@@ -1,0 +1,15 @@
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+vendor/
+go.work
+.env
+*.db
+.vscode
+.commit.log
+.idea
+*_templ.go
