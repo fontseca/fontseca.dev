@@ -13,3 +13,4 @@ go.work
 .commit.log
 .idea
 *_templ.go
+*.sqlite
