@@ -16,6 +16,33 @@ body {
   min-height: 100%;
 }
 
+/* Logo.  */
+
+.logo {
+  display: inline;
+  max-width: 200px;
+  color: black;
+}
+
+.logo-text {
+  font-size: 22px;
+  font-weight: 700;
+  font-family: 'Source Serif 4', sans-serif;
+}
+
+.logo-text span {
+  font-family: 'Source Serif 4', sans-serif;
+  font-weight: 400;
+}
+
+.logo-motto {
+  font-size: 13px;
+}
+
+.main {
+  min-height: 70%;
+}
+
 /* Header and navigation.  */
 
 .header {
