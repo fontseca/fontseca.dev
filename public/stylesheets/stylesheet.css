@@ -60,6 +60,22 @@ body {
   color: white;
 }
 
+/* Title header.  */
+
+.title-header {
+  margin-bottom: 3rem;
+}
+
+.title-header-text {
+  font-size: clamp(2rem, 5vw, 5vw);
+  font-weight: 200;
+}
+
+.title-header-text span {
+  font-weight: 700;
+}
+
+
 /* Wrapper.  */
 
 .site-wrapper {
