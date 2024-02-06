@@ -39,6 +39,27 @@ body {
   font-size: 13px;
 }
 
+/* Wrapper.  */
+
+.site-wrapper {
+  width: 80%;
+  min-height: 100%;
+  margin: auto;
+  border-left: 1px solid black;
+  border-right: 1px solid black;
+  padding-left: 8%;
+  padding-right: 8%;
+  max-width: 1570px;
+  display: block;
+}
+
+@media screen and (max-width: 510px) {
+  .site-wrapper {
+    padding-left: 6%;
+    padding-right: 6%;
+  }
+}
+
 .main {
   min-height: 70%;
 }
