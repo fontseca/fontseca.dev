@@ -1,0 +1,65 @@
+package ui
+
+templ Header(selectedMenuIndex int) {
+	<header class="header">
+		@Logo()
+		<nav class="navigation" id="navigation">
+			<div class="navigation-header">
+				<h2>about:</h2>
+				<p class="navigation-closer" onclick="toggleNavigationSidebar()">close</p>
+			</div>
+			<ul class="navigation-list">
+				<li class="navigation-list-item">
+					<a href="/"
+						 class={ templ.KV("selected", 0 == selectedMenuIndex) }
+					   hx-get="/"
+					   hx-push-url="/"
+					   hx-trigger="click"
+					   hx-target="body">me</a>
+				</li>
+				<li class="navigation-list-item">
+					<a href="/experience"
+						 class={ templ.KV("selected", 1 == selectedMenuIndex) }
+					   hx-get="/experience"
+					   hx-push-url="/experience"
+					   hx-trigger="click"
+					   hx-target="body">experience</a>
+				</li>
+				<li class="navigation-list-item">
+					<a href="/projects"
+						 class={ templ.KV("selected", 2 == selectedMenuIndex) }
+					   hx-get="/projects"
+					   hx-push-url="/projects"
+					   hx-trigger="click"
+					   hx-target="body">projects</a>
+				</li>
+				<li class="navigation-list-item">
+					<a href="/literature"
+						 class={ templ.KV("selected", 3 == selectedMenuIndex) }
+					   hx-get="/literature"
+					   hx-push-url="/literature"
+					   hx-trigger="click"
+					   hx-target="body">literature</a>
+				</li>
+				<li class="navigation-list-item">
+					<a href="/archive"
+						 class={ templ.KV("selected", 4 == selectedMenuIndex) }
+					   hx-get="/archive"
+					   hx-push-url="/archive"
+					   hx-trigger="click"
+					   hx-target="body">archive</a>
+				</li>
+				<li class="navigation-list-item">
+					<a href="/playground"
+						 hx-get="/playground"
+						 hx-push-url="/playground"
+						 hx-trigger="click"
+						 hx-target="body">playground</a>
+				</li>
+			</ul>
+		</nav>
+		<i class="navigation-menu-bars" onclick="toggleNavigationSidebar()">
+			<img src="/public/icons/bars.svg" alt="navigation menu icon"/>
+		</i>
+	</header>
+}

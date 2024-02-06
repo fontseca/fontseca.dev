@@ -18,6 +18,7 @@ templ Layout(title string, selectedMenuIndex int) {
 		</head>
 		<body>
 			<div class="site-wrapper">
+				@ui.Header(selectedMenuIndex)
 				<main class="main">{ children... }</main>
 			</div>
 			<div id="backdrop" onclick="toggleNavigationSidebar()"></div>
