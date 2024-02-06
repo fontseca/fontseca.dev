@@ -224,3 +224,16 @@ body {
     display: none;
   }
 }
+
+/* Footer.  */
+
+.footer {
+  padding-top: 2rem;
+  padding-bottom: 2rem;
+  text-align: center;
+}
+
+.footer-content p {
+  font-family: 'Source Serif 4', sans-serif;
+  font-size: 11px;
+}
