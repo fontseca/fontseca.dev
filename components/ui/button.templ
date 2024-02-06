@@ -1,0 +1,5 @@
+package ui
+
+templ Button(value string, filled bool, href string, attributes templ.Attributes) {
+  <a href={ templ.URL(href) } class={ "btn", templ.KV("filled", filled) }>{ value }</a>
+}

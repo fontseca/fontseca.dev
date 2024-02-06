@@ -39,6 +39,27 @@ body {
   font-size: 13px;
 }
 
+/* Button.  */
+
+.btn {
+  padding: .7rem 2rem .7rem 2rem;
+  background-color: white;
+  color: black;
+  cursor: pointer;
+  border: 1px solid black;
+  text-decoration: none;
+}
+
+.btn:hover {
+  background-color: black;
+  color: white;
+}
+
+.btn.filled {
+  background-color: black;
+  color: white;
+}
+
 /* Wrapper.  */
 
 .site-wrapper {
