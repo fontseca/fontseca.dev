@@ -1,0 +1,17 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: "Raleway", sans-serif;
+}
+
+html {
+  min-height: 100%;
+}
+
+body {
+  background-image: url("/public/images/white-theme-bg.png");
+  background-size: 80%;
+  background-attachment: fixed;
+  min-height: 100%;
+}
