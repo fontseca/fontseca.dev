@@ -174,7 +174,8 @@ func main() {
       CREATE TABLE "me"
       (
         "username"      VARCHAR(64) NOT NULL DEFAULT 'fontseca.dev',
-        "name"          VARCHAR(31) NOT NULL DEFAULT 'Jeremy Fonseca',
+        "first_name"    VARCHAR(6) NOT NULL DEFAULT 'Jeremy',
+        "last_name"     VARCHAR(7) NOT NULL DEFAULT 'Fonseca',
         "summary"       VARCHAR(1024) NOT NULL,
         "job_title"     VARCHAR(64) NOT NULL DEFAULT 'Back-End Software Developer',
         "email"         VARCHAR(254) NOT NULL,
