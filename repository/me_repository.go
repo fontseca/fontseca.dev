@@ -7,8 +7,13 @@ import (
   "fontseca/transfer"
 )
 
+// MeRepository is an abstraction of the database that provides
+// actions for model.Me management.
 type MeRepository interface {
-  Get(ctx context.Context) (me model.Me, err error)
+  // Get retrieves the information of my profile.
+  Get(ctx context.Context) (me *model.Me, err error)
+
+  // Update updates the information of my profile.
   Update(ctx context.Context, update transfer.MeUpdate) (ok bool, err error)
 }
 
