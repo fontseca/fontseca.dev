@@ -33,17 +33,17 @@ func NewRepository(db *sql.DB) MeRepository {
 }
 
 func (r *meRepositoryImpl) registered(ctx context.Context) bool {
-  var n int
+  var exists bool
   ctx, cancel := context.WithTimeout(ctx, time.Second)
   defer cancel()
   var err = r.db.
     QueryRowContext(ctx, `SELECT count (1) FROM "me";`).
-    Scan(&n)
+    Scan(&exists)
   if nil != err {
     slog.Error(err.Error())
     return false
   }
-  return 0 < n
+  return exists
 }
 
 func (r *meRepositoryImpl) Register(ctx context.Context) {
