@@ -3,6 +3,7 @@ package main
 import (
   "context"
   "database/sql"
+  "encoding/json"
   "fmt"
   "github.com/google/uuid"
   "github.com/mattn/go-sqlite3"
@@ -13,6 +14,47 @@ import (
   "path/filepath"
   "time"
 )
+
+// adorn is a decorator that writes line-delimited JSON objects received from calls to
+// the methods of the default slog.Logger to an io.Write, typically a *os.File; these
+// writes are indented and the order of the object fields is conveniently rearranged.
+type adorn struct{ w io.Writer }
+
+func (a adorn) Write(p []byte) (n int, err error) {
+  if err = a.indent(&p); nil != err {
+    return 0, err
+  }
+  return a.write(p)
+}
+
+func (a adorn) indent(p *[]byte) (err error) {
+  var s = struct {
+    Level  string `json:"level"`
+    Time   string `json:"time"`
+    Msg    string `json:"msg"`
+    Source any    `json:"source"`
+  }{}
+  if err = json.Unmarshal(*p, &s); nil != err {
+    return err
+  }
+  if *p, err = json.MarshalIndent(s, "", "  "); nil != err {
+    return err
+  }
+  return nil
+}
+
+func (a adorn) write(p []byte) (n int, err error) {
+  n, err = a.w.Write(p)
+  if nil != err {
+    return 0, err
+  }
+  nn, err := a.w.Write([]byte("\n"))
+  n += nn
+  if n > len(p) {
+    n = len(p) // must be len(p) to avoid an 'io.ErrShortWrite' error
+  }
+  return n, nil
+}
 
 // table contains information about a relation in the database.
 type table struct {
@@ -258,7 +300,7 @@ func main() {
   }
   defer logfile.Close()
 
-  var multiWriter = io.MultiWriter(os.Stderr, logfile)
+  var multiWriter = io.MultiWriter(adorn{os.Stderr}, logfile)
   var logger = slog.New(slog.NewJSONHandler(multiWriter,
     &slog.HandlerOptions{
       AddSource: true,
