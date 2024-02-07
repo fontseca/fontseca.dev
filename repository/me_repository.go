@@ -5,6 +5,8 @@ import (
   "database/sql"
   "fontseca/model"
   "fontseca/transfer"
+  "log/slog"
+  "time"
 )
 
 // MeRepository is an abstraction of the database that provides
@@ -30,9 +32,39 @@ func NewRepository(db *sql.DB) MeRepository {
   return &meRepositoryImpl{db}
 }
 
+func (r *meRepositoryImpl) registered(ctx context.Context) bool {
+  var n int
+  ctx, cancel := context.WithTimeout(ctx, time.Second)
+  defer cancel()
+  var err = r.db.
+    QueryRowContext(ctx, `SELECT count (1) FROM "me";`).
+    Scan(&n)
+  if nil != err {
+    slog.Error(err.Error())
+    return false
+  }
+  return 0 < n
+}
+
 func (r *meRepositoryImpl) Register(ctx context.Context) {
-  // TODO implement me
-  panic("implement me")
+  if r.registered(ctx) {
+    return
+  }
+  var query = `
+  INSERT INTO "me" ("summary",
+                    "email",
+                    "company",
+                    "location")
+            VALUES ('No summary provided.',
+                    'email@example.com',
+                    'None',
+                    'Unknown');`
+  ctx, cancel := context.WithTimeout(ctx, time.Second)
+  defer cancel()
+  _, err := r.db.ExecContext(ctx, query)
+  if nil != err {
+    slog.Error(err.Error())
+  }
 }
 
 func (r *meRepositoryImpl) Get(ctx context.Context) (me *model.Me, err error) {
