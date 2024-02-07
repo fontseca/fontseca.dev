@@ -68,8 +68,35 @@ func (r *meRepositoryImpl) Register(ctx context.Context) {
 }
 
 func (r *meRepositoryImpl) Get(ctx context.Context) (me *model.Me, err error) {
-  // TODO implement me
-  panic("implement me")
+  ctx, cancel := context.WithTimeout(ctx, time.Second)
+  defer cancel()
+  var row = r.db.QueryRowContext(ctx, `SELECT * FROM "me";`)
+  me = new(model.Me)
+  err = row.Scan(
+    &me.Username,
+    &me.FirstName,
+    &me.LastName,
+    &me.Summary,
+    &me.JobTitle,
+    &me.Email,
+    &me.PhotoURL,
+    &me.ResumeURL,
+    &me.CodingSince,
+    &me.Company,
+    &me.Location,
+    &me.Hireable,
+    &me.GitHubURL,
+    &me.LinkedInURL,
+    &me.YouTubeURL,
+    &me.TwitterURL,
+    &me.InstagramURL,
+    &me.CreatedAt,
+    &me.UpdatedAt)
+  if nil != err {
+    slog.Error(err.Error())
+    return me, err
+  }
+  return me, nil
 }
 
 func (r *meRepositoryImpl) Update(ctx context.Context, update transfer.MeUpdate) (ok bool, err error) {
