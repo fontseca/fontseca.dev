@@ -20,7 +20,7 @@ type MeRepository interface {
   Get(ctx context.Context) (me *model.Me, err error)
 
   // Update updates the information of my profile.
-  Update(ctx context.Context, update transfer.MeUpdate) (ok bool, err error)
+  Update(ctx context.Context, update *transfer.MeUpdate) (ok bool, err error)
 }
 
 type meRepositoryImpl struct {
@@ -99,7 +99,76 @@ func (r *meRepositoryImpl) Get(ctx context.Context) (me *model.Me, err error) {
   return me, nil
 }
 
-func (r *meRepositoryImpl) Update(ctx context.Context, update transfer.MeUpdate) (ok bool, err error) {
-  // TODO implement me
-  panic("implement me")
+func (r *meRepositoryImpl) updatable(current *model.Me, update *transfer.MeUpdate) bool {
+  if ("" == update.Summary || update.Summary == current.Summary) &&
+    ("" == update.JobTitle || update.JobTitle == current.JobTitle) &&
+    ("" == update.Email || update.Email == current.Email) &&
+    ("" == update.Company || update.Company == current.Company) &&
+    ("" == update.Location || update.Location == current.Location) &&
+    (update.Hireable == current.Hireable) &&
+    ("" == update.GitHubURL || update.GitHubURL == current.GitHubURL) &&
+    ("" == update.LinkedInURL || update.LinkedInURL == current.LinkedInURL) &&
+    ("" == update.YouTubeURL || update.YouTubeURL == current.YouTubeURL) &&
+    ("" == update.InstagramURL || update.InstagramURL == current.InstagramURL) {
+    return false
+  }
+  return true
+}
+
+func (r *meRepositoryImpl) Update(ctx context.Context, update *transfer.MeUpdate) (ok bool, err error) {
+  tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+  if nil != err {
+    slog.Error(err.Error())
+    return false, err
+  }
+  defer tx.Rollback()
+  current, err := r.Get(ctx)
+  if nil != err {
+    return false, err
+  }
+  if updatable := r.updatable(current, update); !updatable {
+    return false, nil
+  }
+  var query = `
+    UPDATE "me"
+       SET "summary" = coalesce (nullif (@new_summary, ''), @current_summary),
+           "job_title" = coalesce (nullif (@new_job_title, ''), @current_job_title),
+           "email" = coalesce (nullif (@new_email, ''), @current_email),
+           "company" = coalesce (nullif (@new_company, ''), @current_company),
+           "location" = coalesce (nullif (@new_location, ''), @current_location),
+           "hireable" = @new_hireable,
+           "github_url" = coalesce (nullif (@new_github_url, ''), @current_github_url),
+           "linkedin_url" = coalesce (nullif (@new_linkedin_url, ''), @current_linkedin_url),
+           "youtube_url" = coalesce (nullif (@new_youtube_url, ''), @current_youtube_url),
+           "twitter_url" = coalesce (nullif (@new_twitter_url, ''), @current_twitter_url),
+           "instagram_url" = coalesce (nullif (@new_instagram_url, ''), @current_instagram_url),
+           "updated_at" = current_timestamp
+     WHERE "username" = "fontseca.dev";`
+  ctx, cancel := context.WithTimeout(ctx, time.Second)
+  defer cancel()
+  result, err := tx.ExecContext(ctx, query,
+    sql.Named("new_summary", update.Summary), sql.Named("current_summary", current.Summary),
+    sql.Named("new_job_title", update.JobTitle), sql.Named("current_job_title", current.JobTitle),
+    sql.Named("new_email", update.Email), sql.Named("current_email", current.Email),
+    sql.Named("new_company", update.Company), sql.Named("current_company", current.Company),
+    sql.Named("new_location", update.Location), sql.Named("current_location", current.Location),
+    sql.Named("new_hireable", update.Hireable),
+    sql.Named("new_github_url", update.GitHubURL), sql.Named("current_github_url", current.GitHubURL),
+    sql.Named("new_linkedin_url", update.LinkedInURL), sql.Named("current_linkedin_url", current.LinkedInURL),
+    sql.Named("new_youtube_url", update.YouTubeURL), sql.Named("current_youtube_url", current.YouTubeURL),
+    sql.Named("new_twitter_url", update.TwitterURL), sql.Named("current_twitter_url", current.TwitterURL),
+    sql.Named("new_instagram_url", update.InstagramURL), sql.Named("current_instagram_url", current.InstagramURL))
+  if nil != err {
+    slog.Error(err.Error())
+    return false, err
+  }
+  var affected, _ = result.RowsAffected()
+  if 1 != affected {
+    return false, nil
+  }
+  if err = tx.Commit(); nil != err {
+    slog.Error(err.Error())
+    return false, err
+  }
+  return true, nil
 }
