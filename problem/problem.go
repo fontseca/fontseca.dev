@@ -34,3 +34,23 @@ func canonicalSnakeCase(s string) string {
   }
   return strings.ToLower(strings.Join(strings.Fields(s), "_"))
 }
+
+// Extension is a map that stores all the additional members that are
+// specific to a problem type.
+type Extension map[string][]any
+
+// Add adds a new extension to the additional members of the problem.
+func (e Extension) Add(key string, value any) {
+  e[canonicalSnakeCase(key)] = append(e[canonicalSnakeCase(key)], value)
+}
+
+// Set sets the value of the extension for the specified key,
+// replacing any existing values.
+func (e Extension) Set(key string, value any) {
+  e[canonicalSnakeCase(key)] = []any{value}
+}
+
+// Del deletes the extension for the specified key.
+func (e Extension) Del(key string) {
+  delete(e, canonicalSnakeCase(key))
+}

@@ -34,3 +34,23 @@ func TestCanonicalSnakeCase(t *testing.T) {
     assert.Equal(t, expected, output)
   }
 }
+
+func TestExtension(t *testing.T) {
+  var extension = Extension{}
+
+  t.Run("Add", func(t *testing.T) {
+    extension.Add("Key_Name", "value1")
+    extension.Add("KEY_NAME", "value2")
+    assert.Equal(t, Extension{"key_name": {"value1", "value2"}}, extension)
+  })
+
+  t.Run("Set", func(t *testing.T) {
+    extension.Set("Key_Name", "value1")
+    assert.Equal(t, Extension{"key_name": {"value1"}}, extension)
+  })
+
+  t.Run("Del", func(t *testing.T) {
+    extension.Del("Key_Name")
+    assert.Equal(t, Extension{}, extension)
+  })
+}
