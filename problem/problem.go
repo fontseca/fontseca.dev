@@ -116,9 +116,9 @@ func (p *problem) Extension() Extension {
   return p.extension
 }
 
-// hasMultipleValues checks if the provided slice has more than one element.
-func (p *problem) hasMultipleValues(values []any) bool {
-  return 1 < len(values)
+// hasOneValueOnly checks if the slice of extensions for a key has only one element.
+func (p *problem) hasOneValueOnly(values []any) bool {
+  return 1 == len(values)
 }
 
 // makeStructFieldFor creates a reflect.StructField with the given name, sample type, and optional omitempty tag.
@@ -138,7 +138,7 @@ func (p *problem) makeStructFieldFor(name string, sample reflect.Type, omitempty
 func (p *problem) appendExtensions(fields *[]reflect.StructField) {
   for extKey, extValues := range p.extension {
     var extType = reflect.TypeOf(extValues)
-    if !p.hasMultipleValues(extValues) {
+    if p.hasOneValueOnly(extValues) {
       extType = reflect.TypeOf(extValues[0])
     }
     *fields = append(*fields, p.makeStructFieldFor(extKey, extType))
@@ -149,7 +149,7 @@ func (p *problem) appendExtensions(fields *[]reflect.StructField) {
 func (p *problem) setExtensionValues(s reflect.Value) {
   for extKey, extValues := range p.extension {
     var value = reflect.ValueOf(extValues)
-    if 1 == len(extValues) {
+    if p.hasOneValueOnly(extValues) {
       value = reflect.ValueOf(extValues[0])
     }
     s.FieldByName(snakeToPascalCase(extKey)).Set(value)
