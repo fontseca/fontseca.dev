@@ -1,7 +1,11 @@
 package problem
 
 import (
+  "encoding/json"
+  "fmt"
+  "log/slog"
   "net/http"
+  "reflect"
   "strings"
   "unicode"
 )
@@ -112,5 +116,114 @@ func (p *problem) Extension() Extension {
   return p.extension
 }
 
+// hasMultipleValues checks if the provided slice has more than one element.
+func (p *problem) hasMultipleValues(values []any) bool {
+  return 1 < len(values)
+}
+
+// makeStructFieldFor creates a reflect.StructField with the given name, sample type, and optional omitempty tag.
+func (p *problem) makeStructFieldFor(name string, sample reflect.Type, omitempty ...bool) reflect.StructField {
+  tagname := fmt.Sprintf(`json:"%s"`, canonicalSnakeCase(name))
+  if 1 <= len(omitempty) && omitempty[0] {
+    tagname = fmt.Sprintf(`json:"%s,omitempty"`, canonicalSnakeCase(name))
+  }
+  return reflect.StructField{
+    Name: reflect.ValueOf(snakeToPascalCase(name)).Interface().(string),
+    Type: sample,
+    Tag:  reflect.StructTag(tagname),
+  }
+}
+
+// appendExtensions appends the additional fields to the problem struct fields.
+func (p *problem) appendExtensions(fields *[]reflect.StructField) {
+  for extKey, extValues := range p.extension {
+    var extType = reflect.TypeOf(extValues)
+    if !p.hasMultipleValues(extValues) {
+      extType = reflect.TypeOf(extValues[0])
+    }
+    *fields = append(*fields, p.makeStructFieldFor(extKey, extType))
+  }
+}
+
+// setExtensionValues sets extension values to the given struct value.
+func (p *problem) setExtensionValues(s reflect.Value) {
+  for extKey, extValues := range p.extension {
+    var value = reflect.ValueOf(extValues)
+    if 1 == len(extValues) {
+      value = reflect.ValueOf(extValues[0])
+    }
+    s.FieldByName(snakeToPascalCase(extKey)).Set(value)
+  }
+}
+
+// setValuesToStructFields sets problem values to the given struct fields.
+func (p *problem) setValuesToStructFields(s reflect.Value) {
+  s.FieldByName("Type").SetString(p.typ)
+  s.FieldByName("Status").SetInt(int64(p.status))
+  s.FieldByName("Title").SetString(p.title)
+  s.FieldByName("Detail").SetString(p.detail)
+  s.FieldByName("Instance").SetString(p.instance)
+  p.setExtensionValues(s)
+}
+
+// generateStruct generates a struct representing the problem.
+func (p *problem) generateStruct() any {
+  fields := []reflect.StructField{
+    p.makeStructFieldFor("Type", reflect.TypeOf("")),
+    p.makeStructFieldFor("Status", reflect.TypeOf(0)),
+    p.makeStructFieldFor("Title", reflect.TypeOf("")),
+    p.makeStructFieldFor("Detail", reflect.TypeOf(""), true),
+    p.makeStructFieldFor("Instance", reflect.TypeOf(""), true),
+  }
+  p.appendExtensions(&fields)
+  s := reflect.New(reflect.StructOf(fields)).Elem()
+  p.setValuesToStructFields(s)
+  return s.Interface()
+}
+
+// sanitize cleans up problem fields.
+func (p *problem) sanitize() {
+  if !isValidHTTPStatusCode(p.status) {
+    p.status = http.StatusOK
+  }
+  p.detail = strings.TrimSpace(p.detail)
+  p.instance = strings.TrimSpace(p.instance)
+  p.typ = strings.TrimSpace(p.typ)
+  p.title = strings.TrimSpace(p.title)
+  if "" == p.typ {
+    p.typ = "about:blank"
+    if "" == p.title {
+      p.title = http.StatusText(p.status)
+    }
+  }
+}
+
+// serialize converts the struct representation of the problem to JSON bytes.
+func (p *problem) serialize(s any) []byte {
+  data, err := json.Marshal(s)
+  if nil != err {
+    slog.Error(err.Error())
+    return nil
+  }
+  return data
+}
+
+// doEmit writes the serialized problem to the http.ResponseWriter.
+func (p *problem) doEmit(data []byte, w http.ResponseWriter) {
+  w.Header().Set("Content-Type", "application/problem+json")
+  w.WriteHeader(p.status)
+  _, err := w.Write(data)
+  if nil != err {
+    slog.Error(err.Error())
+  }
+}
+
 func (p *problem) Emit(w http.ResponseWriter) {
+  if nil != w {
+    p.sanitize()
+    s := p.generateStruct()
+    if serialized := p.serialize(s); nil != serialized {
+      p.doEmit(serialized, w)
+    }
+  }
 }
