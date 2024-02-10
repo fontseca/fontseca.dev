@@ -1,6 +1,7 @@
 package problem
 
 import (
+  "net/http"
   "strings"
   "unicode"
 )
@@ -53,4 +54,27 @@ func (e Extension) Set(key string, value any) {
 // Del deletes the extension for the specified key.
 func (e Extension) Del(key string) {
   delete(e, canonicalSnakeCase(key))
+}
+
+// isValidHTTPStatusCode checks if the provided integer code is a valid HTTP status code.
+// HTTP status codes are considered valid if they fall within the range of 100 to 599.
+func isValidHTTPStatusCode(code int) bool {
+  return code >= 100 && code <= 999
+}
+
+// Problem represents an RFC 9457 Problem Details object. When serialized in a JSON
+// object, this format is identified with the "application/problem+json" media type.
+// For more details, refer to RFC 9457: https://www.rfc-editor.org/rfc/rfc9457#name-the-problem-details-json-ob.
+// It also implements the error interface for straightforward mobilization.
+type Problem interface {
+  error
+
+  // Extension returns the Extension object associated with the
+  // problem. If the Extension object is nil, then it's created.
+  Extension() Extension
+
+  // Emit sends the problem details as an HTTP response through the
+  // provided http.ResponseWriter w. The response body is a JSON object
+  // and its Content-Type is "application/problem+json".
+  Emit(w http.ResponseWriter)
 }
