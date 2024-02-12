@@ -115,26 +115,6 @@ func canonicalSnakeCase(s string) string {
   return strings.ToLower(strings.Join(strings.Fields(s), "_"))
 }
 
-// Extension is a map that stores all the additional members that are
-// specific to a problem type.
-type Extension map[string][]any
-
-// Add adds a new extension to the additional members of the problem.
-func (e Extension) Add(key string, value any) {
-  e[canonicalSnakeCase(key)] = append(e[canonicalSnakeCase(key)], value)
-}
-
-// Set sets the value of the extension for the specified key,
-// replacing any existing values.
-func (e Extension) Set(key string, value any) {
-  e[canonicalSnakeCase(key)] = []any{value}
-}
-
-// Del deletes the extension for the specified key.
-func (e Extension) Del(key string) {
-  delete(e, canonicalSnakeCase(key))
-}
-
 // isValidHTTPStatusCode checks if the provided integer code is a valid HTTP status code.
 // HTTP status codes are considered valid if they fall within the range of 100 to 599.
 func isValidHTTPStatusCode(code int) bool {
@@ -147,10 +127,6 @@ func isValidHTTPStatusCode(code int) bool {
 // It also implements the error interface for straightforward mobilization.
 type Problem interface {
   error
-
-  // Extension returns the Extension object associated with the
-  // problem. If the Extension object is nil, then it's created.
-  Extension() Extension
 
   // Emit sends the problem details as an HTTP response through the
   // provided http.ResponseWriter w. The response body is a JSON object
@@ -176,19 +152,12 @@ type problem struct {
   // instance is a URI reference that identifies the specific occurrence of the problem. It may or may not yield further information if dereferenced.
   instance string
 
-  // extension contains additional members that are specific to a problem type.
-  extension Extension
+  // extensions contains additional members that are specific to a problem type.
+  extensions []map[string][]any
 }
 
 func (p *problem) Error() string {
   return ""
-}
-
-func (p *problem) Extension() Extension {
-  if nil == p.extension {
-    p.extension = Extension{}
-  }
-  return p.extension
 }
 
 // hasOneValueOnly checks if the slice of extensions for a key has only one element.
@@ -211,23 +180,27 @@ func (p *problem) makeStructFieldFor(name string, sample reflect.Type, omitempty
 
 // appendExtensions appends the additional fields to the problem struct fields.
 func (p *problem) appendExtensions(fields *[]reflect.StructField) {
-  for extKey, extValues := range p.extension {
-    var extType = reflect.TypeOf(extValues)
-    if p.hasOneValueOnly(extValues) {
-      extType = reflect.TypeOf(extValues[0])
+  for _, mp := range p.extensions {
+    for extKey, extValues := range mp {
+      var extType = reflect.TypeOf(extValues)
+      if p.hasOneValueOnly(extValues) {
+        extType = reflect.TypeOf(extValues[0])
+      }
+      *fields = append(*fields, p.makeStructFieldFor(extKey, extType))
     }
-    *fields = append(*fields, p.makeStructFieldFor(extKey, extType))
   }
 }
 
 // setExtensionValues sets extension values to the given struct value.
 func (p *problem) setExtensionValues(s reflect.Value) {
-  for extKey, extValues := range p.extension {
-    var value = reflect.ValueOf(extValues)
-    if p.hasOneValueOnly(extValues) {
-      value = reflect.ValueOf(extValues[0])
+  for _, mp := range p.extensions {
+    for extKey, extValues := range mp {
+      var value = reflect.ValueOf(extValues)
+      if p.hasOneValueOnly(extValues) {
+        value = reflect.ValueOf(extValues[0])
+      }
+      s.FieldByName(snakeToPascalCase(extKey)).Set(value)
     }
-    s.FieldByName(snakeToPascalCase(extKey)).Set(value)
   }
 }
 
