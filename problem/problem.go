@@ -5,10 +5,85 @@ import (
   "fmt"
   "log/slog"
   "net/http"
+  "net/url"
   "reflect"
   "strings"
   "unicode"
 )
+
+// baseURL contains metadata about how to ue the base URL.
+type baseURL struct {
+  url      *url.URL // url holds the parsed URL.
+  fragment bool     // fragment indicates whether the URL will be used with fragments, instead of URL path.
+  empty    bool     // empty indicates whether url is nil.
+}
+
+// set resets the baseURL to its initial state.
+func (b *baseURL) set() {
+  b.url = nil
+  b.fragment = false
+  b.empty = true
+}
+
+// base holds metadata about the default URL
+// to be used when invoking Builder.Type method.
+var base = baseURL{
+  url:      nil,
+  fragment: false,
+  empty:    true,
+}
+
+// doParseURL parses the raw URL string and returns the parsed URL.
+// It also returns a boolean flag indicating whether parsing was
+// successful. If raw is an empty string, it returns a nil pointer
+// to url.URL and false.
+func doParseURL(raw string) (parsed *url.URL, ok bool) {
+  raw, err := url.JoinPath(raw) // Sanitizes URL.
+  if nil != err {
+    slog.Error(err.Error())
+    return nil, false
+  }
+
+  if '/' == raw[len(raw)-1] {
+    raw = strings.TrimRight(raw, "/")
+  }
+
+  parsed, err = url.Parse(raw)
+  if nil != err {
+    slog.Error(err.Error())
+    return nil, false
+  }
+
+  if "" == parsed.String() {
+    return nil, false
+  }
+
+  return parsed, true
+}
+
+// SetGlobalURL sets the global base URI with the provided URI string.
+// It also accepts an optional fragment flag to indicate if the URI
+// will be used with fragments when invoking the builder's Type function.
+// If an error occurs, then an empty URL is used.
+func SetGlobalURL(raw string, fragment ...bool) {
+  raw = strings.TrimSpace(raw)
+
+  base.set()
+
+  if 0 < len(fragment) {
+    base.fragment = fragment[0]
+  }
+
+  if "" == raw {
+    return
+  }
+
+  parsed, ok := doParseURL(raw)
+  if ok {
+    base.url = parsed
+    base.empty = false
+  }
+}
 
 // snakeToPascalCase converts a string from snake_case format to PascalCase.
 // It capitalizes the first letter of each word separated by underscores and

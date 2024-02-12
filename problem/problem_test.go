@@ -10,6 +10,56 @@ import (
   "testing"
 )
 
+func TestSetGlobalURL(t *testing.T) {
+  t.Run("no call, nil by default", func(t *testing.T) {
+    assert.Nil(t, base.url)
+    assert.False(t, base.fragment)
+    assert.True(t, base.empty)
+  })
+
+  t.Run("empty", func(t *testing.T) {
+    SetGlobalURL("")
+    assert.Nil(t, base.url)
+    assert.False(t, base.fragment)
+    assert.True(t, base.empty)
+  })
+
+  t.Run("empty, but with fragment", func(t *testing.T) {
+    SetGlobalURL("", true)
+    assert.Nil(t, base.url)
+    assert.True(t, base.fragment)
+    assert.True(t, base.empty)
+  })
+
+  t.Run("uncanny url", func(t *testing.T) {
+    SetGlobalURL("foobar/")
+    assert.Equal(t, "foobar", base.url.String())
+    assert.False(t, base.fragment)
+    assert.False(t, base.empty)
+  })
+
+  t.Run("good url, without fragment", func(t *testing.T) {
+    SetGlobalURL("    \nhttps://github.com/////fontseca//////    \n")
+    assert.Equal(t, "https://github.com/fontseca", base.url.String())
+    assert.False(t, base.fragment)
+    assert.False(t, base.empty)
+  })
+
+  t.Run("good url, with fragment", func(t *testing.T) {
+    SetGlobalURL("\thttps://example.net//////problems/////\n", true)
+    assert.Equal(t, "https://example.net/problems", base.url.String())
+    assert.True(t, base.fragment)
+    assert.False(t, base.empty)
+  })
+
+  t.Run("wrong url", func(t *testing.T) { // Sends an error to stderr.
+    SetGlobalURL("postgres://user:abc{DEf1=foo@example.com:5432/db")
+    assert.Nil(t, base.url)
+    assert.False(t, base.fragment)
+    assert.True(t, base.empty)
+  })
+}
+
 func TestSnakeToPascalCase(t *testing.T) {
   var cases = map[string]string{
     "snake_case":            "SnakeCase",
