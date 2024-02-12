@@ -90,26 +90,6 @@ func TestCanonicalSnakeCase(t *testing.T) {
   }
 }
 
-func TestExtension(t *testing.T) {
-  var extension = Extension{}
-
-  t.Run("Add", func(t *testing.T) {
-    extension.Add("Key_Name", "value1")
-    extension.Add("KEY_NAME", "value2")
-    assert.Equal(t, Extension{"key_name": {"value1", "value2"}}, extension)
-  })
-
-  t.Run("Set", func(t *testing.T) {
-    extension.Set("Key_Name", "value1")
-    assert.Equal(t, Extension{"key_name": {"value1"}}, extension)
-  })
-
-  t.Run("Del", func(t *testing.T) {
-    extension.Del("Key_Name")
-    assert.Equal(t, Extension{}, extension)
-  })
-}
-
 func TestEmit(t *testing.T) {
   t.Run("Validation error problem", func(t *testing.T) {
     var expectedType = "https://example.net/validation-error"
@@ -120,12 +100,14 @@ func TestEmit(t *testing.T) {
       map[string]any{"detail": "must be 'green', 'red' or 'blue'", "pointer": "#/profile/color"},
     }
 
-    var p = problem{typ: expectedType, title: expectedTitle, status: expectedStatus}
-    p.Extension().Add("error", expectedError[0])
-    p.Extension().Add("error", expectedError[1])
-
     var recorder = httptest.NewRecorder()
-    p.Emit(recorder)
+    var b = Builder{}
+    b.Type(expectedType)
+    b.Title(expectedTitle)
+    b.Status(expectedStatus)
+    b.With("error", expectedError[0])
+    b.With("error", expectedError[1])
+    b.Problem().Emit(recorder)
 
     var response = recorder.Result()
     defer response.Body.Close()
@@ -161,13 +143,17 @@ func TestEmit(t *testing.T) {
       "/account/67890",
     }
 
-    var p = problem{typ: expectedType, title: expectedTitle, status: expectedStatus, detail: expectedDetail, instance: expectedInstance}
-    p.Extension().Add("balance", expectedBalance)
-    p.Extension().Add("accounts", expectedAccounts[0])
-    p.Extension().Add("accounts", expectedAccounts[1])
-
     var recorder = httptest.NewRecorder()
-    p.Emit(recorder)
+    var b = Builder{}
+    b.Type(expectedType)
+    b.Title(expectedTitle)
+    b.Status(expectedStatus)
+    b.Detail(expectedDetail)
+    b.Instance(expectedInstance)
+    b.With("balance", expectedBalance)
+    b.With("accounts", expectedAccounts[0])
+    b.With("accounts", expectedAccounts[1])
+    b.Problem().Emit(recorder)
 
     var response = recorder.Result()
     defer response.Body.Close()
@@ -197,9 +183,10 @@ func TestEmit(t *testing.T) {
     var expectedStatus = http.StatusSeeOther
     var expectedTitle = http.StatusText(expectedStatus)
 
-    var p = problem{status: expectedStatus}
     var recorder = httptest.NewRecorder()
-    p.Emit(recorder)
+    var b = Builder{}
+    b.Status(expectedStatus)
+    b.Problem().Emit(recorder)
 
     var response = recorder.Result()
     defer response.Body.Close()
