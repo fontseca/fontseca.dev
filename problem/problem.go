@@ -275,3 +275,148 @@ func (p *problem) Emit(w http.ResponseWriter) {
     }
   }
 }
+
+// Builder is used to efficiently build an instance of a Problem type.
+type Builder struct{ p *problem }
+
+// check ensures that the internal problem is initialized.
+func (b *Builder) check() {
+  if nil == b.p {
+    b.p = new(problem)
+  }
+}
+
+func (b *Builder) defaultType() {
+  b.p.typ = "about:blank"
+}
+
+// Type sets the type of the problem. If the string t is empty,
+// its value is assumed to be "about:blank".
+func (b *Builder) Type(t string) {
+  b.check()
+
+  t = strings.TrimSpace(t)
+
+  if base.empty {
+    u, ok := doParseURL(t)
+    if ok {
+      b.p.typ = u.String()
+    } else {
+      b.defaultType()
+    }
+    return
+  }
+
+  // So far, base URL cannot be an empty string.
+
+  if base.fragment {
+    clone, _ := url.Parse(base.url.String())
+    clone.Fragment = t
+    b.p.typ = clone.String()
+    return
+  }
+
+  if "" == t {
+    b.p.typ = base.url.String()
+    return
+  }
+
+  u, err := url.JoinPath(base.url.String(), t)
+  if nil != err {
+    slog.Error(err.Error())
+    b.defaultType()
+  } else {
+    b.p.typ = u
+  }
+}
+
+// Status sets the HTTP status code of the problem.
+func (b *Builder) Status(s int) {
+  b.check()
+  if !isValidHTTPStatusCode(s) {
+    s = http.StatusOK
+  }
+  b.p.status = s
+}
+
+// Title sets the title of the problem. The title is
+// a short, human-readable summary of the problem type.
+func (b *Builder) Title(t string) {
+  b.check()
+  t = strings.TrimSpace(t)
+  b.p.title = t
+}
+
+// Detail sets the detail message of the problem. It is a
+// human-readable explanation specific to this occurrence
+// of the problem. If present, it ought to focus on helping
+// the client correct the problem, rather than giving
+// debugging information.
+func (b *Builder) Detail(d string) {
+  b.check()
+  d = strings.TrimSpace(d)
+  b.p.detail = d
+}
+
+// Instance sets the instance URI of the problem. It is a
+// URI reference that identifies the specific occurrence
+// of the problem.
+func (b *Builder) Instance(i string) {
+  b.check()
+  i = strings.TrimSpace(i)
+  b.p.instance = i
+}
+
+// hasExtension checks if the problem has an extension with the specified key k.
+func (b *Builder) hasExtension(k string) bool {
+  for _, mp := range b.p.extensions {
+    if _, ok := mp[k]; ok {
+      return ok
+    }
+  }
+  return false
+}
+
+// appendValue appends a value v to the extension with the specified key k.
+func (b *Builder) appendValue(k string, v any) {
+  for _, mp := range b.p.extensions {
+    if _, ok := mp[k]; ok {
+      mp[k] = append(mp[k], v)
+    }
+  }
+}
+
+// checkExt ensures that the extensions slice is initialized.
+func (b *Builder) checkExt() {
+  if 0 == len(b.p.extensions) {
+    b.p.extensions = make([]map[string][]any, 0)
+  }
+}
+
+// With adds an additional member specific to the problem with the specified key
+// and value. If an extension with the given key already exists, the new value
+// is appended to it, forming a slice.
+func (b *Builder) With(key string, value any) {
+  b.check()
+  b.checkExt()
+  var t = reflect.TypeOf(value)
+  if nil == t || reflect.Invalid == t.Kind() || reflect.Chan == t.Kind() || reflect.Func == t.Kind() {
+    return
+  }
+  key = canonicalSnakeCase(key)
+  if "" == key {
+    return
+  }
+  if b.hasExtension(key) {
+    b.appendValue(key, value)
+  } else {
+    b.p.extensions = append(b.p.extensions, map[string][]any{key: {value}})
+  }
+}
+
+// Problem finalizes the problem construction and returns the problem
+// instance.
+func (b *Builder) Problem() Problem {
+  b.check()
+  return b.p
+}

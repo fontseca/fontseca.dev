@@ -223,3 +223,135 @@ func TestEmit(t *testing.T) {
     assert.NotContains(t, object, "balance", "Superfluous \"balance\" field in JSON body response.")
   })
 }
+
+func TestBuilder(t *testing.T) {
+  t.Run("Problem", func(t *testing.T) {
+    var b = Builder{}
+    var p = b.Problem().(*problem)
+    assert.NotNil(t, p)
+  })
+
+  t.Run("Type", func(t *testing.T) {
+    var b = Builder{}
+    var p = b.Problem().(*problem)
+
+    t.Run("without invoking 'SetGlobalURL'", func(t *testing.T) {
+      b.Type("")
+      assert.Equal(t, "about:blank", p.typ)
+
+      b.Type("www.foo.com/problems#out-of-credit")
+      assert.Equal(t, "www.foo.com/problems#out-of-credit", p.typ)
+    })
+
+    t.Run("invoking 'SetGlobalURL', with empty url and fragment", func(t *testing.T) {
+      SetGlobalURL("\n \t \n", true)
+
+      b.Type("")
+      assert.Equal(t, "about:blank", p.typ)
+
+      b.Type("out-of-credit")
+      assert.Equal(t, "out-of-credit", p.typ)
+    })
+
+    t.Run("with base URL, but no fragments", func(t *testing.T) {
+      SetGlobalURL("https://www.example.com/")
+
+      b.Type("")
+      assert.Equal(t, "https://www.example.com", p.typ)
+
+      b.Type("/path////to/////problems/out-of-credit")
+      assert.Equal(t, "https://www.example.com/path/to/problems/out-of-credit", p.typ)
+    })
+
+    t.Run("with base URL and fragments", func(t *testing.T) {
+      SetGlobalURL("https://www.example.com/problems", true)
+
+      b.Type("")
+      assert.Equal(t, "https://www.example.com/problems", p.typ)
+
+      b.Type("out-of-credit")
+      assert.Equal(t, "https://www.example.com/problems#out-of-credit", p.typ)
+    })
+  })
+
+  t.Run("Status", func(t *testing.T) {
+    var b = Builder{}
+    var p = b.Problem().(*problem)
+
+    t.Run("invalid number, defaults to 200", func(t *testing.T) {
+      b.Status(-1)
+      assert.Equal(t, http.StatusOK, p.status)
+
+      b.Status(1000)
+      assert.Equal(t, http.StatusOK, p.status)
+    })
+
+    t.Run("correct status number", func(t *testing.T) {
+      b.Status(http.StatusForbidden)
+      assert.Equal(t, http.StatusForbidden, p.status)
+    })
+  })
+
+  t.Run("Title", func(t *testing.T) {
+    var b = Builder{}
+    var p = b.Problem().(*problem)
+
+    t.Run("empty title", func(t *testing.T) {
+      b.Title("\n\t \t\n")
+      assert.Equal(t, "", p.title)
+    })
+
+    t.Run("good title", func(t *testing.T) {
+      b.Title("You do not have enough credit.")
+      assert.Equal(t, "You do not have enough credit.", p.title)
+    })
+  })
+
+  t.Run("Detail", func(t *testing.T) {
+    var b = Builder{}
+    var p = b.Problem().(*problem)
+
+    t.Run("empty detail", func(t *testing.T) {
+      b.Detail("\n\t \t\n")
+      assert.Equal(t, "", p.detail)
+    })
+
+    t.Run("good detail", func(t *testing.T) {
+      b.Detail("Your current balance is 30, but that costs 50.")
+      assert.Equal(t, "Your current balance is 30, but that costs 50.", p.detail)
+    })
+  })
+
+  t.Run("Instance", func(t *testing.T) {
+    var b = Builder{}
+    var p = b.Problem().(*problem)
+
+    t.Run("empty instance", func(t *testing.T) {
+      b.Instance("\n\t \t\n")
+      assert.Equal(t, "", p.instance)
+    })
+
+    t.Run("good instance", func(t *testing.T) {
+      b.Instance("/account/12345/msgs/abc")
+      assert.Equal(t, "/account/12345/msgs/abc", p.instance)
+    })
+  })
+
+  t.Run("With", func(t *testing.T) {
+    var b = Builder{}
+    var p = b.Problem().(*problem)
+
+    b.With("", 1)
+    b.With(" \n\t\n ", 2)
+    b.With("chan", make(chan int))
+    b.With("func", func() {})
+    b.With("nil", nil)
+    b.With("balance", 30)
+    b.With("accounts", "/account/12345")
+    b.With("accounts", "/account/67890")
+
+    require.Len(t, p.extensions, 2)
+    assert.Contains(t, p.extensions, map[string][]any{"balance": {30}}, "Extensions slice does not include 'balance' entry or entry's value is not correct.")
+    assert.Contains(t, p.extensions, map[string][]any{"accounts": {"/account/12345", "/account/67890"}}, "Extensions slice does not include 'accounts' entry or entry's value is not correct.")
+  })
+}
