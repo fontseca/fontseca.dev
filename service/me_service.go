@@ -29,11 +29,7 @@ func NewMeService(r repository.MeRepository) MeService {
 }
 
 func (m *meService) Get(ctx context.Context) (me *model.Me, err error) {
-  me, err = m.r.Get(ctx)
-  if nil != err {
-    return nil, err
-  }
-  return me, nil
+  return m.r.Get(ctx)
 }
 
 func (m *meService) Update(ctx context.Context, update *transfer.MeUpdate) (updated bool, err error) {
