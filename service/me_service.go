@@ -29,8 +29,11 @@ func NewMeService(r repository.MeRepository) MeService {
 }
 
 func (m *meService) Get(ctx context.Context) (me *model.Me, err error) {
-  // TODO implement me
-  panic("implement me")
+  me, err = m.r.Get(ctx)
+  if nil != err {
+    return nil, err
+  }
+  return me, nil
 }
 
 func (m *meService) Update(ctx context.Context, update *transfer.MeUpdate) (updated bool, err error) {
