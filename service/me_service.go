@@ -2,9 +2,12 @@ package service
 
 import (
   "context"
+  "errors"
   "fontseca/model"
   "fontseca/repository"
   "fontseca/transfer"
+  "log/slog"
+  "strings"
 )
 
 // MeService defines the interface for managing user profile related operations.
@@ -33,6 +36,20 @@ func (m *meService) Get(ctx context.Context) (me *model.Me, err error) {
 }
 
 func (m *meService) Update(ctx context.Context, update *transfer.MeUpdate) (updated bool, err error) {
-  // TODO implement me
-  panic("implement me")
+  if nil == update {
+    err = errors.New("nil value for parameter: update")
+    slog.Error(err.Error())
+    return false, err
+  }
+  update.Summary = strings.TrimSpace(update.Summary)
+  update.JobTitle = strings.TrimSpace(update.JobTitle)
+  update.Email = strings.TrimSpace(update.Email)
+  update.Company = strings.TrimSpace(update.Company)
+  update.Location = strings.TrimSpace(update.Location)
+  update.GitHubURL = strings.TrimSpace(update.GitHubURL)
+  update.LinkedInURL = strings.TrimSpace(update.LinkedInURL)
+  update.YouTubeURL = strings.TrimSpace(update.YouTubeURL)
+  update.TwitterURL = strings.TrimSpace(update.TwitterURL)
+  update.InstagramURL = strings.TrimSpace(update.InstagramURL)
+  return m.r.Update(ctx, update)
 }
