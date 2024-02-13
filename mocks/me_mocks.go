@@ -32,3 +32,25 @@ func (o *MeRepository) Update(ctx context.Context, update *transfer.MeUpdate) (o
   var args = o.Called(ctx, update)
   return args.Bool(0), args.Error(1)
 }
+
+type MeService struct {
+  mock.Mock
+}
+
+func NewMeService() *MeService {
+  return new(MeService)
+}
+
+func (o *MeService) Get(ctx context.Context) (me *model.Me, err error) {
+  var args = o.Called(ctx)
+  var arg0 = args.Get(0)
+  if nil != arg0 {
+    me = arg0.(*model.Me)
+  }
+  return me, args.Error(1)
+}
+
+func (o *MeService) Update(ctx context.Context, update *transfer.MeUpdate) (ok bool, err error) {
+  var args = o.Called(ctx, update)
+  return args.Bool(0), args.Error(1)
+}
