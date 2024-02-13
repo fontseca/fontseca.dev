@@ -3,6 +3,7 @@ package service
 import (
   "context"
   "fontseca/model"
+  "fontseca/repository"
   "fontseca/transfer"
 )
 
@@ -17,4 +18,22 @@ type MeService interface {
   // errors when they occur. Returns true if the profile was successfully
   // updated, otherwise false.
   Update(ctx context.Context, update *transfer.MeUpdate) (updated bool, err error)
+}
+
+type meService struct {
+  r repository.MeRepository
+}
+
+func NewMeService(r repository.MeRepository) MeService {
+  return &meService{r}
+}
+
+func (m *meService) Get(ctx context.Context) (me *model.Me, err error) {
+  // TODO implement me
+  panic("implement me")
+}
+
+func (m *meService) Update(ctx context.Context, update *transfer.MeUpdate) (updated bool, err error) {
+  // TODO implement me
+  panic("implement me")
 }
