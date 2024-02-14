@@ -5,13 +5,16 @@ import (
   "database/sql"
   "encoding/json"
   "fmt"
+  "github.com/gin-gonic/gin"
   "github.com/google/uuid"
   "github.com/mattn/go-sqlite3"
   "io"
   "log"
   "log/slog"
+  "net/http"
   "os"
   "path/filepath"
+  "strings"
   "time"
 )
 
@@ -316,4 +319,53 @@ func main() {
     }))
 
   slog.SetDefault(logger)
+
+  var mode = strings.TrimSpace(os.Getenv("SERVER_MODE"))
+  if "" == mode {
+    mode = gin.DebugMode
+  }
+
+  gin.SetMode(mode)
+  var engine = gin.New()
+
+  engine.Use(gin.Recovery())
+
+  var formatter = func(param gin.LogFormatterParams) string {
+    if param.Latency > time.Minute {
+      param.Latency = param.Latency.Truncate(time.Second)
+    }
+    return fmt.Sprintf("%v | %s \033[1m%s%s %#v | %s%d%s | %s | %s |\n%s",
+      param.TimeStamp.Format(time.RFC3339),
+      param.Request.Proto,
+      param.Method, param.ResetColor(),
+      param.Path,
+      param.StatusCodeColor(), param.StatusCode, param.ResetColor(),
+      param.Latency,
+      param.ClientIP,
+      param.ErrorMessage,
+    )
+  }
+
+  engine.Use(gin.LoggerWithConfig(gin.LoggerConfig{
+    Formatter: formatter,
+    Output:    os.Stdout,
+  }))
+
+  engine.Static("/public", "public")
+
+  var port = strings.TrimSpace(os.Getenv("SERVER_PORT"))
+  if "" == port {
+    port = ":5487"
+  }
+
+  var server = http.Server{
+    Addr:           port,
+    IdleTimeout:    1 * time.Minute,
+    ReadTimeout:    5 * time.Second,
+    WriteTimeout:   5 * time.Second,
+    MaxHeaderBytes: 1024,
+    Handler:        engine,
+  }
+
+  slog.Error(server.ListenAndServe().Error())
 }
