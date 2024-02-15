@@ -5,6 +5,8 @@ type MeUpdate struct {
   Summary      string `json:"summary"`
   JobTitle     string `json:"job_title"`
   Email        string `json:"email"`
+  PhotoURL     string `json:"photo_url"`
+  ResumeURL    string `json:"resume_url"`
   Company      string `json:"company"`
   Location     string `json:"location"`
   Hireable     bool   `json:"hireable"`

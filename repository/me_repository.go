@@ -103,6 +103,8 @@ func (r *meRepositoryImpl) updatable(current *model.Me, update *transfer.MeUpdat
   if ("" == update.Summary || update.Summary == current.Summary) &&
     ("" == update.JobTitle || update.JobTitle == current.JobTitle) &&
     ("" == update.Email || update.Email == current.Email) &&
+    ("" == update.PhotoURL || update.PhotoURL == current.PhotoURL) &&
+    ("" == update.ResumeURL || update.ResumeURL == current.ResumeURL) &&
     ("" == update.Company || update.Company == current.Company) &&
     ("" == update.Location || update.Location == current.Location) &&
     (update.Hireable == current.Hireable) &&
@@ -134,6 +136,8 @@ func (r *meRepositoryImpl) Update(ctx context.Context, update *transfer.MeUpdate
        SET "summary" = coalesce (nullif (@new_summary, ''), @current_summary),
            "job_title" = coalesce (nullif (@new_job_title, ''), @current_job_title),
            "email" = coalesce (nullif (@new_email, ''), @current_email),
+           "photo_url" = coalesce (nullif (@new_photo_url, ''), @current_photo_url),
+           "resume_url" = coalesce (nullif (@new_resume_url, ''), @current_resume_url),
            "company" = coalesce (nullif (@new_company, ''), @current_company),
            "location" = coalesce (nullif (@new_location, ''), @current_location),
            "hireable" = @new_hireable,
@@ -150,6 +154,8 @@ func (r *meRepositoryImpl) Update(ctx context.Context, update *transfer.MeUpdate
     sql.Named("new_summary", update.Summary), sql.Named("current_summary", current.Summary),
     sql.Named("new_job_title", update.JobTitle), sql.Named("current_job_title", current.JobTitle),
     sql.Named("new_email", update.Email), sql.Named("current_email", current.Email),
+    sql.Named("new_photo_url", update.PhotoURL), sql.Named("current_photo_url", current.PhotoURL),
+    sql.Named("new_resume_url", update.ResumeURL), sql.Named("current_resume_url", current.ResumeURL),
     sql.Named("new_company", update.Company), sql.Named("current_company", current.Company),
     sql.Named("new_location", update.Location), sql.Named("current_location", current.Location),
     sql.Named("new_hireable", update.Hireable),

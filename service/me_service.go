@@ -44,6 +44,8 @@ func (m *meService) Update(ctx context.Context, update *transfer.MeUpdate) (upda
   update.Summary = strings.TrimSpace(update.Summary)
   update.JobTitle = strings.TrimSpace(update.JobTitle)
   update.Email = strings.TrimSpace(update.Email)
+  update.PhotoURL = strings.TrimSpace(update.PhotoURL)
+  update.ResumeURL = strings.TrimSpace(update.ResumeURL)
   update.Company = strings.TrimSpace(update.Company)
   update.Location = strings.TrimSpace(update.Location)
   update.GitHubURL = strings.TrimSpace(update.GitHubURL)
