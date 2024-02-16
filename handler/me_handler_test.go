@@ -114,3 +114,65 @@ func TestMeHandler_SetPhoto(t *testing.T) {
     }
   })
 }
+
+func TestMeHandler_SetResume(t *testing.T) {
+  const routine = "Update"
+  const method = http.MethodPost
+  const target = "/me.setResume"
+
+  t.Run("success", func(t *testing.T) {
+    var urls = []string{
+      "  \t\n\t  ",
+      "https://picsum.photos/200/300",
+      "http://www.picture.com/",
+    }
+
+    for _, url := range urls {
+      url = strings.TrimSpace(url)
+      var expected = transfer.MeUpdate{ResumeURL: url}
+
+      var s = mocks.NewMeService()
+      s.On(routine, mock.AnythingOfType("*gin.Context"), &expected).Return(true, nil)
+
+      var request = httptest.NewRequest(method, target, nil)
+      _ = request.ParseForm()
+      request.PostForm.Set("resume_url", url)
+      gin.SetMode(gin.ReleaseMode)
+      var engine = gin.Default()
+      engine.POST(target, NewMeHandler(s).SetResume)
+      var recorder = httptest.NewRecorder()
+      engine.ServeHTTP(recorder, request)
+
+      assert.Equal(t, http.StatusNoContent, recorder.Code)
+      assert.Empty(t, recorder.Body.String())
+      assert.Empty(t, recorder.Header())
+    }
+  })
+
+  t.Run("wrong urls", func(t *testing.T) {
+    var urls = []string{
+      "  \t\n . \n\t  ",
+      "picsum.photos/200/300",
+      "foo/bar/",
+      "gotlim.com",
+    }
+
+    for _, url := range urls {
+      var s = mocks.NewMeService()
+      s.AssertNotCalled(t, routine)
+
+      var request = httptest.NewRequest(method, target, nil)
+      _ = request.ParseForm()
+      request.PostForm.Set("resume_url", url)
+      gin.SetMode(gin.ReleaseMode)
+      var engine = gin.Default()
+      engine.POST(target, NewMeHandler(s).SetResume)
+      var recorder = httptest.NewRecorder()
+      engine.ServeHTTP(recorder, request)
+
+      assert.Equal(t, http.StatusUnprocessableEntity, recorder.Code)
+      assert.NotEmpty(t, recorder.Body.String())
+      assert.Contains(t, recorder.Body.String(), "Unprocessable photo URL format.")
+    }
+  })
+}
