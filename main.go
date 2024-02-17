@@ -6,6 +6,8 @@ import (
   "encoding/json"
   "fmt"
   "github.com/gin-gonic/gin"
+  "github.com/gin-gonic/gin/binding"
+  "github.com/go-playground/validator/v10"
   "github.com/google/uuid"
   "github.com/mattn/go-sqlite3"
   "io"
@@ -14,6 +16,7 @@ import (
   "net/http"
   "os"
   "path/filepath"
+  "reflect"
   "strings"
   "time"
 )
@@ -107,6 +110,21 @@ func (t *table) create(ctx context.Context, tx *sql.Tx) {
       log.Fatalf("unable to rollback: %v: %v", err, rollbackErr)
     }
     log.Fatal(err)
+  }
+}
+
+func statusCodeColor(code int) string {
+  switch {
+  default:
+    return "\033[1;91m" // red
+  case code >= http.StatusContinue && code < http.StatusOK:
+    return "\033[1;97m" // white
+  case code >= http.StatusOK && code < http.StatusMultipleChoices:
+    return "\033[1;92m" // green
+  case code >= http.StatusMultipleChoices && code < http.StatusBadRequest:
+    return "\033[1;94m" // blue
+  case code >= http.StatusBadRequest && code < http.StatusInternalServerError:
+    return "\033[1;95m" // magenta
   }
 }
 
@@ -339,7 +357,7 @@ func main() {
       param.Request.Proto,
       param.Method, param.ResetColor(),
       param.Path,
-      param.StatusCodeColor(), param.StatusCode, param.ResetColor(),
+      statusCodeColor(param.StatusCode), param.StatusCode, param.ResetColor(),
       param.Latency,
       param.ClientIP,
       param.ErrorMessage,
@@ -352,6 +370,17 @@ func main() {
   }))
 
   engine.Static("/public", "public")
+
+  binding.EnableDecoderDisallowUnknownFields = true
+  if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
+    v.RegisterTagNameFunc(func(fld reflect.StructField) string {
+      var name = strings.SplitN(fld.Tag.Get("json"), ",", 2)[0]
+      if 0 == strings.Compare(name, "-") {
+        return ""
+      }
+      return name
+    })
+  }
 
   var port = strings.TrimSpace(os.Getenv("SERVER_PORT"))
   if "" == port {
