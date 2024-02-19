@@ -7,8 +7,6 @@ import (
   "fontseca/transfer"
   "github.com/gin-gonic/gin"
   "net/http"
-  "net/url"
-  "strings"
 )
 
 type MeHandler struct {
@@ -34,15 +32,7 @@ func (h *MeHandler) Get(c *gin.Context) {
 }
 
 func (h *MeHandler) SetPhoto(c *gin.Context) {
-  var photoURL = strings.TrimSpace(c.PostForm("photo_url"))
-  var ok bool
-
-  if "" != photoURL {
-    if photoURL, ok = h.validateURL(c.Writer, photoURL); !ok {
-      return
-    }
-  }
-
+  var photoURL = c.PostForm("photo_url")
   ok, err := h.s.Update(c, &transfer.MeUpdate{PhotoURL: photoURL})
   if nil != err {
     var p problem.Problem
@@ -62,15 +52,7 @@ func (h *MeHandler) SetPhoto(c *gin.Context) {
 }
 
 func (h *MeHandler) SetResume(c *gin.Context) {
-  var resumeURL = strings.TrimSpace(c.PostForm("resume_url"))
-  var ok bool
-
-  if "" != resumeURL {
-    if resumeURL, ok = h.validateURL(c.Writer, resumeURL); !ok {
-      return
-    }
-  }
-
+  var resumeURL = c.PostForm("resume_url")
   ok, err := h.s.Update(c, &transfer.MeUpdate{ResumeURL: resumeURL})
   if nil != err {
     var p problem.Problem
