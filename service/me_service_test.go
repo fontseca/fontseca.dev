@@ -67,16 +67,16 @@ func TestMeService_Update(t *testing.T) {
       Summary:      "Summary",
       JobTitle:     "JobTitle",
       Email:        "Email",
-      PhotoURL:     "PhotoURL",
-      ResumeURL:    "ResumeURL",
+      PhotoURL:     "https://www.PhotoURL.com",
+      ResumeURL:    "https://www.ResumeURL.com",
       Company:      "Company",
       Location:     "Location",
       Hireable:     false,
-      GitHubURL:    "GitHubURL",
-      LinkedInURL:  "LinkedInURL",
-      YouTubeURL:   "YouTubeURL",
-      TwitterURL:   "TwitterURL",
-      InstagramURL: "InstagramURL",
+      GitHubURL:    "https://www.GitHubURL.com/",
+      LinkedInURL:  "https://www.LinkedInURL.com/",
+      YouTubeURL:   "https://www.YouTubeURL.com/",
+      TwitterURL:   "https://www.TwitterURL.com/",
+      InstagramURL: "https://www.InstagramURL.com/",
     }
     var dirty = transfer.MeUpdate{
       Summary:      " \n\t " + expected.Summary + " \n\t ",
@@ -99,31 +99,6 @@ func TestMeService_Update(t *testing.T) {
     res, err := NewMeService(r).Update(ctx, &dirty)
     assert.NoError(t, err)
     assert.True(t, res)
-  })
-
-  t.Run("defaults urls", func(t *testing.T) {
-    var expected = transfer.MeUpdate{
-      PhotoURL:     "about:blank",
-      ResumeURL:    "about:blank",
-      GitHubURL:    "about:blank",
-      LinkedInURL:  "about:blank",
-      YouTubeURL:   "about:blank",
-      TwitterURL:   "about:blank",
-      InstagramURL: "about:blank",
-    }
-    var dirty = transfer.MeUpdate{
-      PhotoURL:     " \t\n ",
-      ResumeURL:    " \t\n ",
-      GitHubURL:    " \t\n ",
-      LinkedInURL:  " \t\n ",
-      YouTubeURL:   " \t\n ",
-      TwitterURL:   " \t\n ",
-      InstagramURL: " \t\n ",
-    }
-    var r = mocks.NewMeRepository()
-    var ctx = context.Background()
-    r.On(routine, ctx, &expected).Return(true, nil)
-    _, _ = NewMeService(r).Update(ctx, &dirty)
   })
 
   t.Run("error on nil update", func(t *testing.T) {

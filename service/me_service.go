@@ -35,18 +35,25 @@ func (m *meService) Get(ctx context.Context) (me *model.Me, err error) {
   return m.r.Get(ctx)
 }
 
-func (m *meService) defaultURL(u *string) {
-  if "" == *u {
-    *u = "about:blank"
-  }
-}
-
 func (m *meService) Update(ctx context.Context, update *transfer.MeUpdate) (updated bool, err error) {
   if nil == update {
     err = errors.New("nil value for parameter: update")
     slog.Error(err.Error())
     return false, err
   }
+
+  if err = sanitizeURL(
+    &update.PhotoURL,
+    &update.ResumeURL,
+    &update.TwitterURL,
+    &update.YouTubeURL,
+    &update.InstagramURL,
+    &update.LinkedInURL,
+    &update.GitHubURL,
+  ); nil != err {
+    return false, err
+  }
+
   update.Summary = strings.TrimSpace(update.Summary)
   update.JobTitle = strings.TrimSpace(update.JobTitle)
   update.Email = strings.TrimSpace(update.Email)
@@ -59,12 +66,5 @@ func (m *meService) Update(ctx context.Context, update *transfer.MeUpdate) (upda
   update.YouTubeURL = strings.TrimSpace(update.YouTubeURL)
   update.TwitterURL = strings.TrimSpace(update.TwitterURL)
   update.InstagramURL = strings.TrimSpace(update.InstagramURL)
-  m.defaultURL(&update.PhotoURL)
-  m.defaultURL(&update.ResumeURL)
-  m.defaultURL(&update.GitHubURL)
-  m.defaultURL(&update.LinkedInURL)
-  m.defaultURL(&update.YouTubeURL)
-  m.defaultURL(&update.TwitterURL)
-  m.defaultURL(&update.InstagramURL)
   return m.r.Update(ctx, update)
 }
