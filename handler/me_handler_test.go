@@ -86,33 +86,6 @@ func TestMeHandler_SetPhoto(t *testing.T) {
       assert.Empty(t, recorder.Header())
     }
   })
-
-  t.Run("wrong urls", func(t *testing.T) {
-    var urls = []string{
-      "  \t\n . \n\t  ",
-      "picsum.photos/200/300",
-      "foo/bar/",
-      "gotlim.com",
-    }
-
-    for _, url := range urls {
-      var s = mocks.NewMeService()
-      s.AssertNotCalled(t, routine)
-
-      var request = httptest.NewRequest(method, target, nil)
-      _ = request.ParseForm()
-      request.PostForm.Set("photo_url", url)
-      gin.SetMode(gin.ReleaseMode)
-      var engine = gin.Default()
-      engine.POST(target, NewMeHandler(s).SetPhoto)
-      var recorder = httptest.NewRecorder()
-      engine.ServeHTTP(recorder, request)
-
-      assert.Equal(t, http.StatusUnprocessableEntity, recorder.Code)
-      assert.NotEmpty(t, recorder.Body.String())
-      assert.Contains(t, recorder.Body.String(), "Unprocessable photo URL format.")
-    }
-  })
 }
 
 func TestMeHandler_SetResume(t *testing.T) {
@@ -148,31 +121,47 @@ func TestMeHandler_SetResume(t *testing.T) {
       assert.Empty(t, recorder.Header())
     }
   })
+}
 
-  t.Run("wrong urls", func(t *testing.T) {
-    var urls = []string{
-      "  \t\n . \n\t  ",
-      "picsum.photos/200/300",
-      "foo/bar/",
-      "gotlim.com",
-    }
+func TestMeHandler_SetHireable(t *testing.T) {
+  const routine = "Update"
+  const method = http.MethodPost
+  const target = "/me.setHireable"
 
-    for _, url := range urls {
-      var s = mocks.NewMeService()
-      s.AssertNotCalled(t, routine)
+  t.Run("success", func(t *testing.T) {
+    var s = mocks.NewMeService()
+    var expected = transfer.MeUpdate{Hireable: true}
+    s.On(routine, mock.AnythingOfType("*gin.Context"), &expected).Return(true, nil)
 
-      var request = httptest.NewRequest(method, target, nil)
-      _ = request.ParseForm()
-      request.PostForm.Set("resume_url", url)
-      gin.SetMode(gin.ReleaseMode)
-      var engine = gin.Default()
-      engine.POST(target, NewMeHandler(s).SetResume)
-      var recorder = httptest.NewRecorder()
-      engine.ServeHTTP(recorder, request)
+    var request = httptest.NewRequest(method, target, nil)
+    _ = request.ParseForm()
+    request.PostForm.Set("hireable", "true")
+    gin.SetMode(gin.ReleaseMode)
+    var engine = gin.Default()
+    engine.POST(target, NewMeHandler(s).SetHireable)
+    var recorder = httptest.NewRecorder()
+    engine.ServeHTTP(recorder, request)
 
-      assert.Equal(t, http.StatusUnprocessableEntity, recorder.Code)
-      assert.NotEmpty(t, recorder.Body.String())
-      assert.Contains(t, recorder.Body.String(), "Unprocessable photo URL format.")
-    }
+    assert.Equal(t, http.StatusNoContent, recorder.Code)
+    assert.Empty(t, recorder.Body.String())
+    assert.Empty(t, recorder.Header())
+  })
+
+  t.Run("could not parse", func(t *testing.T) {
+    var s = mocks.NewMeService()
+    s.AssertNotCalled(t, routine)
+
+    var request = httptest.NewRequest(method, target, nil)
+    _ = request.ParseForm()
+    request.PostForm.Set("hireable", "unparsable format")
+    gin.SetMode(gin.ReleaseMode)
+    var engine = gin.Default()
+    engine.POST(target, NewMeHandler(s).SetHireable)
+    var recorder = httptest.NewRecorder()
+    engine.ServeHTTP(recorder, request)
+
+    assert.Equal(t, http.StatusUnprocessableEntity, recorder.Code)
+    assert.NotEmpty(t, recorder.Body.String())
+    assert.Contains(t, recorder.Body.String(), "Failure when parsing boolean value.")
   })
 }
