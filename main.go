@@ -387,7 +387,7 @@ func main() {
   }
 
   var (
-    meRepository = repository.NewRepository(db)
+    meRepository = repository.NewMeRepository(db)
     meService    = service.NewMeService(meRepository)
     meHandler    = handler.NewMeHandler(meService)
   )

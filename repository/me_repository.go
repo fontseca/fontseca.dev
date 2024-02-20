@@ -27,8 +27,8 @@ type meRepositoryImpl struct {
   db *sql.DB
 }
 
-// NewRepository creates a new MeRepository instance associating db as its database.
-func NewRepository(db *sql.DB) MeRepository {
+// NewMeRepository creates a new MeRepository instance associating db as its database.
+func NewMeRepository(db *sql.DB) MeRepository {
   return &meRepositoryImpl{db}
 }
 
