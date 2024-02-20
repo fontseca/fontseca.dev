@@ -402,6 +402,10 @@ func main() {
   engine.POST("/me.authenticate", meHandler.Authenticate)
   engine.POST("/me.deauthenticate", meHandler.Deauthenticate)
 
+  var webHandler = handler.NewWebHandler(meService)
+
+  engine.GET("/", webHandler.RenderMe)
+
   var port = strings.TrimSpace(os.Getenv("SERVER_PORT"))
   if "" == port {
     port = ":5487"
