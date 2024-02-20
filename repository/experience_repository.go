@@ -5,13 +5,15 @@ import (
   "database/sql"
   "fontseca/model"
   "fontseca/transfer"
+  "log/slog"
+  "time"
 )
 
 // ExperienceRepository provides methods for interacting with experience data in the database.
 type ExperienceRepository interface {
   // Get retrieves a slice of experience. If hidden is true it returns all
   // the hidden experience records.
-  Get(ctx context.Context, hidden ...bool) (experience []model.Experience, err error)
+  Get(ctx context.Context, hidden ...bool) (experience []*model.Experience, err error)
 
   // GetByID retrieves a single experience record by its ID.
   GetByID(ctx context.Context, id string) (experience *model.Experience, err error)
@@ -35,9 +37,45 @@ func NewExperienceRepository(db *sql.DB) ExperienceRepository {
   return &experienceRepository{db}
 }
 
-func (r *experienceRepository) Get(ctx context.Context, hidden ...bool) (experience []model.Experience, err error) {
-  // TODO implement me
-  panic("implement me")
+func (r *experienceRepository) Get(ctx context.Context, hidden ...bool) (experience []*model.Experience, err error) {
+  var query string
+  if 0 < len(hidden) && hidden[0] {
+    query = `SELECT *
+               FROM "experience"
+              WHERE "hidden" IS TRUE;`
+  } else {
+    query = `SELECT *
+               FROM "experience";`
+  }
+  ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+  defer cancel()
+  rows, err := r.db.QueryContext(ctx, query)
+  if nil != err {
+    slog.Error(err.Error())
+    return nil, err
+  }
+  s := make([]*model.Experience, 0)
+  for rows.Next() {
+    e := new(model.Experience)
+    err = rows.Scan(
+      &e.ID,
+      &e.Starts,
+      &e.Ends,
+      &e.JobTitle,
+      &e.Company,
+      &e.Country,
+      &e.Summary,
+      &e.Active,
+      &e.Hidden,
+      &e.CreatedAt,
+      &e.UpdatedAt)
+    if nil != err {
+      slog.Error(err.Error())
+      return nil, err
+    }
+    s = append(s, e)
+  }
+  return s, nil
 }
 
 func (r *experienceRepository) GetByID(ctx context.Context, id string) (experience *model.Experience, err error) {
