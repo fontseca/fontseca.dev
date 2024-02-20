@@ -2,6 +2,7 @@ package repository
 
 import (
   "context"
+  "database/sql"
   "fontseca/model"
   "fontseca/transfer"
 )
@@ -23,4 +24,38 @@ type ExperienceRepository interface {
 
   // Remove deletes an experience record by its ID.
   Remove(ctx context.Context, id string) error
+}
+
+type experienceRepository struct {
+  db *sql.DB
+}
+
+// NewExperienceRepository creates a new ExperienceRepository instance associating db as its database.
+func NewExperienceRepository(db *sql.DB) ExperienceRepository {
+  return &experienceRepository{db}
+}
+
+func (r *experienceRepository) Get(ctx context.Context, hidden ...bool) (experience []model.Experience, err error) {
+  // TODO implement me
+  panic("implement me")
+}
+
+func (r *experienceRepository) GetByID(ctx context.Context, id string) (experience *model.Experience, err error) {
+  // TODO implement me
+  panic("implement me")
+}
+
+func (r *experienceRepository) Save(ctx context.Context, creation *transfer.ExperienceCreation) (saved bool, err error) {
+  // TODO implement me
+  panic("implement me")
+}
+
+func (r *experienceRepository) Update(ctx context.Context, update *transfer.ExperienceUpdate) (updated bool, err error) {
+  // TODO implement me
+  panic("implement me")
+}
+
+func (r *experienceRepository) Remove(ctx context.Context, id string) error {
+  // TODO implement me
+  panic("implement me")
 }
