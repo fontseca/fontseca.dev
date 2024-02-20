@@ -5,6 +5,9 @@ import (
   "database/sql"
   "encoding/json"
   "fmt"
+  "fontseca/handler"
+  "fontseca/repository"
+  "fontseca/service"
   "github.com/gin-gonic/gin"
   "github.com/gin-gonic/gin/binding"
   "github.com/go-playground/validator/v10"
@@ -382,6 +385,22 @@ func main() {
       return name
     })
   }
+
+  var (
+    meRepository = repository.NewRepository(db)
+    meService    = service.NewMeService(meRepository)
+    meHandler    = handler.NewMeHandler(meService)
+  )
+
+  meRepository.Register(context.Background())
+
+  engine.GET("/me.info", meHandler.Get)
+  engine.POST("/me.setPhoto", meHandler.SetPhoto)
+  engine.POST("/me.setResume", meHandler.SetResume)
+  engine.POST("/me.setHireable", meHandler.SetHireable)
+  engine.POST("/me.update", meHandler.Update)
+  engine.POST("/me.authenticate", meHandler.Authenticate)
+  engine.POST("/me.deauthenticate", meHandler.Deauthenticate)
 
   var port = strings.TrimSpace(os.Getenv("SERVER_PORT"))
   if "" == port {
