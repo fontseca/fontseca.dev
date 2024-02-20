@@ -46,8 +46,47 @@ func (r *experienceRepository) GetByID(ctx context.Context, id string) (experien
 }
 
 func (r *experienceRepository) Save(ctx context.Context, creation *transfer.ExperienceCreation) (saved bool, err error) {
-  // TODO implement me
-  panic("implement me")
+  tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+  if nil != err {
+    slog.Error(err.Error())
+    return false, err
+  }
+  defer tx.Rollback()
+  query := `
+  INSERT INTO "experience" ("starts",
+                            "ends",
+                            "job_title",
+                            "company",
+                            "country",
+                            "summary")
+                    VALUES (@starts,
+                            @ends,
+                            @job_title,
+                            @company,
+                            @country,
+                            @summary);`
+  ctx, cancel := context.WithTimeout(ctx, time.Second)
+  defer cancel()
+  result, err := r.db.ExecContext(ctx, query,
+    sql.Named("starts", creation.Starts),
+    sql.Named("ends", creation.Ends),
+    sql.Named("job_title", creation.JobTitle),
+    sql.Named("company", creation.Company),
+    sql.Named("country", creation.Country),
+    sql.Named("summary", creation.Summary))
+  if nil != err {
+    slog.Error(err.Error())
+    return false, err
+  }
+  affected, _ := result.RowsAffected()
+  if 1 != affected {
+    return false, nil
+  }
+  if err = tx.Commit(); nil != err {
+    slog.Error(err.Error())
+    return false, nil
+  }
+  return true, nil
 }
 
 func (r *experienceRepository) Update(ctx context.Context, update *transfer.ExperienceUpdate) (updated bool, err error) {
