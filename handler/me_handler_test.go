@@ -1,6 +1,7 @@
 package handler
 
 import (
+  "bytes"
   "fontseca/mocks"
   "fontseca/model"
   "fontseca/transfer"
@@ -163,5 +164,40 @@ func TestMeHandler_SetHireable(t *testing.T) {
     assert.Equal(t, http.StatusUnprocessableEntity, recorder.Code)
     assert.NotEmpty(t, recorder.Body.String())
     assert.Contains(t, recorder.Body.String(), "Failure when parsing boolean value.")
+  })
+}
+
+func TestMeHandler_Update(t *testing.T) {
+  const (
+    routine = "Update"
+    method  = http.MethodPost
+    target  = "/me.update"
+  )
+
+  t.Run("success", func(t *testing.T) {
+    var update = transfer.MeUpdate{
+      Summary:      "Summary",
+      JobTitle:     "JobTitle",
+      Email:        "Email",
+      Company:      "Company",
+      Location:     "Location",
+      GitHubURL:    "GitHubURL",
+      LinkedInURL:  "LinkedInURL",
+      YouTubeURL:   "YouTubeURL",
+      TwitterURL:   "TwitterURL",
+      InstagramURL: "InstagramURL",
+    }
+    var s = mocks.NewMeService()
+    s.On(routine, mock.AnythingOfType("*gin.Context"), &update).Return(true, nil)
+    gin.SetMode(gin.ReleaseMode)
+    var engine = gin.Default()
+    engine.POST(target, NewMeHandler(s).Update)
+    var recorder = httptest.NewRecorder()
+    var request = httptest.NewRequest(method, target, bytes.NewReader(marshal(t, update)))
+    engine.ServeHTTP(recorder, request)
+
+    assert.Equal(t, http.StatusNoContent, recorder.Code)
+    assert.Empty(t, recorder.Body.String())
+    assert.Empty(t, recorder.Header())
   })
 }

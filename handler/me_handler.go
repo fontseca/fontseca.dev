@@ -107,3 +107,28 @@ func (h *MeHandler) SetHireable(c *gin.Context) {
     c.Redirect(http.StatusSeeOther, "/me.info")
   }
 }
+
+func (h *MeHandler) Update(c *gin.Context) {
+  var update transfer.MeUpdate
+
+  if ok := bindJSONRequestBody(c, &update); !ok {
+    return
+  }
+
+  ok, err := h.s.Update(c, &update)
+  if nil != err {
+    var p problem.Problem
+    if errors.As(err, &p) {
+      p.Emit(c.Writer)
+    } else {
+      problem.NewInternalProblem().Emit(c.Writer)
+    }
+    return
+  }
+
+  if ok {
+    c.Status(http.StatusNoContent)
+  } else {
+    c.Redirect(http.StatusSeeOther, "/me.info")
+  }
+}
