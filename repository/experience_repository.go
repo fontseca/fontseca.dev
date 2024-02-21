@@ -3,7 +3,9 @@ package repository
 import (
   "context"
   "database/sql"
+  "errors"
   "fontseca/model"
+  "fontseca/problem"
   "fontseca/transfer"
   "log/slog"
   "time"
@@ -79,8 +81,34 @@ func (r *experienceRepository) Get(ctx context.Context, hidden ...bool) (experie
 }
 
 func (r *experienceRepository) GetByID(ctx context.Context, id string) (experience *model.Experience, err error) {
-  // TODO implement me
-  panic("implement me")
+  query := `SELECT *
+              FROM "experience"
+             WHERE "id" = @id;`
+  ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+  defer cancel()
+  row := r.db.QueryRowContext(ctx, query, sql.Named("id", id))
+  experience = new(model.Experience)
+  err = row.Scan(
+    &experience.ID,
+    &experience.Starts,
+    &experience.Ends,
+    &experience.JobTitle,
+    &experience.Company,
+    &experience.Country,
+    &experience.Summary,
+    &experience.Active,
+    &experience.Hidden,
+    &experience.CreatedAt,
+    &experience.UpdatedAt)
+  if nil != err {
+    if errors.Is(err, sql.ErrNoRows) {
+      err = problem.NewNotFoundProblem(id, "experience")
+    } else {
+      slog.Error(err.Error())
+    }
+    return nil, err
+  }
+  return experience, nil
 }
 
 func (r *experienceRepository) Save(ctx context.Context, creation *transfer.ExperienceCreation) (saved bool, err error) {
