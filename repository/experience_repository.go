@@ -24,7 +24,7 @@ type ExperienceRepository interface {
   Save(ctx context.Context, creation *transfer.ExperienceCreation) (saved bool, err error)
 
   // Update modifies an existing experience record with the provided update data.
-  Update(ctx context.Context, update *transfer.ExperienceUpdate) (updated bool, err error)
+  Update(ctx context.Context, id string, update *transfer.ExperienceUpdate) (updated bool, err error)
 
   // Remove deletes an experience record by its ID.
   Remove(ctx context.Context, id string) error
@@ -155,7 +155,7 @@ func (r *experienceRepository) Save(ctx context.Context, creation *transfer.Expe
   return true, nil
 }
 
-func (r *experienceRepository) Update(ctx context.Context, update *transfer.ExperienceUpdate) (updated bool, err error) {
+func (r *experienceRepository) Update(ctx context.Context, id string, update *transfer.ExperienceUpdate) (updated bool, err error) {
   // TODO implement me
   panic("implement me")
 }
