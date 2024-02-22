@@ -222,6 +222,25 @@ func (r *experienceRepository) Update(ctx context.Context, id string, update *tr
 }
 
 func (r *experienceRepository) Remove(ctx context.Context, id string) error {
-  // TODO implement me
-  panic("implement me")
+  tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+  if nil != err {
+    slog.Error(err.Error())
+    return err
+  }
+  defer tx.Rollback()
+  query := `
+  DELETE FROM "experience"
+        WHERE "id" = @id;`
+  ctx, cancel := context.WithTimeout(ctx, time.Second)
+  defer cancel()
+  result, err := r.db.ExecContext(ctx, query, sql.Named("id", id))
+  if nil != err {
+    slog.Error(err.Error())
+    return err
+  }
+  affected, _ := result.RowsAffected()
+  if 1 != affected {
+    return problem.NewNotFoundProblem(id, "experience")
+  }
+  return nil
 }
