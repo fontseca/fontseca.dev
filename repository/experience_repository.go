@@ -155,9 +155,70 @@ func (r *experienceRepository) Save(ctx context.Context, creation *transfer.Expe
   return true, nil
 }
 
+func (r *experienceRepository) updatable(current *model.Experience, update *transfer.ExperienceUpdate) bool {
+  if (0 == update.Starts || update.Starts == current.Starts) &&
+    (0 == update.Ends || update.Ends == current.Ends) &&
+    ("" == update.JobTitle || update.JobTitle == current.JobTitle) &&
+    ("" == update.Company || update.Company == current.Company) &&
+    ("" == update.Country || update.Country == current.Country) &&
+    ("" == update.Summary || update.Summary == current.Summary) &&
+    (update.Active == current.Active) &&
+    (update.Hidden == current.Hidden) {
+    return false
+  }
+  return true
+}
+
 func (r *experienceRepository) Update(ctx context.Context, id string, update *transfer.ExperienceUpdate) (updated bool, err error) {
-  // TODO implement me
-  panic("implement me")
+  tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+  if nil != err {
+    slog.Error(err.Error())
+    return false, err
+  }
+  current, err := r.GetByID(ctx, id)
+  if nil != err {
+    return false, err
+  }
+  if updatable := r.updatable(current, update); !updatable {
+    return false, nil
+  }
+  query := `
+  UPDATE "experience"
+     SET "starts" = CASE WHEN @starts = @current_starts OR 0 = @starts THEN @current_starts ELSE @starts END,
+         "ends" = CASE WHEN @ends = @current_ends OR 0 = @ends THEN @current_ends ELSE @ends END,
+         "job_title" = coalesce (nullif (@job_title, ''), @current_job_title),
+         "company" = coalesce (nullif (@company, ''), @current_company),
+         "country" = coalesce (nullif (@country, ''), @current_country),
+         "summary" = coalesce (nullif (@summary, ''), @current_summary),
+         "active" = @active,
+         "hidden" = @hidden,
+         "updated_at" = current_timestamp
+   WHERE "id" = @id;`
+  ctx, cancel := context.WithTimeout(ctx, time.Second)
+  defer cancel()
+  result, err := tx.ExecContext(ctx, query,
+    sql.Named("id", id),
+    sql.Named("starts", update.Starts), sql.Named("current_starts", current.Starts),
+    sql.Named("ends", update.Ends), sql.Named("current_ends", current.Ends),
+    sql.Named("job_title", update.JobTitle), sql.Named("current_job_title", current.JobTitle),
+    sql.Named("company", update.Company), sql.Named("current_company", current.Company),
+    sql.Named("country", update.Country), sql.Named("current_country", current.Country),
+    sql.Named("summary", update.Summary), sql.Named("current_summary", current.Summary),
+    sql.Named("active", update.Active),
+    sql.Named("hidden", update.Hidden))
+  if nil != err {
+    slog.Error(err.Error())
+    return false, err
+  }
+  affected, _ := result.RowsAffected()
+  if 1 != affected {
+    return false, nil
+  }
+  if err = tx.Commit(); nil != err {
+    slog.Error(err.Error())
+    return false, err
+  }
+  return true, nil
 }
 
 func (r *experienceRepository) Remove(ctx context.Context, id string) error {
