@@ -22,11 +22,11 @@ func NewMeHandler(s service.MeService) *MeHandler {
 func (h *MeHandler) Get(c *gin.Context) {
   var me, err = h.s.Get(c)
   if nil != err {
-    var p problem.Problem
+    var p *problem.Problem
     if errors.As(err, &p) {
       p.Emit(c.Writer)
     } else {
-      problem.NewInternalProblem().Emit(c.Writer)
+      problem.NewInternal().Emit(c.Writer)
     }
     return
   }
@@ -37,11 +37,11 @@ func (h *MeHandler) SetPhoto(c *gin.Context) {
   var photoURL = c.PostForm("photo_url")
   ok, err := h.s.Update(c, &transfer.MeUpdate{PhotoURL: photoURL})
   if nil != err {
-    var p problem.Problem
+    var p *problem.Problem
     if errors.As(err, &p) {
       p.Emit(c.Writer)
     } else {
-      problem.NewInternalProblem().Emit(c.Writer)
+      problem.NewInternal().Emit(c.Writer)
     }
     return
   }
@@ -57,11 +57,11 @@ func (h *MeHandler) SetResume(c *gin.Context) {
   var resumeURL = c.PostForm("resume_url")
   ok, err := h.s.Update(c, &transfer.MeUpdate{ResumeURL: resumeURL})
   if nil != err {
-    var p problem.Problem
+    var p *problem.Problem
     if errors.As(err, &p) {
       p.Emit(c.Writer)
     } else {
-      problem.NewInternalProblem().Emit(c.Writer)
+      problem.NewInternal().Emit(c.Writer)
     }
     return
   }
@@ -78,25 +78,25 @@ func (h *MeHandler) SetHireable(c *gin.Context) {
   if nil != err {
     var numError *strconv.NumError
     if errors.As(err, &numError) {
-      var b problem.Builder
-      b.Title("Failure when parsing boolean value.")
-      b.Status(http.StatusUnprocessableEntity)
-      b.Detail("Failed to parse the provided value as a boolean. Please ensure the value is either 'true' or 'false'.")
-      b.With("value", numError.Num)
-      b.Problem().Emit(c.Writer)
+      var p *problem.Problem
+      p.Title("Failure when parsing boolean value.")
+      p.Status(http.StatusUnprocessableEntity)
+      p.Detail("Failed to parse the provided value as a boolean. Please ensure the value is either 'true' or 'false'.")
+      p.With("value", numError.Num)
+      p.Emit(c.Writer)
     } else {
-      problem.NewInternalProblem().Emit(c.Writer)
+      problem.NewInternal().Emit(c.Writer)
     }
     return
   }
 
   ok, err := h.s.Update(c, &transfer.MeUpdate{Hireable: hireable})
   if nil != err {
-    var p problem.Problem
+    var p *problem.Problem
     if errors.As(err, &p) {
       p.Emit(c.Writer)
     } else {
-      problem.NewInternalProblem().Emit(c.Writer)
+      problem.NewInternal().Emit(c.Writer)
     }
     return
   }
@@ -117,11 +117,11 @@ func (h *MeHandler) Update(c *gin.Context) {
 
   ok, err := h.s.Update(c, &update)
   if nil != err {
-    var p problem.Problem
+    var p *problem.Problem
     if errors.As(err, &p) {
       p.Emit(c.Writer)
     } else {
-      problem.NewInternalProblem().Emit(c.Writer)
+      problem.NewInternal().Emit(c.Writer)
     }
     return
   }

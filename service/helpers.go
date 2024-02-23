@@ -24,12 +24,12 @@ func sanitizeURL(urls ...*string) error {
 
     uri, err := url.ParseRequestURI(*u)
     if nil != err {
-      var b problem.Builder
-      b.Title("Unprocessable photo URL format.")
-      b.Status(http.StatusUnprocessableEntity)
-      b.Detail("There was an error parsing the requested URL. Please try with a different URL or verify the current one for correctness.")
-      b.With("wrong_url", *u)
-      return b.Problem()
+      var p problem.Problem
+      p.Title("Unprocessable URL format.")
+      p.Status(http.StatusUnprocessableEntity)
+      p.Detail("There was an error parsing the requested URL. Please try with a different URL or verify the current one for correctness.")
+      p.With("wrong_url", *u)
+      return &p
     }
     *u = uri.String()
   }

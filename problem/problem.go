@@ -26,7 +26,7 @@ func (b *baseURL) set() {
 }
 
 // base holds metadata about the default URL
-// to be used when invoking Builder.Type method.
+// to be used when invoking problem's Type method.
 var base = baseURL{
   url:      nil,
   fragment: false,
@@ -63,7 +63,7 @@ func doParseURL(raw string) (parsed *url.URL, ok bool) {
 
 // SetGlobalURL sets the global base URI with the provided URI string.
 // It also accepts an optional fragment flag to indicate if the URI
-// will be used with fragments when invoking the builder's Type function.
+// will be used with fragments when invoking the problem's Type function.
 // If an error occurs, then an empty URL is used.
 func SetGlobalURL(raw string, fragment ...bool) {
   raw = strings.TrimSpace(raw)
@@ -125,18 +125,7 @@ func isValidHTTPStatusCode(code int) bool {
 // object, this format is identified with the "application/problem+json" media type.
 // For more details, refer to RFC 9457: https://www.rfc-editor.org/rfc/rfc9457#name-the-problem-details-json-ob.
 // It also implements the error interface for straightforward mobilization.
-type Problem interface {
-  error
-
-  // Emit sends the problem details as an HTTP response through the
-  // provided http.ResponseWriter w. The response body is a JSON object
-  // and its Content-Type is "application/problem+json".
-  Emit(w http.ResponseWriter)
-}
-
-// problem implements the Problem interface. It serves to create new problems and
-// as a base for custom problems.
-type problem struct {
+type Problem struct {
   // typ is a URI reference that identifies the problem type.
   typ string
 
@@ -156,17 +145,17 @@ type problem struct {
   extensions []map[string][]any
 }
 
-func (p *problem) Error() string {
-  return ""
+func (p *Problem) Error() string {
+  return p.detail
 }
 
 // hasOneValueOnly checks if the slice of extensions for a key has only one element.
-func (p *problem) hasOneValueOnly(values []any) bool {
+func (p *Problem) hasOneValueOnly(values []any) bool {
   return 1 == len(values)
 }
 
 // makeStructFieldFor creates a reflect.StructField with the given name, sample type, and optional omitempty tag.
-func (p *problem) makeStructFieldFor(name string, sample reflect.Type, omitempty ...bool) reflect.StructField {
+func (p *Problem) makeStructFieldFor(name string, sample reflect.Type, omitempty ...bool) reflect.StructField {
   tagname := fmt.Sprintf(`json:"%s"`, canonicalSnakeCase(name))
   if 1 <= len(omitempty) && omitempty[0] {
     tagname = fmt.Sprintf(`json:"%s,omitempty"`, canonicalSnakeCase(name))
@@ -179,7 +168,7 @@ func (p *problem) makeStructFieldFor(name string, sample reflect.Type, omitempty
 }
 
 // appendExtensions appends the additional fields to the problem struct fields.
-func (p *problem) appendExtensions(fields *[]reflect.StructField) {
+func (p *Problem) appendExtensions(fields *[]reflect.StructField) {
   for _, mp := range p.extensions {
     for extKey, extValues := range mp {
       var extType = reflect.TypeOf(extValues)
@@ -192,7 +181,7 @@ func (p *problem) appendExtensions(fields *[]reflect.StructField) {
 }
 
 // setExtensionValues sets extension values to the given struct value.
-func (p *problem) setExtensionValues(s reflect.Value) {
+func (p *Problem) setExtensionValues(s reflect.Value) {
   for _, mp := range p.extensions {
     for extKey, extValues := range mp {
       var value = reflect.ValueOf(extValues)
@@ -205,7 +194,7 @@ func (p *problem) setExtensionValues(s reflect.Value) {
 }
 
 // setValuesToStructFields sets problem values to the given struct fields.
-func (p *problem) setValuesToStructFields(s reflect.Value) {
+func (p *Problem) setValuesToStructFields(s reflect.Value) {
   s.FieldByName("Type").SetString(p.typ)
   s.FieldByName("Status").SetInt(int64(p.status))
   s.FieldByName("Title").SetString(p.title)
@@ -215,7 +204,7 @@ func (p *problem) setValuesToStructFields(s reflect.Value) {
 }
 
 // generateStruct generates a struct representing the problem.
-func (p *problem) generateStruct() any {
+func (p *Problem) generateStruct() any {
   fields := []reflect.StructField{
     p.makeStructFieldFor("Type", reflect.TypeOf("")),
     p.makeStructFieldFor("Status", reflect.TypeOf(0)),
@@ -230,7 +219,7 @@ func (p *problem) generateStruct() any {
 }
 
 // sanitize cleans up problem fields.
-func (p *problem) sanitize() {
+func (p *Problem) sanitize() {
   if !isValidHTTPStatusCode(p.status) {
     p.status = http.StatusOK
   }
@@ -247,7 +236,7 @@ func (p *problem) sanitize() {
 }
 
 // serialize converts the struct representation of the problem to JSON bytes.
-func (p *problem) serialize(s any) []byte {
+func (p *Problem) serialize(s any) []byte {
   data, err := json.Marshal(s)
   if nil != err {
     slog.Error(err.Error())
@@ -257,7 +246,7 @@ func (p *problem) serialize(s any) []byte {
 }
 
 // doEmit writes the serialized problem to the http.ResponseWriter.
-func (p *problem) doEmit(data []byte, w http.ResponseWriter) {
+func (p *Problem) doEmit(data []byte, w http.ResponseWriter) {
   w.Header().Set("Content-Type", "application/problem+json")
   w.WriteHeader(p.status)
   _, err := w.Write(data)
@@ -266,7 +255,10 @@ func (p *problem) doEmit(data []byte, w http.ResponseWriter) {
   }
 }
 
-func (p *problem) Emit(w http.ResponseWriter) {
+// Emit sends the problem details as an HTTP response through the
+// provided http.ResponseWriter w. The response body is a JSON object
+// and its Content-Type is "application/problem+json".
+func (p *Problem) Emit(w http.ResponseWriter) {
   if nil != w {
     p.sanitize()
     s := p.generateStruct()
@@ -276,33 +268,21 @@ func (p *problem) Emit(w http.ResponseWriter) {
   }
 }
 
-// Builder is used to efficiently build an instance of a Problem type.
-type Builder struct{ p *problem }
-
-// check ensures that the internal problem is initialized.
-func (b *Builder) check() {
-  if nil == b.p {
-    b.p = new(problem)
-  }
-}
-
-func (b *Builder) defaultType() {
-  b.p.typ = "about:blank"
+func (p *Problem) defaultType() {
+  p.typ = "about:blank"
 }
 
 // Type sets the type of the problem. If the string t is empty,
 // its value is assumed to be "about:blank".
-func (b *Builder) Type(t string) {
-  b.check()
-
+func (p *Problem) Type(t string) {
   t = strings.TrimSpace(t)
 
   if base.empty {
     u, ok := doParseURL(t)
     if ok {
-      b.p.typ = u.String()
+      p.typ = u.String()
     } else {
-      b.defaultType()
+      p.defaultType()
     }
     return
   }
@@ -312,39 +292,36 @@ func (b *Builder) Type(t string) {
   if base.fragment {
     clone, _ := url.Parse(base.url.String())
     clone.Fragment = t
-    b.p.typ = clone.String()
+    p.typ = clone.String()
     return
   }
 
   if "" == t {
-    b.p.typ = base.url.String()
+    p.typ = base.url.String()
     return
   }
 
   u, err := url.JoinPath(base.url.String(), t)
   if nil != err {
     slog.Error(err.Error())
-    b.defaultType()
+    p.defaultType()
   } else {
-    b.p.typ = u
+    p.typ = u
   }
 }
 
 // Status sets the HTTP status code of the problem.
-func (b *Builder) Status(s int) {
-  b.check()
+func (p *Problem) Status(s int) {
   if !isValidHTTPStatusCode(s) {
     s = http.StatusOK
   }
-  b.p.status = s
+  p.status = s
 }
 
 // Title sets the title of the problem. The title is
 // a short, human-readable summary of the problem type.
-func (b *Builder) Title(t string) {
-  b.check()
-  t = strings.TrimSpace(t)
-  b.p.title = t
+func (p *Problem) Title(t string) {
+  p.title = strings.TrimSpace(t)
 }
 
 // Detail sets the detail message of the problem. It is a
@@ -352,24 +329,20 @@ func (b *Builder) Title(t string) {
 // of the problem. If present, it ought to focus on helping
 // the client correct the problem, rather than giving
 // debugging information.
-func (b *Builder) Detail(d string) {
-  b.check()
-  d = strings.TrimSpace(d)
-  b.p.detail = d
+func (p *Problem) Detail(d string) {
+  p.detail = strings.TrimSpace(d)
 }
 
 // Instance sets the instance URI of the problem. It is a
 // URI reference that identifies the specific occurrence
 // of the problem.
-func (b *Builder) Instance(i string) {
-  b.check()
-  i = strings.TrimSpace(i)
-  b.p.instance = i
+func (p *Problem) Instance(i string) {
+  p.instance = strings.TrimSpace(i)
 }
 
 // hasExtension checks if the problem has an extension with the specified key k.
-func (b *Builder) hasExtension(k string) bool {
-  for _, mp := range b.p.extensions {
+func (p *Problem) hasExtension(k string) bool {
+  for _, mp := range p.extensions {
     if _, ok := mp[k]; ok {
       return ok
     }
@@ -378,8 +351,8 @@ func (b *Builder) hasExtension(k string) bool {
 }
 
 // appendValue appends a value v to the extension with the specified key k.
-func (b *Builder) appendValue(k string, v any) {
-  for _, mp := range b.p.extensions {
+func (p *Problem) appendValue(k string, v any) {
+  for _, mp := range p.extensions {
     if _, ok := mp[k]; ok {
       mp[k] = append(mp[k], v)
     }
@@ -387,18 +360,17 @@ func (b *Builder) appendValue(k string, v any) {
 }
 
 // checkExt ensures that the extensions slice is initialized.
-func (b *Builder) checkExt() {
-  if 0 == len(b.p.extensions) {
-    b.p.extensions = make([]map[string][]any, 0)
+func (p *Problem) checkExt() {
+  if 0 == len(p.extensions) {
+    p.extensions = make([]map[string][]any, 0)
   }
 }
 
 // With adds an additional member specific to the problem with the specified key
 // and value. If an extension with the given key already exists, the new value
 // is appended to it, forming a slice.
-func (b *Builder) With(key string, value any) {
-  b.check()
-  b.checkExt()
+func (p *Problem) With(key string, value any) {
+  p.checkExt()
   var t = reflect.TypeOf(value)
   if nil == t || reflect.Invalid == t.Kind() || reflect.Chan == t.Kind() || reflect.Func == t.Kind() {
     return
@@ -407,16 +379,9 @@ func (b *Builder) With(key string, value any) {
   if "" == key {
     return
   }
-  if b.hasExtension(key) {
-    b.appendValue(key, value)
+  if p.hasExtension(key) {
+    p.appendValue(key, value)
   } else {
-    b.p.extensions = append(b.p.extensions, map[string][]any{key: {value}})
+    p.extensions = append(p.extensions, map[string][]any{key: {value}})
   }
-}
-
-// Problem finalizes the problem construction and returns the problem
-// instance.
-func (b *Builder) Problem() Problem {
-  b.check()
-  return b.p
 }

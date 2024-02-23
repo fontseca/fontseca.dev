@@ -4,19 +4,12 @@ import (
   "net/http"
 )
 
-type internalProblem struct {
-  problem
-}
-
-func NewInternalProblem() Problem {
-  return &internalProblem{
-    problem: problem{
-      typ:        "about:blank",
-      status:     http.StatusInternalServerError,
-      title:      "Internal Server Error.",
-      detail:     "An unexpected error occurred while processing your request. Please try again later. If the problem persists, contact the developer for assistance.",
-      instance:   "",
-      extensions: []map[string][]any{{"contact": {"mailto:fontseca.dev@outlook.com"}}},
-    },
-  }
+func NewInternal() *Problem {
+  var p Problem
+  p.Type("about:blank")
+  p.Status(http.StatusInternalServerError)
+  p.Title("Internal Server Error.")
+  p.Detail("An unexpected error occurred while processing your request. Please try again later. If the problem persists, contact the developer for assistance.")
+  p.With("contact", "mailto:fontseca.dev@outlook.com")
+  return &p
 }
