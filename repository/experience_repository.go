@@ -15,7 +15,7 @@ import (
 type ExperienceRepository interface {
   // Get retrieves a slice of experience. If hidden is true it returns all
   // the hidden experience records.
-  Get(ctx context.Context, hidden ...bool) (experience []*model.Experience, err error)
+  Get(ctx context.Context, hidden bool) (experience []*model.Experience, err error)
 
   // GetByID retrieves a single experience record by its ID.
   GetByID(ctx context.Context, id string) (experience *model.Experience, err error)
@@ -39,9 +39,9 @@ func NewExperienceRepository(db *sql.DB) ExperienceRepository {
   return &experienceRepository{db}
 }
 
-func (r *experienceRepository) Get(ctx context.Context, hidden ...bool) (experience []*model.Experience, err error) {
+func (r *experienceRepository) Get(ctx context.Context, hidden bool) (experience []*model.Experience, err error) {
   var query string
-  if 0 < len(hidden) && hidden[0] {
+  if hidden {
     query = `SELECT *
                FROM "experience"
               WHERE "hidden" IS TRUE;`
