@@ -3,6 +3,7 @@ package service
 import (
   "context"
   "fontseca/model"
+  "fontseca/repository"
   "fontseca/transfer"
 )
 
@@ -31,4 +32,37 @@ type ExperienceService interface {
   // It returns an error if the operation fails; for example,
   // if the record does not exist.
   Remove(ctx context.Context, id string) error
+}
+
+type experienceService struct {
+  r repository.ExperienceRepository
+}
+
+func NewExperienceService(r repository.ExperienceRepository) ExperienceService {
+  return &experienceService{r}
+}
+
+func (s *experienceService) Get(ctx context.Context, hidden ...bool) (experience []*model.Experience, err error) {
+  // TODO implement me
+  panic("implement me")
+}
+
+func (s *experienceService) GetByID(ctx context.Context, id string) (experience *model.Experience, err error) {
+  // TODO implement me
+  panic("implement me")
+}
+
+func (s *experienceService) Save(ctx context.Context, creation *transfer.ExperienceCreation) (saved bool, err error) {
+  // TODO implement me
+  panic("implement me")
+}
+
+func (s *experienceService) Update(ctx context.Context, id string, update *transfer.ExperienceUpdate) (updated bool, err error) {
+  // TODO implement me
+  panic("implement me")
+}
+
+func (s *experienceService) Remove(ctx context.Context, id string) error {
+  // TODO implement me
+  panic("implement me")
 }
