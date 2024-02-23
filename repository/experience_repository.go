@@ -102,7 +102,7 @@ func (r *experienceRepository) GetByID(ctx context.Context, id string) (experien
     &experience.UpdatedAt)
   if nil != err {
     if errors.Is(err, sql.ErrNoRows) {
-      err = problem.NewNotFoundProblem(id, "experience")
+      err = problem.NewNotFound(id, "experience")
     } else {
       slog.Error(err.Error())
     }
@@ -240,7 +240,7 @@ func (r *experienceRepository) Remove(ctx context.Context, id string) error {
   }
   affected, _ := result.RowsAffected()
   if 1 != affected {
-    return problem.NewNotFoundProblem(id, "experience")
+    return problem.NewNotFound(id, "experience")
   }
   return nil
 }
