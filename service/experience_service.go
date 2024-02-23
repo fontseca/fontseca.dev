@@ -43,8 +43,10 @@ func NewExperienceService(r repository.ExperienceRepository) ExperienceService {
 }
 
 func (s *experienceService) Get(ctx context.Context, hidden ...bool) (experience []*model.Experience, err error) {
-  // TODO implement me
-  panic("implement me")
+  if 0 != len(hidden) && hidden[0] {
+    return s.r.Get(ctx, true)
+  }
+  return s.r.Get(ctx, false)
 }
 
 func (s *experienceService) GetByID(ctx context.Context, id string) (experience *model.Experience, err error) {
