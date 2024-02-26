@@ -2,9 +2,12 @@ package service
 
 import (
   "context"
+  "errors"
   "fontseca/model"
   "fontseca/repository"
   "fontseca/transfer"
+  "log/slog"
+  "strings"
 )
 
 // ExperienceService provides methods for interacting with
@@ -57,8 +60,16 @@ func (s *experienceService) GetByID(ctx context.Context, id string) (experience 
 }
 
 func (s *experienceService) Save(ctx context.Context, creation *transfer.ExperienceCreation) (saved bool, err error) {
-  // TODO implement me
-  panic("implement me")
+  if nil == creation {
+    err = errors.New("nil value for parameter: creation")
+    slog.Error(err.Error())
+    return false, err
+  }
+  creation.JobTitle = strings.TrimSpace(creation.JobTitle)
+  creation.Company = strings.TrimSpace(creation.Company)
+  creation.Country = strings.TrimSpace(creation.Country)
+  creation.Summary = strings.TrimSpace(creation.Summary)
+  return s.r.Save(ctx, creation)
 }
 
 func (s *experienceService) Update(ctx context.Context, id string, update *transfer.ExperienceUpdate) (updated bool, err error) {
