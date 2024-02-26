@@ -42,6 +42,7 @@ func validateUUID(id *string) error {
   if nil == id {
     return nil
   }
+  *id = strings.TrimSpace(*id)
   parsed, err := uuid.Parse(*id)
   if nil != err {
     var p problem.Problem
@@ -50,6 +51,7 @@ func validateUUID(id *string) error {
     p.Detail("An error occurred while attempting to parse the provided UUID string.")
     p.With("uuid", *id)
     p.With("error", err.Error())
+    *id = ""
     return &p
   }
   *id = parsed.String()
