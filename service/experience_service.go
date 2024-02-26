@@ -50,8 +50,10 @@ func (s *experienceService) Get(ctx context.Context, hidden ...bool) (experience
 }
 
 func (s *experienceService) GetByID(ctx context.Context, id string) (experience *model.Experience, err error) {
-  // TODO implement me
-  panic("implement me")
+  if err = validateUUID(&id); nil != err {
+    return nil, err
+  }
+  return s.r.GetByID(ctx, id)
 }
 
 func (s *experienceService) Save(ctx context.Context, creation *transfer.ExperienceCreation) (saved bool, err error) {
