@@ -121,3 +121,43 @@ func TestExperienceService_Save(t *testing.T) {
     assert.ErrorIs(t, err, unexpected)
   })
 }
+
+func TestExperienceService_Update(t *testing.T) {
+  const routine = "Update"
+  var id = "   \t\n{7d7d4da0-093a-443b-b041-2da650381220}\n\t   "
+  var expectedID = "7d7d4da0-093a-443b-b041-2da650381220"
+  var ctx = context.Background()
+
+  t.Run("success", func(t *testing.T) {
+    var expected = transfer.ExperienceUpdate{
+      Starts:   2020,
+      Ends:     2023,
+      JobTitle: "JobTitle",
+      Company:  "Company",
+      Country:  "Country",
+      Summary:  "Summary",
+    }
+    var dirty = transfer.ExperienceUpdate{
+      Starts:   expected.Starts,
+      Ends:     expected.Ends,
+      JobTitle: " \n\t " + expected.JobTitle + " \n\t ",
+      Company:  " \n\t " + expected.Company + " \n\t ",
+      Country:  " \n\t " + expected.Country + " \n\t ",
+      Summary:  " \n\t " + expected.Summary + " \n\t ",
+    }
+    var r = mocks.NewExperienceRepository()
+    r.On(routine, ctx, expectedID, &expected).Return(true, nil)
+    res, err := NewExperienceService(r).Update(ctx, id, &dirty)
+    assert.True(t, res)
+    assert.NoError(t, err)
+  })
+
+  t.Run("error", func(t *testing.T) {
+    var unexpected = errors.New("unexpected error")
+    var r = mocks.NewExperienceRepository()
+    r.On(routine, ctx, expectedID, mock.AnythingOfType("*transfer.ExperienceUpdate")).Return(false, unexpected)
+    res, err := NewExperienceService(r).Update(ctx, id, new(transfer.ExperienceUpdate))
+    assert.False(t, res)
+    assert.ErrorIs(t, err, unexpected)
+  })
+}

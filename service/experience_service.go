@@ -73,8 +73,19 @@ func (s *experienceService) Save(ctx context.Context, creation *transfer.Experie
 }
 
 func (s *experienceService) Update(ctx context.Context, id string, update *transfer.ExperienceUpdate) (updated bool, err error) {
-  // TODO implement me
-  panic("implement me")
+  if nil == update {
+    err = errors.New("nil value for parameter: update")
+    slog.Error(err.Error())
+    return false, err
+  }
+  if err = validateUUID(&id); nil != err {
+    return false, err
+  }
+  update.JobTitle = strings.TrimSpace(update.JobTitle)
+  update.Company = strings.TrimSpace(update.Company)
+  update.Country = strings.TrimSpace(update.Country)
+  update.Summary = strings.TrimSpace(update.Summary)
+  return s.r.Update(ctx, id, update)
 }
 
 func (s *experienceService) Remove(ctx context.Context, id string) error {
