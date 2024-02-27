@@ -89,6 +89,8 @@ func (s *experienceService) Update(ctx context.Context, id string, update *trans
 }
 
 func (s *experienceService) Remove(ctx context.Context, id string) error {
-  // TODO implement me
-  panic("implement me")
+  if err := validateUUID(&id); err != nil {
+    return err
+  }
+  return s.r.Remove(ctx, id)
 }

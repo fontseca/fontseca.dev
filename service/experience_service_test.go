@@ -161,3 +161,25 @@ func TestExperienceService_Update(t *testing.T) {
     assert.ErrorIs(t, err, unexpected)
   })
 }
+
+func TestExperienceService_Remove(t *testing.T) {
+  const routine = "Remove"
+  var id = "   \t\n{7d7d4da0-093a-443b-b041-2da650381220}\n\t   "
+  var expectedID = "7d7d4da0-093a-443b-b041-2da650381220"
+  var ctx = context.Background()
+
+  t.Run("success", func(t *testing.T) {
+    var r = mocks.NewExperienceRepository()
+    r.On(routine, ctx, expectedID).Return(nil)
+    err := NewExperienceService(r).Remove(ctx, id)
+    assert.NoError(t, err)
+  })
+
+  t.Run("error", func(t *testing.T) {
+    var unexpected = errors.New("unexpected error")
+    var r = mocks.NewExperienceRepository()
+    r.On(routine, ctx, expectedID).Return(unexpected)
+    err := NewExperienceService(r).Remove(ctx, id)
+    assert.ErrorIs(t, err, unexpected)
+  })
+}
