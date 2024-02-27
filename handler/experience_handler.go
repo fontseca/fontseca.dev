@@ -43,3 +43,18 @@ func (h *ExperienceHandler) GetHidden(c *gin.Context) {
   }
   c.JSON(http.StatusOK, e)
 }
+
+func (h *ExperienceHandler) GetByID(c *gin.Context) {
+  var id = c.Query("id")
+  var e, err = h.s.GetByID(c, id)
+  if nil != err {
+    var p *problem.Problem
+    if errors.As(err, &p) {
+      p.Emit(c.Writer)
+    } else {
+      problem.NewInternal().Emit(c.Writer)
+    }
+    return
+  }
+  c.JSON(http.StatusOK, e)
+}
