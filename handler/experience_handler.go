@@ -29,3 +29,17 @@ func (h *ExperienceHandler) Get(c *gin.Context) {
   }
   c.JSON(http.StatusOK, e)
 }
+
+func (h *ExperienceHandler) GetHidden(c *gin.Context) {
+  var e, err = h.s.Get(c, true)
+  if nil != err {
+    var p *problem.Problem
+    if errors.As(err, &p) {
+      p.Emit(c.Writer)
+    } else {
+      problem.NewInternal().Emit(c.Writer)
+    }
+    return
+  }
+  c.JSON(http.StatusOK, e)
+}
