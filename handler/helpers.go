@@ -5,6 +5,7 @@ import (
   "errors"
   "fontseca/problem"
   "github.com/gin-gonic/gin"
+  "github.com/gin-gonic/gin/binding"
   "github.com/go-playground/validator/v10"
   "io"
   "log/slog"
@@ -91,4 +92,34 @@ func bindJSONRequestBody(c *gin.Context, obj any) (ok bool) {
     return false
   }
   return true
+}
+
+func validateStruct(s any) error {
+  var err = binding.Validator.ValidateStruct(s)
+  if nil != err {
+    var validationErrors validator.ValidationErrors
+    if errors.As(err, &validationErrors) {
+      var p problem.Problem
+      p.Title("Failed to validate request data.")
+      p.Status(http.StatusUnprocessableEntity)
+      p.Detail("The provided data does not meet the required validation criteria. Please review your input and try again.")
+      var l = len(validationErrors)
+      for _, e := range validationErrors {
+        f := failure{
+          Criterion: e.Tag(),
+          Parameter: e.Param(),
+          Field:     e.Field(),
+        }
+        if 1 == l {
+          p.With("errors", []any{f})
+        } else {
+          p.With("errors", f)
+        }
+      }
+      err = &p
+    } else {
+      slog.Error(err.Error())
+    }
+  }
+  return err
 }
