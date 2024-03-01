@@ -3,13 +3,17 @@ package handler
 import (
   "encoding/json"
   "errors"
+  "fmt"
   "fontseca/problem"
   "github.com/gin-gonic/gin"
   "github.com/gin-gonic/gin/binding"
   "github.com/go-playground/validator/v10"
   "io"
   "log/slog"
+  "math"
   "net/http"
+  "reflect"
+  "strconv"
   "strings"
   "testing"
 )
@@ -122,4 +126,96 @@ func validateStruct(s any) error {
     }
   }
   return err
+}
+
+func handleStrconvError(err error, targetType, fieldName string) (error, bool) {
+  if nil != err {
+    var numErr *strconv.NumError
+    if errors.As(err, &numErr) {
+      switch {
+      case errors.Is(err, strconv.ErrSyntax):
+        return problem.NewUnparsableValue(targetType, fieldName, numErr.Num), false
+      case errors.Is(err, strconv.ErrRange):
+        return problem.NewValueOutOfRange(targetType, fieldName, numErr.Num), false
+      }
+    }
+    return err, false
+  }
+  return nil, true
+}
+
+func bindPostForm(c *gin.Context, val any) error {
+  if nil == c || nil == val {
+    var err = errors.New("got an unacceptable nil parameter")
+    slog.Error(err.Error())
+    return err
+  }
+  var t = reflect.TypeOf(val)
+  var wrongType = errors.New("type of parameter \"val\" is not a pointer to a struct")
+  if reflect.Pointer != t.Kind() {
+    slog.Error(wrongType.Error())
+    return wrongType
+  }
+  var s = t.Elem()
+  if reflect.Struct != s.Kind() {
+    slog.Error(wrongType.Error())
+    return wrongType
+  }
+  var v = reflect.ValueOf(val).Elem()
+
+  for i := 0; i < s.NumField(); i++ {
+    var fieldType = s.Field(i)
+    if fieldType.IsExported() {
+      var fieldValue = v.Field(i)
+      if fieldValue.IsValid() && fieldValue.CanSet() {
+        var fieldName = strings.Split(fieldType.Tag.Get("json"), ",")[0]
+        var value, success = c.GetPostForm(fieldName)
+        if !success {
+          continue
+        }
+        value = strings.TrimSpace(value)
+        var kind = fieldValue.Kind()
+        switch {
+        case reflect.String == kind:
+          fieldValue.SetString(value)
+        case reflect.Int == kind || reflect.Int8 == kind || reflect.Int16 == kind || reflect.Int32 == kind || reflect.Int64 == kind:
+          var bitSize = 32
+          var notInt = reflect.Int != kind
+          if notInt {
+            bitSize = int(math.Pow(2, float64(kind)))
+          }
+          var parsed, err = strconv.ParseInt(value, 10, bitSize)
+          if nil != err {
+            var targetType = "int"
+            if notInt {
+              targetType = fmt.Sprintf("int%d", bitSize)
+            }
+            if err, ok := handleStrconvError(err, targetType, fieldName); !ok {
+              return err
+            }
+          }
+          fieldValue.SetInt(parsed)
+        case reflect.Float32 == kind || reflect.Float64 == kind:
+          var parsed, err = strconv.ParseFloat(value, 128)
+          if nil != err {
+            var targetType = "float32"
+            if reflect.Float64 == kind {
+              targetType = "float64"
+            }
+            if err, ok := handleStrconvError(err, targetType, fieldName); !ok {
+              return err
+            }
+          }
+          fieldValue.SetFloat(parsed)
+        case reflect.Bool == kind:
+          var parsed, err = strconv.ParseBool(value)
+          if err, ok := handleStrconvError(err, "bool", fieldName); !ok {
+            return err
+          }
+          fieldValue.SetBool(parsed)
+        }
+      }
+    }
+  }
+  return nil
 }
