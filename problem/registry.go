@@ -44,6 +44,7 @@ func NewValueOutOfRange(targetType, fieldName, fieldValue string) *Problem {
   p.Status(http.StatusUnprocessableEntity)
   p.Title(fmt.Sprintf("Failure when parsing %s value.", targetType))
   p.Detail(fmt.Sprintf("Out of range for the provided value as: %s. Please make sure the value is valid according to its type.", targetType))
+  p.Detail(fmt.Sprintf("The value provided for '%s' (%s) is out of range for the specified type (%s). Please ensure the value falls within the acceptable range.", fieldName, fieldValue, targetType))
   p.With("field_name", fieldName)
   p.With("field_type", targetType)
   p.With("field_value", fieldValue)
