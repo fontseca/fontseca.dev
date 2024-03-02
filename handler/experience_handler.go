@@ -82,3 +82,36 @@ func (h *ExperienceHandler) Add(c *gin.Context) {
 
   c.Status(http.StatusCreated)
 }
+
+func (h *ExperienceHandler) Set(c *gin.Context) {
+  var update transfer.ExperienceUpdate
+
+  var id, success = c.GetPostForm("id")
+  if !success {
+    var p problem.Problem
+    p.Title("Missing parameter.")
+    p.Status(http.StatusBadRequest)
+    p.Detail("The 'id' parameter is missing or not provided in the form data.")
+    p.Emit(c.Writer)
+    return
+  }
+
+  if err := bindPostForm(c, &update); check(err, c.Writer) {
+    return
+  }
+
+  if err := validateStruct(&update); check(err, c.Writer) {
+    return
+  }
+
+  updated, err := h.s.Update(c, id, &update)
+  if check(err, c.Writer) {
+    return
+  }
+
+  if updated {
+    c.Status(http.StatusNoContent)
+  } else {
+    c.Redirect(http.StatusSeeOther, "/experience.info?id="+id)
+  }
+}

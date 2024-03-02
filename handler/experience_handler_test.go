@@ -153,3 +153,91 @@ func TestExperienceHandler_Add(t *testing.T) {
     assert.Contains(t, recorder.Body.String(), "An unexpected error occurred while processing your request")
   })
 }
+
+func TestExperienceHandler_Set(t *testing.T) {
+  const routine = "Update"
+  const method = http.MethodPost
+  const target = "/experience.set"
+
+  var update = &transfer.ExperienceUpdate{
+    Starts:   2028,
+    Ends:     2030,
+    JobTitle: "JobTitle",
+    Company:  "Company",
+    Country:  "Country",
+    Summary:  "Summary",
+  }
+
+  var request = httptest.NewRequest(method, target, nil)
+  _ = request.ParseForm()
+
+  var id = uuid.New().String()
+
+  request.PostForm.Add("starts", "2028")
+  request.PostForm.Add("ends", "2030")
+  request.PostForm.Add("job_title", "JobTitle")
+  request.PostForm.Add("company", "Company")
+  request.PostForm.Add("country", "Country")
+  request.PostForm.Add("summary", "Summary")
+
+  t.Run("missing 'id' parameter", func(t *testing.T) {
+    var s = mocks.NewExperienceService()
+    s.AssertNotCalled(t, routine)
+    var engine = gin.Default()
+    engine.POST(target, NewExperienceHandler(s).Set)
+    var recorder = httptest.NewRecorder()
+    engine.ServeHTTP(recorder, request)
+    assert.Equal(t, http.StatusBadRequest, recorder.Code)
+    assert.Contains(t, recorder.Body.String(), "The 'id' parameter is missing or not provided in the form data.")
+  })
+
+  request.PostForm.Add("id", id)
+
+  t.Run("success", func(t *testing.T) {
+    var s = mocks.NewExperienceService()
+    s.On(routine, mock.AnythingOfType("*gin.Context"), id, update).Return(true, nil)
+    var engine = gin.Default()
+    engine.POST(target, NewExperienceHandler(s).Set)
+    var recorder = httptest.NewRecorder()
+    engine.ServeHTTP(recorder, request)
+    assert.Equal(t, http.StatusNoContent, recorder.Code)
+    assert.Empty(t, recorder.Body.String())
+  })
+
+  t.Run("redirects when there's nothing new", func(t *testing.T) {
+    var s = mocks.NewExperienceService()
+    s.On(routine, mock.AnythingOfType("*gin.Context"), id, update).Return(false, nil)
+    var engine = gin.Default()
+    engine.POST(target, NewExperienceHandler(s).Set)
+    var recorder = httptest.NewRecorder()
+    engine.ServeHTTP(recorder, request)
+    assert.Equal(t, http.StatusSeeOther, recorder.Code)
+    assert.Empty(t, recorder.Body.String())
+  })
+
+  t.Run("expected problem detail", func(t *testing.T) {
+    var expected = &problem.Problem{}
+    expected.Status(http.StatusGone)
+    expected.Detail("Expected problem detail.")
+    var s = mocks.NewExperienceService()
+    s.On(routine, mock.AnythingOfType("*gin.Context"), id, update).Return(false, expected)
+    var engine = gin.Default()
+    engine.POST(target, NewExperienceHandler(s).Set)
+    var recorder = httptest.NewRecorder()
+    engine.ServeHTTP(recorder, request)
+    assert.Equal(t, http.StatusGone, recorder.Code)
+    assert.Contains(t, recorder.Body.String(), "Expected problem detail.")
+  })
+
+  t.Run("unexpected error", func(t *testing.T) {
+    var unexpected = errors.New("unexpected error")
+    var s = mocks.NewExperienceService()
+    s.On(routine, mock.AnythingOfType("*gin.Context"), id, update).Return(false, unexpected)
+    var engine = gin.Default()
+    engine.POST(target, NewExperienceHandler(s).Set)
+    var recorder = httptest.NewRecorder()
+    engine.ServeHTTP(recorder, request)
+    assert.Equal(t, http.StatusInternalServerError, recorder.Code)
+    assert.Contains(t, recorder.Body.String(), "An unexpected error occurred while processing your request")
+  })
+}
