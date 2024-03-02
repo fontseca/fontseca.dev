@@ -4,6 +4,7 @@ import (
   "errors"
   "fontseca/problem"
   "fontseca/service"
+  "fontseca/transfer"
   "github.com/gin-gonic/gin"
   "net/http"
 )
@@ -57,4 +58,27 @@ func (h *ExperienceHandler) GetByID(c *gin.Context) {
     return
   }
   c.JSON(http.StatusOK, e)
+}
+
+func (h *ExperienceHandler) Add(c *gin.Context) {
+  var e transfer.ExperienceCreation
+
+  if err := bindPostForm(c, &e); check(err, c.Writer) {
+    return
+  }
+
+  if err := validateStruct(&e); check(err, c.Writer) {
+    return
+  }
+
+  ok, err := h.s.Save(c, &e)
+  if check(err, c.Writer) {
+    return
+  }
+
+  if !ok {
+    problem.NewInternal().Emit(c.Writer)
+  }
+
+  c.Status(http.StatusCreated)
 }

@@ -1,8 +1,11 @@
 package handler
 
 import (
+  "errors"
   "fontseca/mocks"
   "fontseca/model"
+  "fontseca/problem"
+  "fontseca/transfer"
   "github.com/gin-gonic/gin"
   "github.com/google/uuid"
   "github.com/stretchr/testify/assert"
@@ -87,5 +90,66 @@ func TestExperienceHandler_GetByID(t *testing.T) {
     engine.ServeHTTP(recorder, request)
     assert.Equal(t, http.StatusOK, recorder.Code)
     assert.Equal(t, string(marshal(t, e)), recorder.Body.String())
+  })
+}
+
+func TestExperienceHandler_Add(t *testing.T) {
+  const routine = "Save"
+  const method = http.MethodPost
+  const target = "/experience.add"
+
+  var e = &transfer.ExperienceCreation{
+    Starts:   2028,
+    Ends:     2030,
+    JobTitle: "JobTitle",
+    Company:  "Company",
+    Country:  "Country",
+    Summary:  "Summary",
+  }
+
+  var request = httptest.NewRequest(method, target, nil)
+  _ = request.ParseForm()
+  request.PostForm.Add("starts", "2028")
+  request.PostForm.Add("ends", "2030")
+  request.PostForm.Add("job_title", "JobTitle")
+  request.PostForm.Add("company", "Company")
+  request.PostForm.Add("country", "Country")
+  request.PostForm.Add("summary", "Summary")
+
+  t.Run("success", func(t *testing.T) {
+    var s = mocks.NewExperienceService()
+    s.On(routine, mock.AnythingOfType("*gin.Context"), e).Return(true, nil)
+    var engine = gin.Default()
+    engine.POST(target, NewExperienceHandler(s).Add)
+    var recorder = httptest.NewRecorder()
+    engine.ServeHTTP(recorder, request)
+    assert.Equal(t, http.StatusCreated, recorder.Code)
+    assert.Empty(t, recorder.Body.String())
+  })
+
+  t.Run("expected problem detail", func(t *testing.T) {
+    var expected = &problem.Problem{}
+    expected.Status(http.StatusGone)
+    expected.Detail("Expected problem detail.")
+    var s = mocks.NewExperienceService()
+    s.On(routine, mock.AnythingOfType("*gin.Context"), e).Return(false, expected)
+    var engine = gin.Default()
+    engine.POST(target, NewExperienceHandler(s).Add)
+    var recorder = httptest.NewRecorder()
+    engine.ServeHTTP(recorder, request)
+    assert.Equal(t, http.StatusGone, recorder.Code)
+    assert.Contains(t, recorder.Body.String(), "Expected problem detail.")
+  })
+
+  t.Run("unexpected error", func(t *testing.T) {
+    var unexpected = errors.New("unexpected error")
+    var s = mocks.NewExperienceService()
+    s.On(routine, mock.AnythingOfType("*gin.Context"), e).Return(false, unexpected)
+    var engine = gin.Default()
+    engine.POST(target, NewExperienceHandler(s).Add)
+    var recorder = httptest.NewRecorder()
+    engine.ServeHTTP(recorder, request)
+    assert.Equal(t, http.StatusInternalServerError, recorder.Code)
+    assert.Contains(t, recorder.Body.String(), "An unexpected error occurred while processing your request")
   })
 }
