@@ -26,6 +26,19 @@ func marshal(t *testing.T, value any) []byte {
   return data
 }
 
+func check(err error, w http.ResponseWriter) bool {
+  if nil != err {
+    var p *problem.Problem
+    if errors.As(err, &p) {
+      p.Emit(w)
+    } else {
+      problem.NewInternal().Emit(w)
+    }
+    return true
+  }
+  return false
+}
+
 type failure struct {
   Field     string `json:"field"`
   Criterion string `json:"criterion"`
