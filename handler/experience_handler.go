@@ -130,3 +130,22 @@ func (h *ExperienceHandler) Hide(c *gin.Context) {
     c.Redirect(http.StatusSeeOther, "/experience.info?id="+id)
   }
 }
+
+func (h *ExperienceHandler) Show(c *gin.Context) {
+  id, success := c.GetPostForm("id")
+  if !success {
+    problem.NewMissingParameter("id").Emit(c.Writer)
+    return
+  }
+
+  updated, err := h.s.Update(c, id, &transfer.ExperienceUpdate{Hidden: false})
+  if check(err, c.Writer) {
+    return
+  }
+
+  if updated {
+    c.Status(http.StatusNoContent)
+  } else {
+    c.Redirect(http.StatusSeeOther, "/experience.info?id="+id)
+  }
+}
