@@ -63,10 +63,11 @@ func TestExperienceHandler_GetByID(t *testing.T) {
   const target = "/experience.info"
 
   t.Run("success", func(t *testing.T) {
+    var i = 2023
     var e = &model.Experience{
       ID:        uuid.New(),
       Starts:    2020,
-      Ends:      2030,
+      Ends:      &i,
       JobTitle:  "JobTitle",
       Company:   "Company",
       Country:   "Country",
