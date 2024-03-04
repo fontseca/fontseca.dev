@@ -214,7 +214,8 @@ func main() {
         "hidden"     BOOLEAN DEFAULT FALSE,
         "created_at" TIMESTAMP NOT NULL DEFAULT current_timestamp,
         "updated_at" TIMESTAMP NOT NULL DEFAULT current_timestamp,
-        CHECK ("starts" > 2003 AND "ends" > 2003)
+        CHECK ("starts" > 2017),
+        CHECK ("ends" > 2017 OR "ends" IS NULL)
       );`,
     },
     {
