@@ -173,3 +173,17 @@ func (h *ExperienceHandler) Quit(c *gin.Context) {
     c.Redirect(http.StatusSeeOther, "/experience.info?id="+id)
   }
 }
+
+func (h *ExperienceHandler) Remove(c *gin.Context) {
+  var id, success = c.GetPostForm("id")
+  if !success {
+    problem.NewMissingParameter("id").Emit(c.Writer)
+    return
+  }
+
+  if check(h.s.Remove(c, id), c.Writer) {
+    return
+  }
+
+  c.Status(http.StatusNoContent)
+}
