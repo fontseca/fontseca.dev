@@ -7,6 +7,7 @@ import (
   "fontseca/transfer"
   "github.com/gin-gonic/gin"
   "net/http"
+  "time"
 )
 
 type ExperienceHandler struct {
@@ -139,6 +140,29 @@ func (h *ExperienceHandler) Show(c *gin.Context) {
   }
 
   updated, err := h.s.Update(c, id, &transfer.ExperienceUpdate{Hidden: false})
+  if check(err, c.Writer) {
+    return
+  }
+
+  if updated {
+    c.Status(http.StatusNoContent)
+  } else {
+    c.Redirect(http.StatusSeeOther, "/experience.info?id="+id)
+  }
+}
+
+func (h *ExperienceHandler) Quit(c *gin.Context) {
+  id, success := c.GetPostForm("id")
+  if !success {
+    problem.NewMissingParameter("id").Emit(c.Writer)
+    return
+  }
+
+  var updated, err = h.s.Update(c, id, &transfer.ExperienceUpdate{
+    Active: false,
+    Ends:   time.Now().Year(),
+  })
+
   if check(err, c.Writer) {
     return
   }
