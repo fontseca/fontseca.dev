@@ -4,10 +4,13 @@ import (
   "context"
   "errors"
   "fontseca/model"
+  "fontseca/problem"
   "fontseca/repository"
   "fontseca/transfer"
   "log/slog"
+  "strconv"
   "strings"
+  "time"
 )
 
 // ExperienceService provides methods for interacting with
@@ -69,6 +72,19 @@ func (s *experienceService) Save(ctx context.Context, creation *transfer.Experie
   creation.Company = strings.TrimSpace(creation.Company)
   creation.Country = strings.TrimSpace(creation.Country)
   creation.Summary = strings.TrimSpace(creation.Summary)
+
+  var year = time.Now().Year()
+  switch {
+  case 0 != creation.Starts && 2017 >= creation.Starts:
+    return false, problem.NewValidation([3]string{"starts", "gt", "2017"})
+  case 0 != creation.Starts && year < creation.Starts:
+    return false, problem.NewValidation([3]string{"starts", "lte", strconv.Itoa(year)})
+  case 0 != creation.Ends && creation.Starts > creation.Ends:
+    return false, problem.NewValidation([3]string{"ends", "gte", strconv.Itoa(creation.Starts)})
+  case 0 != creation.Ends && year < creation.Ends:
+    return false, problem.NewValidation([3]string{"ends", "lte", strconv.Itoa(year)})
+  }
+
   return s.r.Save(ctx, creation)
 }
 
@@ -81,10 +97,29 @@ func (s *experienceService) Update(ctx context.Context, id string, update *trans
   if err = validateUUID(&id); nil != err {
     return false, err
   }
+
   update.JobTitle = strings.TrimSpace(update.JobTitle)
   update.Company = strings.TrimSpace(update.Company)
   update.Country = strings.TrimSpace(update.Country)
   update.Summary = strings.TrimSpace(update.Summary)
+
+  var year = time.Now().Year()
+  switch {
+  case 0 != update.Starts && 2017 >= update.Starts:
+    return false, problem.NewValidation([3]string{"starts", "gt", "2017"})
+  case 0 != update.Starts && year < update.Starts:
+    return false, problem.NewValidation([3]string{"starts", "lte", strconv.Itoa(year)})
+  case 0 != update.Ends:
+    switch {
+    case 0 != update.Starts && update.Starts > update.Ends:
+      return false, problem.NewValidation([3]string{"ends", "gte", strconv.Itoa(update.Starts)})
+    case 2017 >= update.Ends:
+      return false, problem.NewValidation([3]string{"ends", "gt", "2017"})
+    case year < update.Ends:
+      return false, problem.NewValidation([3]string{"ends", "lte", strconv.Itoa(year)})
+    }
+  }
+
   return s.r.Update(ctx, id, update)
 }
 

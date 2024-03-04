@@ -10,6 +10,7 @@ import (
   "github.com/stretchr/testify/assert"
   "github.com/stretchr/testify/mock"
   "testing"
+  "time"
 )
 
 func TestExperienceService_Get(t *testing.T) {
@@ -111,6 +112,109 @@ func TestExperienceService_Save(t *testing.T) {
     assert.False(t, res)
   })
 
+  t.Run("creation.Starts validations", func(t *testing.T) {
+    var creation = transfer.ExperienceCreation{Starts: 2020, Ends: 2023}
+
+    t.Run("2017<creation.Starts<=current_year", func(t *testing.T) {
+      t.Run("fails:creation.Starts=2016", func(t *testing.T) {
+        creation.Starts = 2016
+        var ctx = context.Background()
+        var r = mocks.NewExperienceRepository()
+        r.On(routine, ctx, mock.AnythingOfType("*transfer.ExperienceCreation")).Return(true, nil)
+        res, err := NewExperienceService(r).Save(ctx, &creation)
+        assert.ErrorContains(t, err, "The provided data does not meet the required validation criteria")
+        assert.False(t, res)
+      })
+
+      t.Run("meets:creation.Starts=2020", func(t *testing.T) {
+        creation.Starts = 2020
+        var ctx = context.Background()
+        var r = mocks.NewExperienceRepository()
+        r.On(routine, ctx, mock.AnythingOfType("*transfer.ExperienceCreation")).Return(true, nil)
+        res, err := NewExperienceService(r).Save(ctx, &creation)
+        assert.NoError(t, err)
+        assert.True(t, res)
+      })
+
+      t.Run("meets:creation.Starts=current_year", func(t *testing.T) {
+        creation.Starts = time.Now().Year()
+        creation.Ends = creation.Starts
+        var ctx = context.Background()
+        var r = mocks.NewExperienceRepository()
+        r.On(routine, ctx, mock.AnythingOfType("*transfer.ExperienceCreation")).Return(true, nil)
+        res, err := NewExperienceService(r).Save(ctx, &creation)
+        assert.NoError(t, err)
+        assert.True(t, res)
+      })
+
+      t.Run("fails:creation.Starts=1+current_year", func(t *testing.T) {
+        creation.Starts = 1 + time.Now().Year()
+        var ctx = context.Background()
+        var r = mocks.NewExperienceRepository()
+        r.On(routine, ctx, mock.AnythingOfType("*transfer.ExperienceCreation")).Return(true, nil)
+        res, err := NewExperienceService(r).Save(ctx, &creation)
+        assert.ErrorContains(t, err, "The provided data does not meet the required validation criteria")
+        assert.False(t, res)
+      })
+    })
+  })
+
+  t.Run("creation.Ends validations", func(t *testing.T) {
+    var creation = transfer.ExperienceCreation{Starts: 2020, Ends: 2023}
+
+    t.Run("creation.Starts<=creation.Ends<=current_year", func(t *testing.T) {
+      t.Run("fails:creation.Ends=2016", func(t *testing.T) {
+        creation.Ends = 2016
+        var ctx = context.Background()
+        var r = mocks.NewExperienceRepository()
+        r.On(routine, ctx, mock.AnythingOfType("*transfer.ExperienceCreation")).Return(true, nil)
+        res, err := NewExperienceService(r).Save(ctx, &creation)
+        assert.ErrorContains(t, err, "The provided data does not meet the required validation criteria")
+        assert.False(t, res)
+      })
+
+      t.Run("meets:creation.Ends=creation.Starts", func(t *testing.T) {
+        creation.Ends = creation.Starts
+        var ctx = context.Background()
+        var r = mocks.NewExperienceRepository()
+        r.On(routine, ctx, mock.AnythingOfType("*transfer.ExperienceCreation")).Return(true, nil)
+        res, err := NewExperienceService(r).Save(ctx, &creation)
+        assert.NoError(t, err)
+        assert.True(t, res)
+      })
+
+      t.Run("meets:creation.Ends=1+creation.Starts", func(t *testing.T) {
+        creation.Ends = 1 + creation.Starts
+        var ctx = context.Background()
+        var r = mocks.NewExperienceRepository()
+        r.On(routine, ctx, mock.AnythingOfType("*transfer.ExperienceCreation")).Return(true, nil)
+        res, err := NewExperienceService(r).Save(ctx, &creation)
+        assert.NoError(t, err)
+        assert.True(t, res)
+      })
+
+      t.Run("meets:creation.Ends=current_year", func(t *testing.T) {
+        creation.Ends = time.Now().Year()
+        var ctx = context.Background()
+        var r = mocks.NewExperienceRepository()
+        r.On(routine, ctx, mock.AnythingOfType("*transfer.ExperienceCreation")).Return(true, nil)
+        res, err := NewExperienceService(r).Save(ctx, &creation)
+        assert.NoError(t, err)
+        assert.True(t, res)
+      })
+
+      t.Run("fails:creation.Ends=1+current_year", func(t *testing.T) {
+        creation.Ends = 1 + time.Now().Year()
+        var ctx = context.Background()
+        var r = mocks.NewExperienceRepository()
+        r.On(routine, ctx, mock.AnythingOfType("*transfer.ExperienceCreation")).Return(true, nil)
+        res, err := NewExperienceService(r).Save(ctx, &creation)
+        assert.ErrorContains(t, err, "The provided data does not meet the required validation criteria")
+        assert.False(t, res)
+      })
+    })
+  })
+
   t.Run("error", func(t *testing.T) {
     var unexpected = errors.New("unexpected error")
     var r = mocks.NewExperienceRepository()
@@ -150,6 +254,111 @@ func TestExperienceService_Update(t *testing.T) {
     res, err := NewExperienceService(r).Update(ctx, id, &dirty)
     assert.True(t, res)
     assert.NoError(t, err)
+  })
+
+  t.Run("update.Starts validations", func(t *testing.T) {
+    var update = transfer.ExperienceUpdate{Starts: 2020}
+
+    t.Run("2017<update.Starts<=current_year", func(t *testing.T) {
+      t.Run("fails:update.Starts=2016", func(t *testing.T) {
+        update.Starts = 2016
+        var r = mocks.NewExperienceRepository()
+        r.On(routine, ctx, mock.Anything, mock.AnythingOfType("*transfer.ExperienceUpdate")).Return(true, nil)
+        res, err := NewExperienceService(r).Update(ctx, id, &update)
+        assert.ErrorContains(t, err, "The provided data does not meet the required validation criteria")
+        assert.False(t, res)
+      })
+
+      t.Run("meets:update.Starts=2020", func(t *testing.T) {
+        update.Starts = 2020
+        var r = mocks.NewExperienceRepository()
+        r.On(routine, ctx, mock.Anything, mock.AnythingOfType("*transfer.ExperienceUpdate")).Return(true, nil)
+        res, err := NewExperienceService(r).Update(ctx, id, &update)
+        assert.NoError(t, err)
+        assert.True(t, res)
+      })
+
+      t.Run("meets:update.Starts=current_year", func(t *testing.T) {
+        update.Starts = time.Now().Year()
+        update.Ends = update.Starts
+        var r = mocks.NewExperienceRepository()
+        r.On(routine, ctx, mock.Anything, mock.AnythingOfType("*transfer.ExperienceUpdate")).Return(true, nil)
+        res, err := NewExperienceService(r).Update(ctx, id, &update)
+        assert.NoError(t, err)
+        assert.True(t, res)
+      })
+
+      t.Run("fails:update.Starts=1+current_year", func(t *testing.T) {
+        update.Starts = 1 + time.Now().Year()
+        var r = mocks.NewExperienceRepository()
+        r.On(routine, ctx, mock.Anything, mock.AnythingOfType("*transfer.ExperienceUpdate")).Return(true, nil)
+        res, err := NewExperienceService(r).Update(ctx, id, &update)
+        assert.ErrorContains(t, err, "The provided data does not meet the required validation criteria")
+        assert.False(t, res)
+      })
+    })
+  })
+
+  t.Run("update.Ends validations", func(t *testing.T) {
+    var update = transfer.ExperienceUpdate{Ends: 2023}
+
+    t.Run("update.Starts<=update.Ends<=current_year", func(t *testing.T) {
+      t.Run("fails:update.Ends=2016", func(t *testing.T) {
+        update.Ends = 2016
+        var r = mocks.NewExperienceRepository()
+        r.On(routine, ctx, mock.Anything, mock.AnythingOfType("*transfer.ExperienceUpdate")).Return(true, nil)
+        res, err := NewExperienceService(r).Update(ctx, id, &update)
+        assert.ErrorContains(t, err, "The provided data does not meet the required validation criteria")
+        assert.False(t, res)
+      })
+
+      t.Run("meets:update.Ends=update.Starts", func(t *testing.T) {
+        update.Starts = 2020
+        update.Ends = update.Starts
+        var r = mocks.NewExperienceRepository()
+        r.On(routine, ctx, mock.Anything, mock.AnythingOfType("*transfer.ExperienceUpdate")).Return(true, nil)
+        res, err := NewExperienceService(r).Update(ctx, id, &update)
+        assert.NoError(t, err)
+        assert.True(t, res)
+      })
+
+      t.Run("meets:update.Ends=1+update.Starts", func(t *testing.T) {
+        update.Ends = 1 + update.Starts
+        var r = mocks.NewExperienceRepository()
+        r.On(routine, ctx, mock.Anything, mock.AnythingOfType("*transfer.ExperienceUpdate")).Return(true, nil)
+        res, err := NewExperienceService(r).Update(ctx, id, &update)
+        assert.NoError(t, err)
+        assert.True(t, res)
+      })
+
+      t.Run("meets:update.Ends=current_year", func(t *testing.T) {
+        update.Ends = time.Now().Year()
+        var r = mocks.NewExperienceRepository()
+        r.On(routine, ctx, mock.Anything, mock.AnythingOfType("*transfer.ExperienceUpdate")).Return(true, nil)
+        res, err := NewExperienceService(r).Update(ctx, id, &update)
+        assert.NoError(t, err)
+        assert.True(t, res)
+      })
+
+      t.Run("fails:update.Starts>update.Ends", func(t *testing.T) {
+        update.Starts = 2020
+        update.Ends = 2019
+        var r = mocks.NewExperienceRepository()
+        r.On(routine, ctx, mock.Anything, mock.AnythingOfType("*transfer.ExperienceUpdate")).Return(true, nil)
+        res, err := NewExperienceService(r).Update(ctx, id, &update)
+        assert.ErrorContains(t, err, "The provided data does not meet the required validation criteria")
+        assert.False(t, res)
+      })
+
+      t.Run("fails:update.Ends=1+current_year", func(t *testing.T) {
+        update.Ends = 1 + time.Now().Year()
+        var r = mocks.NewExperienceRepository()
+        r.On(routine, ctx, mock.Anything, mock.AnythingOfType("*transfer.ExperienceUpdate")).Return(true, nil)
+        res, err := NewExperienceService(r).Update(ctx, id, &update)
+        assert.ErrorContains(t, err, "The provided data does not meet the required validation criteria")
+        assert.False(t, res)
+      })
+    })
   })
 
   t.Run("error", func(t *testing.T) {
