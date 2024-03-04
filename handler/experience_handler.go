@@ -88,11 +88,7 @@ func (h *ExperienceHandler) Set(c *gin.Context) {
 
   var id, success = c.GetPostForm("id")
   if !success {
-    var p problem.Problem
-    p.Title("Missing parameter.")
-    p.Status(http.StatusBadRequest)
-    p.Detail("The 'id' parameter is missing or not provided in the form data.")
-    p.Emit(c.Writer)
+    problem.NewMissingParameter("id").Emit(c.Writer)
     return
   }
 
@@ -105,6 +101,25 @@ func (h *ExperienceHandler) Set(c *gin.Context) {
   }
 
   updated, err := h.s.Update(c, id, &update)
+  if check(err, c.Writer) {
+    return
+  }
+
+  if updated {
+    c.Status(http.StatusNoContent)
+  } else {
+    c.Redirect(http.StatusSeeOther, "/experience.info?id="+id)
+  }
+}
+
+func (h *ExperienceHandler) Hide(c *gin.Context) {
+  id, success := c.GetPostForm("id")
+  if !success {
+    problem.NewMissingParameter("id").Emit(c.Writer)
+    return
+  }
+
+  updated, err := h.s.Update(c, id, &transfer.ExperienceUpdate{Hidden: true})
   if check(err, c.Writer) {
     return
   }
