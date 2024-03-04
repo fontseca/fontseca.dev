@@ -74,3 +74,12 @@ func NewValidation(failures ...[3]string) *Problem {
 
   return &p
 }
+
+func NewMissingParameter(parameter string) *Problem {
+  var p Problem
+  p.Status(http.StatusBadRequest)
+  p.Title("Missing required parameter.")
+  p.Detail(fmt.Sprintf("The '%s' parameter is required but was not found in the request form data.", parameter))
+  p.With("missing_parameter", parameter)
+  return &p
+}
