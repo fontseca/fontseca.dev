@@ -157,7 +157,7 @@ func (r *experienceRepository) Save(ctx context.Context, creation *transfer.Expe
 
 func (r *experienceRepository) updatable(current *model.Experience, update *transfer.ExperienceUpdate) bool {
   if (0 == update.Starts || update.Starts == current.Starts) &&
-    (0 == update.Ends || update.Ends == current.Ends) &&
+    (0 == update.Ends || (nil != current.Ends && update.Ends == *current.Ends)) &&
     ("" == update.JobTitle || update.JobTitle == current.JobTitle) &&
     ("" == update.Company || update.Company == current.Company) &&
     ("" == update.Country || update.Country == current.Country) &&

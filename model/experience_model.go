@@ -9,7 +9,7 @@ import (
 type Experience struct {
   ID        uuid.UUID `json:"id"`
   Starts    int       `json:"starts"`
-  Ends      int       `json:"ends"`
+  Ends      *int      `json:"ends"`
   JobTitle  string    `json:"job_title"`
   Company   string    `json:"company"`
   Country   string    `json:"country"`
