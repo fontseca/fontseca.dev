@@ -50,3 +50,27 @@ func NewValueOutOfRange(targetType, fieldName, fieldValue string) *Problem {
   p.With("field_value", fieldValue)
   return &p
 }
+
+func NewValidation(failures ...[3]string) *Problem {
+  var p Problem
+  p.Status(http.StatusBadRequest)
+  p.Title("Failed to validate request data.")
+  p.Detail("The provided data does not meet the required validation criteria. Please review your input and try again.")
+
+  for _, f := range failures {
+    if "" != f[2] {
+      p.With("errors", map[string]string{
+        "field":     f[0],
+        "criterion": f[1],
+        "parameter": f[2],
+      })
+    } else {
+      p.With("errors", map[string]string{
+        "field":     f[0],
+        "criterion": f[1],
+      })
+    }
+  }
+
+  return &p
+}
