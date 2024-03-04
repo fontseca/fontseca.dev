@@ -124,13 +124,15 @@ func (r *experienceRepository) Save(ctx context.Context, creation *transfer.Expe
                             "job_title",
                             "company",
                             "country",
-                            "summary")
+                            "summary",
+                            "active")
                     VALUES (@starts,
-                            @ends,
+                            nullif (@ends, 0),
                             @job_title,
                             @company,
                             @country,
-                            @summary);`
+                            @summary,
+                            TRUE);`
   ctx, cancel := context.WithTimeout(ctx, time.Second)
   defer cancel()
   result, err := r.db.ExecContext(ctx, query,
