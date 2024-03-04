@@ -1,0 +1,40 @@
+package pages
+
+import (
+  "fontseca/model"
+  "fontseca/components/layout"
+  "fontseca/components/ui"
+  "strconv"
+)
+
+templ Experience(exp []*model.Experience) {
+  @layout.Layout("experience", 1) {
+    <section class="experience">
+      @ui.TitleHeader("experience")
+      <section class="experience-list">
+        for i, e := range exp {
+          <article class="experience-list-tile">
+            if len(exp) - 1 != i {
+              <p class="line"></p>
+            }
+            <span class="spot"></span>
+            <div class="dates-container">
+              <p class="dates-text">{ strconv.Itoa(e.Starts) } —
+                if nil != e.Ends {
+                  { strconv.Itoa(*e.Ends) }
+                } else {
+                 { "Present" }
+                }
+             </p>
+            </div>
+            <div class="content-container">
+              <p class="job-title">{ e.JobTitle }</p>
+              <p class="company-and-location">{ e.Company }, { e.Country }</p>
+              <p class="summary">{! templ.Raw(e.Summary) }</p>
+            </div>
+          </article>
+        }
+      </section>
+    </section>
+  }
+}

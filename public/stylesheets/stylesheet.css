@@ -451,3 +451,79 @@ body {
     width: 100%;
   }
 }
+
+/* Experience page.  */
+
+.experience-list-tile {
+  display: flex;
+  position: relative;
+}
+
+.experience-list-tile .line {
+  position: absolute;
+  background-color: black;
+  width: 1px;
+  height: 100%;
+}
+
+.experience-list-tile .dates-container {
+  min-width: 260px;
+  text-align: left;
+  padding-left: 3rem;
+}
+
+.experience-list-tile .dates-container .dates-text {
+  font-weight: 700;
+}
+
+.experience-list-tile .spot {
+  position: absolute;
+  background-color: black;
+  width: 14px;
+  height: 14px;
+  left: -7px;
+  border-radius: 50%;
+}
+
+.experience-list-tile:last-child .dates-container {
+  height: 13px;
+}
+
+.experience-list-tile .content-container {
+  min-height: 200px;
+  padding-bottom: 2rem;
+}
+
+.experience-list-tile .content-container .job-title {
+  font-size: 25px;
+  font-weight: 700;
+  margin-bottom: .5rem;
+}
+
+.experience-list-tile .content-container .company-and-location {
+  font-weight: 500;
+  margin-bottom: 1rem;
+  font-style: italic;
+}
+
+.experience-list-tile .content-container .summary {
+  font-family: 'Source Serif 4', sans-serif;
+}
+
+@media screen and (max-width: 1120px) {
+  .experience-list-tile {
+    flex-wrap: wrap;
+  }
+
+  .experience-list-tile .dates-container {
+    padding-left: 30px;
+  }
+
+  .experience-list-tile .content-container {
+    padding-left: 30px;
+  }
+
+  .experience-list-tile .content-container .info-article .job-title {
+    padding-top: 1rem;
+  }
+}
