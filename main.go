@@ -399,13 +399,33 @@ func main() {
   engine.POST("/me.setPhoto", meHandler.SetPhoto)
   engine.POST("/me.setResume", meHandler.SetResume)
   engine.POST("/me.setHireable", meHandler.SetHireable)
-  engine.POST("/me.update", meHandler.Update)
+  engine.POST("/me.set", meHandler.Update)
   engine.POST("/me.authenticate", meHandler.Authenticate)
   engine.POST("/me.deauthenticate", meHandler.Deauthenticate)
 
-  var webHandler = handler.NewWebHandler(meService)
+  var (
+    experienceRepository = repository.NewExperienceRepository(db)
+    experienceService    = service.NewExperienceService(experienceRepository)
+    experienceHandler    = handler.NewExperienceHandler(experienceService)
+  )
+
+  engine.GET("/experience.list", experienceHandler.Get)
+  engine.GET("/experience.hidden.list", experienceHandler.GetHidden)
+  engine.GET("/experience.info", experienceHandler.GetByID)
+  engine.POST("/experience.add", experienceHandler.Add)
+  engine.POST("/experience.set", experienceHandler.Set)
+  engine.POST("/experience.hide", experienceHandler.Hide)
+  engine.POST("/experience.show", experienceHandler.Show)
+  engine.POST("/experience.quit", experienceHandler.Quit)
+  engine.POST("/experience.remove", experienceHandler.Remove)
+
+  var webHandler = handler.NewWebHandler(
+    meService,
+    experienceService,
+  )
 
   engine.GET("/", webHandler.RenderMe)
+  engine.GET("/experience", webHandler.RenderExperience)
 
   var port = strings.TrimSpace(os.Getenv("SERVER_PORT"))
   if "" == port {
