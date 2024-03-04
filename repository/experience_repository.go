@@ -44,10 +44,12 @@ func (r *experienceRepository) Get(ctx context.Context, hidden bool) (experience
   if hidden {
     query = `SELECT *
                FROM "experience"
-              WHERE "hidden" IS TRUE;`
+              WHERE "hidden" IS TRUE
+           ORDER BY "starts" DESC;`
   } else {
     query = `SELECT *
-               FROM "experience";`
+               FROM "experience"
+           ORDER BY "starts" DESC;`
   }
   ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
   defer cancel()
