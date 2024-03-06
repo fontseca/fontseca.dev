@@ -2,6 +2,7 @@ package repository
 
 import (
   "context"
+  "database/sql"
   "fontseca/model"
   "fontseca/transfer"
 )
@@ -19,4 +20,32 @@ type TechnologyTagRepository interface {
 
   // Remove deletes an existing technology tag. If not found, returns a not found error.
   Remove(ctx context.Context, id string) (err error)
+}
+
+type technologyTagRepository struct {
+  db *sql.DB
+}
+
+func NewTechnologyTagRepository(db *sql.DB) TechnologyTagRepository {
+  return &technologyTagRepository{db}
+}
+
+func (r *technologyTagRepository) Get(ctx context.Context) (technologies []*model.TechnologyTag, err error) {
+  // TODO implement me
+  panic("implement me")
+}
+
+func (r *technologyTagRepository) Add(ctx context.Context, creation *transfer.TechnologyTagCreation) (id string, err error) {
+  // TODO implement me
+  panic("implement me")
+}
+
+func (r *technologyTagRepository) Update(ctx context.Context, id string, update *transfer.TechnologyTagUpdate) (updated bool, err error) {
+  // TODO implement me
+  panic("implement me")
+}
+
+func (r *technologyTagRepository) Remove(ctx context.Context, id string) (err error) {
+  // TODO implement me
+  panic("implement me")
 }
