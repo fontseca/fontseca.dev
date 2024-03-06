@@ -18,6 +18,10 @@ type TechnologyTagRepository interface {
   // Add creates a new technology tag record with the provided creation data.
   Add(ctx context.Context, creation *transfer.TechnologyTagCreation) (id string, err error)
 
+  // Exists checks whether a technology tag exists in the database.
+  // If it does, it returns nil; otherwise a not found error.
+  Exists(ctx context.Context, id string) (err error)
+
   // Update modifies an existing technology tag record with the provided update data.
   Update(ctx context.Context, id string, update *transfer.TechnologyTagUpdate) (updated bool, err error)
 
@@ -79,6 +83,26 @@ func (r *technologyTagRepository) Add(ctx context.Context, creation *transfer.Te
     return "", nil
   }
   return id, nil
+}
+
+func (r *technologyTagRepository) Exists(ctx context.Context, id string) (err error) {
+  var query = `
+  SELECT count (1)
+    FROM "technology_tag"
+   WHERE "id" = @id;`
+  ctx, cancel := context.WithTimeout(ctx, time.Second)
+  defer cancel()
+  var row = r.db.QueryRowContext(ctx, query, sql.Named("id", id))
+  var count int
+  err = row.Scan(&count)
+  if nil != err {
+    slog.Error(err.Error())
+    return err
+  }
+  if count != 1 {
+    return problem.NewNotFound(id, "technology_tag")
+  }
+  return nil
 }
 
 func (r *technologyTagRepository) Update(ctx context.Context, id string, update *transfer.TechnologyTagUpdate) (updated bool, err error) {
