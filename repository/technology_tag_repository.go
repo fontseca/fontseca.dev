@@ -5,6 +5,8 @@ import (
   "database/sql"
   "fontseca/model"
   "fontseca/transfer"
+  "log/slog"
+  "time"
 )
 
 // TechnologyTagRepository provides methods for interacting with technology tags data in the database.
@@ -31,8 +33,25 @@ func NewTechnologyTagRepository(db *sql.DB) TechnologyTagRepository {
 }
 
 func (r *technologyTagRepository) Get(ctx context.Context) (technologies []*model.TechnologyTag, err error) {
-  // TODO implement me
-  panic("implement me")
+  var query = `SELECT * FROM "technology_tag";`
+  ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+  defer cancel()
+  rows, err := r.db.QueryContext(ctx, query)
+  if nil != err {
+    slog.Error(err.Error())
+    return nil, err
+  }
+  technologies = make([]*model.TechnologyTag, 0)
+  for rows.Next() {
+    var tech = new(model.TechnologyTag)
+    err = rows.Scan(&tech.ID, &tech.Name, &tech.CreatedAt, &tech.UpdatedAt)
+    if nil != err {
+      slog.Error(err.Error())
+      return nil, err
+    }
+    technologies = append(technologies, tech)
+  }
+  return
 }
 
 func (r *technologyTagRepository) Add(ctx context.Context, creation *transfer.TechnologyTagCreation) (id string, err error) {
