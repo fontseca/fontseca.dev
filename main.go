@@ -249,7 +249,9 @@ func main() {
       CREATE TABLE "technology_tag"
       (
         "id"   VARCHAR(36) NOT NULL PRIMARY KEY DEFAULT (uuid_generate_v4 ()),
-        "name" VARCHAR(64) NOT NULL
+        "name" VARCHAR(64) NOT NULL,
+        "created_at"       TIMESTAMP NOT NULL DEFAULT current_timestamp,
+        "updated_at"       TIMESTAMP NOT NULL DEFAULT current_timestamp
       );`,
     },
     {
