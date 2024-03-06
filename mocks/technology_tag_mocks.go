@@ -11,6 +11,10 @@ type TechnologyTagRepository struct {
   mock.Mock
 }
 
+func NewTechnologyTagRepository() *TechnologyTagRepository {
+  return new(TechnologyTagRepository)
+}
+
 func (o *TechnologyTagRepository) Get(ctx context.Context) (technologies []*model.TechnologyTag, err error) {
   var args = o.Called(ctx)
   var arg0 = args.Get(0)
@@ -42,6 +46,10 @@ func (o *TechnologyTagRepository) Remove(ctx context.Context, id string) (err er
 
 type TechnologyTagService struct {
   mock.Mock
+}
+
+func NewTechnologyTagService() *TechnologyTagService {
+  return new(TechnologyTagService)
 }
 
 func (o *TechnologyTagService) Get(ctx context.Context) (technologies []*model.TechnologyTag, err error) {
