@@ -411,15 +411,15 @@ func main() {
     experienceHandler    = handler.NewExperienceHandler(experienceService)
   )
 
-  engine.GET("/experience.list", experienceHandler.Get)
-  engine.GET("/experience.hidden.list", experienceHandler.GetHidden)
-  engine.GET("/experience.info", experienceHandler.GetByID)
-  engine.POST("/experience.add", experienceHandler.Add)
-  engine.POST("/experience.set", experienceHandler.Set)
-  engine.POST("/experience.hide", experienceHandler.Hide)
-  engine.POST("/experience.show", experienceHandler.Show)
-  engine.POST("/experience.quit", experienceHandler.Quit)
-  engine.POST("/experience.remove", experienceHandler.Remove)
+  engine.GET("/me.experience.list", experienceHandler.Get)
+  engine.GET("/me.experience.hidden.list", experienceHandler.GetHidden)
+  engine.GET("/me.experience.info", experienceHandler.GetByID)
+  engine.POST("/me.experience.add", experienceHandler.Add)
+  engine.POST("/me.experience.set", experienceHandler.Set)
+  engine.POST("/me.experience.hide", experienceHandler.Hide)
+  engine.POST("/me.experience.show", experienceHandler.Show)
+  engine.POST("/me.experience.quit", experienceHandler.Quit)
+  engine.POST("/me.experience.remove", experienceHandler.Remove)
 
   var webHandler = handler.NewWebHandler(
     meService,
