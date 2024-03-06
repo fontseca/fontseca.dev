@@ -55,8 +55,29 @@ func (r *technologyTagRepository) Get(ctx context.Context) (technologies []*mode
 }
 
 func (r *technologyTagRepository) Add(ctx context.Context, creation *transfer.TechnologyTagCreation) (id string, err error) {
-  // TODO implement me
-  panic("implement me")
+  tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+  if nil != err {
+    slog.Error(err.Error())
+    return "", err
+  }
+  defer tx.Rollback()
+  var query = `
+  INSERT INTO "technology_tag" ("name")
+                        VALUES (@name)
+    RETURNING "id";`
+  ctx, cancel := context.WithTimeout(ctx, time.Second)
+  defer cancel()
+  var result = tx.QueryRowContext(ctx, query, sql.Named("name", creation.Name))
+  err = result.Scan(&id)
+  if nil != err {
+    slog.Error(err.Error())
+    return "", err
+  }
+  if err = tx.Commit(); nil != err {
+    slog.Error(err.Error())
+    return "", nil
+  }
+  return id, nil
 }
 
 func (r *technologyTagRepository) Update(ctx context.Context, id string, update *transfer.TechnologyTagUpdate) (updated bool, err error) {
