@@ -81,8 +81,49 @@ func (r *technologyTagRepository) Add(ctx context.Context, creation *transfer.Te
 }
 
 func (r *technologyTagRepository) Update(ctx context.Context, id string, update *transfer.TechnologyTagUpdate) (updated bool, err error) {
-  // TODO implement me
-  panic("implement me")
+  tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+  if nil != err {
+    slog.Error(err.Error())
+    return false, err
+  }
+  defer tx.Rollback()
+  var query = `
+  SELECT "name"
+    FROM "technology_tag"
+   WHERE id = @id;`
+  ctx, cancel := context.WithTimeout(ctx, time.Second)
+  defer cancel()
+  var row = tx.QueryRowContext(ctx, query, sql.Named("id", id))
+  var currentName string
+  err = row.Scan(&currentName)
+  if nil != err {
+    slog.Error(err.Error())
+    return false, err
+  }
+  query = `
+  UPDATE "technology_tag"
+     SET "name" = coalesce (nullif (@new_name, ''), @current_name),
+         "updated_at" = current_timestamp
+   WHERE "id" = @id;`
+  ctx, cancel = context.WithTimeout(ctx, time.Second)
+  defer cancel()
+  result, err := tx.ExecContext(ctx, query,
+    sql.Named("id", id),
+    sql.Named("new_name", update.Name),
+    sql.Named("current_name", currentName))
+  if nil != err {
+    slog.Error(err.Error())
+    return false, err
+  }
+  affected, _ := result.RowsAffected()
+  if 1 != affected {
+    return false, nil
+  }
+  if err = tx.Commit(); nil != err {
+    slog.Error(err.Error())
+    return false, err
+  }
+  return true, nil
 }
 
 func (r *technologyTagRepository) Remove(ctx context.Context, id string) (err error) {
