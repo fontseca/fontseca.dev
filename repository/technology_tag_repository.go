@@ -4,6 +4,7 @@ import (
   "context"
   "database/sql"
   "fontseca/model"
+  "fontseca/problem"
   "fontseca/transfer"
   "log/slog"
   "time"
@@ -127,6 +128,29 @@ func (r *technologyTagRepository) Update(ctx context.Context, id string, update 
 }
 
 func (r *technologyTagRepository) Remove(ctx context.Context, id string) (err error) {
-  // TODO implement me
-  panic("implement me")
+  tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+  if nil != err {
+    slog.Error(err.Error())
+    return err
+  }
+  defer tx.Rollback()
+  var query = `
+  DELETE FROM "technology_tag"
+        WHERE id = @id;`
+  ctx, cancel := context.WithTimeout(ctx, time.Second)
+  defer cancel()
+  result, err := tx.ExecContext(ctx, query, sql.Named("id", id))
+  if nil != err {
+    slog.Error(err.Error())
+    return err
+  }
+  affected, _ := result.RowsAffected()
+  if 1 != affected {
+    return problem.NewNotFound(id, "technology_tag")
+  }
+  if err = tx.Commit(); nil != err {
+    slog.Error(err.Error())
+    return err
+  }
+  return nil
 }
