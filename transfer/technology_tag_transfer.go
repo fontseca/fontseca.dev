@@ -2,7 +2,7 @@ package transfer
 
 // TechnologyTagCreation represents the data required to create a new technology tag entry.
 type TechnologyTagCreation struct {
-  Name string `json:"name" binding:"required"`
+  Name string `json:"name" binding:"required,max=64"`
 }
 
 // TechnologyTagUpdate represents the data required to update an existing technology tag entry.
