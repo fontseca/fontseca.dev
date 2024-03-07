@@ -2,6 +2,7 @@ package repository
 
 import (
   "context"
+  "database/sql"
   "fontseca/model"
   "fontseca/transfer"
 )
@@ -28,4 +29,47 @@ type ProjectsRepository interface {
 
   // RemoveTechnologyTag removes a technology tag that belongs to the project represented by projectID.
   RemoveTechnologyTag(ctx context.Context, projectID, technologyID string) (err error)
+}
+
+type projectsRepository struct {
+  db *sql.DB
+}
+
+func NewProjectsRepository(db *sql.DB) ProjectsRepository {
+  return &projectsRepository{db}
+}
+
+func (r *projectsRepository) Get(ctx context.Context, archived bool) (projects []*model.Project, err error) {
+  // TODO implement me
+  panic("implement me")
+}
+
+func (r *projectsRepository) GetByID(ctx context.Context, id string) (project *model.Project, err error) {
+  // TODO implement me
+  panic("implement me")
+}
+
+func (r *projectsRepository) Add(ctx context.Context, creation *transfer.ProjectCreation) (id string, err error) {
+  // TODO implement me
+  panic("implement me")
+}
+
+func (r *projectsRepository) Update(ctx context.Context, id string, update *transfer.ProjectUpdate) (updated bool, err error) {
+  // TODO implement me
+  panic("implement me")
+}
+
+func (r *projectsRepository) Remove(ctx context.Context, id string) (err error) {
+  // TODO implement me
+  panic("implement me")
+}
+
+func (r *projectsRepository) AddTechnologyTag(ctx context.Context, projectID, technologyTagID string) (added bool, err error) {
+  // TODO implement me
+  panic("implement me")
+}
+
+func (r *projectsRepository) RemoveTechnologyTag(ctx context.Context, projectID, technologyID string) (err error) {
+  // TODO implement me
+  panic("implement me")
 }
