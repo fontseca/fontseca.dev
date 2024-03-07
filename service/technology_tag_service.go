@@ -71,6 +71,5 @@ func (s *technologyTagService) Update(ctx context.Context, id string, update *tr
 }
 
 func (s *technologyTagService) Remove(ctx context.Context, id string) (err error) {
-  // TODO implement me
-  panic("implement me")
+  return s.r.Remove(ctx, id)
 }
