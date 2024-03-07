@@ -5,7 +5,10 @@ import (
   "errors"
   "fontseca/mocks"
   "fontseca/model"
+  "fontseca/transfer"
+  "github.com/google/uuid"
   "github.com/stretchr/testify/assert"
+  "github.com/stretchr/testify/mock"
   "testing"
 )
 
@@ -28,6 +31,39 @@ func TestTechnologyTagService_Get(t *testing.T) {
     r.On(routine, ctx).Return(nil, unexpected)
     res, err := NewTechnologyTagService(r).Get(ctx)
     assert.Nil(t, res)
+    assert.ErrorIs(t, err, unexpected)
+  })
+}
+
+func TestTechnologyTagService_Add(t *testing.T) {
+  const routine = "Add"
+  var creation = &transfer.TechnologyTagCreation{Name: "Technology Tag Name"}
+  var ctx = context.Background()
+
+  t.Run("success", func(t *testing.T) {
+    var dirty = &transfer.TechnologyTagCreation{Name: "  \n\t\n  " + creation.Name + "  \n\t\n  "}
+    var id = uuid.New().String()
+    var r = mocks.NewTechnologyTagRepository()
+    r.On(routine, ctx, creation).Return(id, nil)
+    res, err := NewTechnologyTagService(r).Add(ctx, dirty)
+    assert.Equal(t, id, res)
+    assert.NoError(t, err)
+  })
+
+  t.Run("error on nil creation", func(t *testing.T) {
+    var r = mocks.NewTechnologyTagRepository()
+    r.AssertNotCalled(t, routine)
+    res, err := NewTechnologyTagService(r).Add(ctx, nil)
+    assert.ErrorContains(t, err, "nil value for parameter: creation")
+    assert.Empty(t, res)
+  })
+
+  t.Run("got an error", func(t *testing.T) {
+    var unexpected = errors.New("unexpected error")
+    var r = mocks.NewTechnologyTagRepository()
+    r.On(routine, ctx, mock.Anything).Return("", unexpected)
+    res, err := NewTechnologyTagService(r).Add(ctx, creation)
+    assert.Empty(t, res)
     assert.ErrorIs(t, err, unexpected)
   })
 }

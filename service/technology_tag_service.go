@@ -2,9 +2,12 @@ package service
 
 import (
   "context"
+  "errors"
   "fontseca/model"
   "fontseca/repository"
   "fontseca/transfer"
+  "log/slog"
+  "strings"
 )
 
 // TechnologyTagService provides methods for interacting with technology
@@ -40,8 +43,13 @@ func (s *technologyTagService) Get(ctx context.Context) (technologies []*model.T
 }
 
 func (s *technologyTagService) Add(ctx context.Context, creation *transfer.TechnologyTagCreation) (id string, err error) {
-  // TODO implement me
-  panic("implement me")
+  if nil == creation {
+    err = errors.New("nil value for parameter: creation")
+    slog.Error(err.Error())
+    return "", err
+  }
+  creation.Name = strings.TrimSpace(creation.Name)
+  return s.r.Add(ctx, creation)
 }
 
 func (s *technologyTagService) Exists(ctx context.Context, id string) (err error) {
