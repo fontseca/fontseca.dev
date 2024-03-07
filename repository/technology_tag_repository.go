@@ -80,7 +80,7 @@ func (r *technologyTagRepository) Add(ctx context.Context, creation *transfer.Te
   }
   if err = tx.Commit(); nil != err {
     slog.Error(err.Error())
-    return "", nil
+    return "", err
   }
   return id, nil
 }
