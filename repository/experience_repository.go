@@ -137,7 +137,7 @@ func (r *experienceRepository) Save(ctx context.Context, creation *transfer.Expe
                             TRUE);`
   ctx, cancel := context.WithTimeout(ctx, time.Second)
   defer cancel()
-  result, err := r.db.ExecContext(ctx, query,
+  result, err := tx.ExecContext(ctx, query,
     sql.Named("starts", creation.Starts),
     sql.Named("ends", creation.Ends),
     sql.Named("job_title", creation.JobTitle),
@@ -237,7 +237,7 @@ func (r *experienceRepository) Remove(ctx context.Context, id string) error {
         WHERE "id" = @id;`
   ctx, cancel := context.WithTimeout(ctx, time.Second)
   defer cancel()
-  result, err := r.db.ExecContext(ctx, query, sql.Named("id", id))
+  result, err := tx.ExecContext(ctx, query, sql.Named("id", id))
   if nil != err {
     slog.Error(err.Error())
     return err
@@ -245,6 +245,10 @@ func (r *experienceRepository) Remove(ctx context.Context, id string) error {
   affected, _ := result.RowsAffected()
   if 1 != affected {
     return problem.NewNotFound(id, "experience")
+  }
+  if err = tx.Commit(); nil != err {
+    slog.Error(err.Error())
+    return err
   }
   return nil
 }
