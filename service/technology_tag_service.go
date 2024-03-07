@@ -36,8 +36,7 @@ func NewTechnologyTagService(repository repository.TechnologyTagRepository) Tech
 }
 
 func (s *technologyTagService) Get(ctx context.Context) (technologies []*model.TechnologyTag, err error) {
-  // TODO implement me
-  panic("implement me")
+  return s.r.Get(ctx)
 }
 
 func (s *technologyTagService) Add(ctx context.Context, creation *transfer.TechnologyTagCreation) (id string, err error) {
