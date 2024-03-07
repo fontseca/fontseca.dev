@@ -68,6 +68,16 @@ func TestTechnologyTagService_Add(t *testing.T) {
     assert.Empty(t, res)
     assert.ErrorIs(t, err, unexpected)
   })
+
+  t.Run("max len (64) exceeded", func(t *testing.T) {
+    var r = mocks.NewTechnologyTagRepository()
+    var p = problem.NewValidation([3]string{"name", "max", "64"})
+    r.AssertNotCalled(t, routine)
+    creation.Name = strings.Repeat("x", 65)
+    res, err := NewTechnologyTagService(r).Add(ctx, creation)
+    assert.ErrorAs(t, err, &p)
+    assert.Empty(t, res)
+  })
 }
 
 func TestTechnologyTagService_Exists(t *testing.T) {

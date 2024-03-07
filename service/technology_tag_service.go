@@ -50,6 +50,9 @@ func (s *technologyTagService) Add(ctx context.Context, creation *transfer.Techn
     return "", err
   }
   creation.Name = strings.TrimSpace(creation.Name)
+  if 64 < len(creation.Name) {
+    return "", problem.NewValidation([3]string{"name", "max", "64"})
+  }
   return s.r.Add(ctx, creation)
 }
 
