@@ -10,6 +10,7 @@ import (
   "github.com/google/uuid"
   "github.com/stretchr/testify/assert"
   "github.com/stretchr/testify/mock"
+  "strings"
   "testing"
 )
 
@@ -95,5 +96,48 @@ func TestTechnologyTagService_Exists(t *testing.T) {
     r.On(routine, ctx, mock.Anything).Return(unexpected)
     err := NewTechnologyTagService(r).Exists(ctx, id)
     assert.ErrorIs(t, err, unexpected)
+  })
+}
+
+func TestTechnologyTagService_Update(t *testing.T) {
+  const routine = "Update"
+  var update = &transfer.TechnologyTagUpdate{Name: strings.Repeat("x", 64)}
+  var ctx = context.Background()
+  var id = uuid.New().String()
+
+  t.Run("success", func(t *testing.T) {
+    var dirty = &transfer.TechnologyTagUpdate{Name: "  \n\t\n  " + update.Name + "  \n\t\n  "}
+    var r = mocks.NewTechnologyTagRepository()
+    r.On(routine, ctx, id, update).Return(true, nil)
+    res, err := NewTechnologyTagService(r).Update(ctx, id, dirty)
+    assert.True(t, res)
+    assert.NoError(t, err)
+  })
+
+  t.Run("error on nil update", func(t *testing.T) {
+    var r = mocks.NewTechnologyTagRepository()
+    r.AssertNotCalled(t, routine)
+    res, err := NewTechnologyTagService(r).Update(ctx, id, nil)
+    assert.ErrorContains(t, err, "nil value for parameter: update")
+    assert.False(t, res)
+  })
+
+  t.Run("got an error", func(t *testing.T) {
+    var unexpected = errors.New("unexpected error")
+    var r = mocks.NewTechnologyTagRepository()
+    r.On(routine, ctx, mock.Anything, mock.Anything).Return(false, unexpected)
+    res, err := NewTechnologyTagService(r).Update(ctx, id, update)
+    assert.False(t, res)
+    assert.ErrorIs(t, err, unexpected)
+  })
+
+  t.Run("max len (64) exceeded", func(t *testing.T) {
+    var r = mocks.NewTechnologyTagRepository()
+    var p = problem.NewValidation([3]string{"name", "max", "64"})
+    r.AssertNotCalled(t, routine)
+    update.Name = strings.Repeat("x", 65)
+    res, err := NewTechnologyTagService(r).Update(ctx, id, update)
+    assert.ErrorAs(t, err, &p)
+    assert.False(t, res)
   })
 }

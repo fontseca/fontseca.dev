@@ -4,6 +4,7 @@ import (
   "context"
   "errors"
   "fontseca/model"
+  "fontseca/problem"
   "fontseca/repository"
   "fontseca/transfer"
   "log/slog"
@@ -57,8 +58,16 @@ func (s *technologyTagService) Exists(ctx context.Context, id string) (err error
 }
 
 func (s *technologyTagService) Update(ctx context.Context, id string, update *transfer.TechnologyTagUpdate) (updated bool, err error) {
-  // TODO implement me
-  panic("implement me")
+  if nil == update {
+    err = errors.New("nil value for parameter: update")
+    slog.Error(err.Error())
+    return false, err
+  }
+  update.Name = strings.TrimSpace(update.Name)
+  if 64 < len(update.Name) {
+    return false, problem.NewValidation([3]string{"name", "max", "64"})
+  }
+  return s.r.Update(ctx, id, update)
 }
 
 func (s *technologyTagService) Remove(ctx context.Context, id string) (err error) {
