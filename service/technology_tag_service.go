@@ -53,8 +53,7 @@ func (s *technologyTagService) Add(ctx context.Context, creation *transfer.Techn
 }
 
 func (s *technologyTagService) Exists(ctx context.Context, id string) (err error) {
-  // TODO implement me
-  panic("implement me")
+  return s.r.Exists(ctx, id)
 }
 
 func (s *technologyTagService) Update(ctx context.Context, id string, update *transfer.TechnologyTagUpdate) (updated bool, err error) {
