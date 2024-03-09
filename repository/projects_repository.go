@@ -29,6 +29,9 @@ type ProjectsRepository interface {
   // Remove deletes an existing project type. If not found, returns a not found error.
   Remove(ctx context.Context, id string) (err error)
 
+  // ContainsTechnologyTag checks whether technologyTagID belongs to projectID.
+  ContainsTechnologyTag(ctx context.Context, projectID, technologyTagID string) (success bool, err error)
+
   // AddTechnologyTag adds an existing technology tag that will belong to the project represented by projectID .
   AddTechnologyTag(ctx context.Context, projectID, technologyTagID string) (added bool, err error)
 
@@ -226,6 +229,22 @@ func (r *projectsRepository) Update(ctx context.Context, id string, update *tran
 func (r *projectsRepository) Remove(ctx context.Context, id string) (err error) {
   // TODO implement me
   panic("implement me")
+}
+
+func (r *projectsRepository) ContainsTechnologyTag(ctx context.Context, projectID, technologyTagID string) (success bool, err error) {
+  var query = `
+  SELECT count (1)
+    FROM "project_technology_tag" ptt
+   WHERE ptt."project_id" = @project_id
+     AND ptt."technology_tag_id" = @technology_tag_id;`
+  var result = r.db.QueryRowContext(ctx, query,
+    sql.Named("project_id", projectID), sql.Named("technology_tag_id", technologyTagID))
+  err = result.Scan(&success)
+  if nil != err {
+    slog.Error(err.Error())
+    return false, err
+  }
+  return success, nil
 }
 
 func (r *projectsRepository) AddTechnologyTag(ctx context.Context, projectID, technologyTagID string) (added bool, err error) {
