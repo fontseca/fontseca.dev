@@ -229,8 +229,34 @@ func (r *projectsRepository) Remove(ctx context.Context, id string) (err error) 
 }
 
 func (r *projectsRepository) AddTechnologyTag(ctx context.Context, projectID, technologyTagID string) (added bool, err error) {
-  // TODO implement me
-  panic("implement me")
+  tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+  if nil != err {
+    slog.Error(err.Error())
+    return false, err
+  }
+  defer tx.Rollback()
+  var query = `
+  INSERT INTO "project_technology_tag" ("project_id",
+                                        "technology_tag_id")
+                                VALUES (@project_id,
+                                        @technology_tag_id);`
+  ctx, cancel := context.WithTimeout(ctx, time.Second)
+  defer cancel()
+  result, err := tx.ExecContext(ctx, query,
+    sql.Named("project_id", projectID),
+    sql.Named("technology_tag_id", technologyTagID))
+  if nil != err {
+    slog.Error(err.Error())
+    return false, err
+  }
+  affected, _ := result.RowsAffected()
+  if 1 != affected {
+    return false, nil
+  }
+  if err = tx.Commit(); nil != err {
+    return false, err
+  }
+  return true, nil
 }
 
 func (r *projectsRepository) RemoveTechnologyTag(ctx context.Context, projectID, technologyID string) (err error) {
