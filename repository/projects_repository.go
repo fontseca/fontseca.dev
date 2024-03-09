@@ -33,7 +33,7 @@ type ProjectsRepository interface {
   AddTechnologyTag(ctx context.Context, projectID, technologyTagID string) (added bool, err error)
 
   // RemoveTechnologyTag removes a technology tag that belongs to the project represented by projectID.
-  RemoveTechnologyTag(ctx context.Context, projectID, technologyID string) (err error)
+  RemoveTechnologyTag(ctx context.Context, projectID, technologyTagID string) (removed bool, err error)
 }
 
 type projectsRepository struct {
@@ -259,7 +259,31 @@ func (r *projectsRepository) AddTechnologyTag(ctx context.Context, projectID, te
   return true, nil
 }
 
-func (r *projectsRepository) RemoveTechnologyTag(ctx context.Context, projectID, technologyID string) (err error) {
-  // TODO implement me
-  panic("implement me")
+func (r *projectsRepository) RemoveTechnologyTag(ctx context.Context, projectID, technologyTagID string) (removed bool, err error) {
+  tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+  if nil != err {
+    slog.Error(err.Error())
+    return false, err
+  }
+  defer tx.Rollback()
+  var query = `
+  DELETE FROM "project_technology_tag"
+        WHERE "project_id" = @project_id
+          AND "technology_tag_id" = @technology_tag_id;`
+  ctx, cancel := context.WithTimeout(ctx, time.Second)
+  defer cancel()
+  result, err := tx.ExecContext(ctx, query,
+    sql.Named("project_id", projectID), sql.Named("technology_tag_id", technologyTagID))
+  if nil != err {
+    slog.Error(err.Error())
+    return false, err
+  }
+  affected, _ := result.RowsAffected()
+  if 1 != affected {
+    return false, nil
+  }
+  if err = tx.Commit(); nil != err {
+    return false, err
+  }
+  return true, nil
 }
