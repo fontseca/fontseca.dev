@@ -6,6 +6,7 @@ import (
   "fontseca/model"
   "fontseca/transfer"
   "log/slog"
+  "strings"
   "time"
 )
 
@@ -42,8 +43,59 @@ func NewProjectsRepository(db *sql.DB) ProjectsRepository {
 }
 
 func (r *projectsRepository) Get(ctx context.Context, archived bool) (projects []*model.Project, err error) {
-  // TODO implement me
-  panic("implement me")
+  var query = `
+     SELECT p.*,
+            coalesce (group_concat (tt.name, ','), '') AS "technology_tags"
+       FROM "project" p
+  LEFT JOIN "project_technology_tag" ptt
+         ON ptt."project_id" = p."id"
+  LEFT JOIN "technology_tag" tt
+         ON tt."id" = ptt."technology_tag_id"
+      WHERE p."archived" IS @archived
+   GROUP BY p."id"
+   ORDER BY p."created_at" DESC;`
+  ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+  defer cancel()
+  rows, err := r.db.QueryContext(ctx, query, sql.Named("archived", archived))
+  if nil != err {
+    slog.Error(err.Error())
+    return nil, err
+  }
+  projects = make([]*model.Project, 0)
+  for rows.Next() {
+    var (
+      project = new(model.Project)
+      tags    string
+    )
+    err = rows.Scan(
+      &project.ID,
+      &project.Name,
+      &project.Homepage,
+      &project.Language,
+      &project.Summary,
+      &project.Content,
+      &project.EstimatedTime,
+      &project.FirstImageURL,
+      &project.SecondImageURL,
+      &project.GitHubURL,
+      &project.CollectionURL,
+      &project.PlaygroundURL,
+      &project.Playable,
+      &project.Archived,
+      &project.Finished,
+      &project.CreatedAt,
+      &project.UpdatedAt,
+      &tags)
+    if nil != err {
+      slog.Error(err.Error())
+      return nil, err
+    }
+    if "" != tags {
+      project.TechnologyTags = strings.Split(tags, ",")
+    }
+    projects = append(projects, project)
+  }
+  return projects, nil
 }
 
 func (r *projectsRepository) GetByID(ctx context.Context, id string) (project *model.Project, err error) {
