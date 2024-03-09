@@ -44,8 +44,7 @@ func NewProjectsRepository(db *sql.DB) ProjectsRepository {
 
 func (r *projectsRepository) Get(ctx context.Context, archived bool) (projects []*model.Project, err error) {
   var query = `
-     SELECT p.*,
-            coalesce (group_concat (tt.name, ','), '') AS "technology_tags"
+     SELECT p.*, group_concat (tt.name)
        FROM "project" p
   LEFT JOIN "project_technology_tag" ptt
          ON ptt."project_id" = p."id"
@@ -65,7 +64,7 @@ func (r *projectsRepository) Get(ctx context.Context, archived bool) (projects [
   for rows.Next() {
     var (
       project = new(model.Project)
-      tags    string
+      tags    *string
     )
     err = rows.Scan(
       &project.ID,
@@ -90,8 +89,8 @@ func (r *projectsRepository) Get(ctx context.Context, archived bool) (projects [
       slog.Error(err.Error())
       return nil, err
     }
-    if "" != tags {
-      project.TechnologyTags = strings.Split(tags, ",")
+    if nil != tags && "" != *tags {
+      project.TechnologyTags = strings.Split(*tags, ",")
     }
     projects = append(projects, project)
   }
