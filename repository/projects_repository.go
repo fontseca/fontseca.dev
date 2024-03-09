@@ -3,7 +3,9 @@ package repository
 import (
   "context"
   "database/sql"
+  "errors"
   "fontseca/model"
+  "fontseca/problem"
   "fontseca/transfer"
   "log/slog"
   "strings"
@@ -44,7 +46,7 @@ func NewProjectsRepository(db *sql.DB) ProjectsRepository {
 
 func (r *projectsRepository) Get(ctx context.Context, archived bool) (projects []*model.Project, err error) {
   var query = `
-     SELECT p.*, group_concat (tt.name)
+     SELECT p.*, group_concat (tt."name")
        FROM "project" p
   LEFT JOIN "project_technology_tag" ptt
          ON ptt."project_id" = p."id"
@@ -98,8 +100,56 @@ func (r *projectsRepository) Get(ctx context.Context, archived bool) (projects [
 }
 
 func (r *projectsRepository) GetByID(ctx context.Context, id string) (project *model.Project, err error) {
-  // TODO implement me
-  panic("implement me")
+  var query = `
+     SELECT p.*, group_concat (tt."name")
+       FROM "project" p
+  LEFT JOIN "project_technology_tag" ptt
+         ON ptt."project_id" = p."id"
+  LEFT JOIN "technology_tag" tt
+         ON tt."id" = ptt."technology_tag_id"
+      WHERE p."archived" IS FALSE
+        AND p."id" = @project_id
+   GROUP BY p."id";`
+  ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+  defer cancel()
+  var result = r.db.QueryRowContext(ctx, query, sql.Named("project_id", id))
+  if nil != err {
+    slog.Error(err.Error())
+    return nil, err
+  }
+  project = new(model.Project)
+  var tags *string
+  err = result.Scan(
+    &project.ID,
+    &project.Name,
+    &project.Homepage,
+    &project.Language,
+    &project.Summary,
+    &project.Content,
+    &project.EstimatedTime,
+    &project.FirstImageURL,
+    &project.SecondImageURL,
+    &project.GitHubURL,
+    &project.CollectionURL,
+    &project.PlaygroundURL,
+    &project.Playable,
+    &project.Archived,
+    &project.Finished,
+    &project.CreatedAt,
+    &project.UpdatedAt,
+    &tags)
+  if nil != err {
+    if errors.Is(err, sql.ErrNoRows) {
+      err = problem.NewNotFound(id, "project")
+    } else {
+      slog.Error(err.Error())
+    }
+    return nil, err
+  }
+  if nil != tags && "" != *tags {
+    project.TechnologyTags = strings.Split(*tags, ",")
+  }
+  return project, nil
 }
 
 func (r *projectsRepository) Add(ctx context.Context, creation *transfer.ProjectCreation) (id string, err error) {
