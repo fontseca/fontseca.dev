@@ -227,8 +227,51 @@ func (r *projectsRepository) Update(ctx context.Context, id string, update *tran
 }
 
 func (r *projectsRepository) Remove(ctx context.Context, id string) (err error) {
-  // TODO implement me
-  panic("implement me")
+  tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+  if nil != err {
+    slog.Error(err.Error())
+    return err
+  }
+  defer tx.Rollback()
+
+  // Remove technology tags associated with the project to remove.
+
+  var query = `
+  DELETE FROM "project_technology_tag"
+        WHERE "project_id" = @project_id`
+  ctx, cancel := context.WithTimeout(ctx, time.Second)
+  defer cancel()
+  _, err = tx.ExecContext(ctx, query, sql.Named("project_id", id))
+  if nil != err {
+    slog.Error(err.Error())
+    return err
+  }
+
+  // Remove the actual project.
+
+  query = `
+  DELETE FROM "project"
+        WHERE "id" = @id;`
+  ctx, cancel = context.WithTimeout(ctx, time.Second)
+  defer cancel()
+
+  result, err := tx.ExecContext(ctx, query, sql.Named("id", id))
+  if nil != err {
+    slog.Error(err.Error())
+    return err
+  }
+
+  affected, _ := result.RowsAffected()
+  if 1 != affected {
+    return problem.NewNotFound(id, "project")
+  }
+
+  if err = tx.Commit(); nil != err {
+    slog.Error(err.Error())
+    return err
+  }
+
+  return nil
 }
 
 func (r *projectsRepository) ContainsTechnologyTag(ctx context.Context, projectID, technologyTagID string) (success bool, err error) {
