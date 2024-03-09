@@ -5,6 +5,8 @@ import (
   "database/sql"
   "fontseca/model"
   "fontseca/transfer"
+  "log/slog"
+  "time"
 )
 
 // ProjectsRepository provides methods for interacting with project data in the database.
@@ -50,8 +52,69 @@ func (r *projectsRepository) GetByID(ctx context.Context, id string) (project *m
 }
 
 func (r *projectsRepository) Add(ctx context.Context, creation *transfer.ProjectCreation) (id string, err error) {
-  // TODO implement me
-  panic("implement me")
+  tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+  if nil != err {
+    slog.Error(err.Error())
+    return "", err
+  }
+  defer tx.Rollback()
+  var query = `
+  INSERT INTO "project" ("name",
+                         "homepage",
+                         "language",
+                         "summary",
+                         "content",
+                         "estimated_time",
+                         "first_image_url",
+                         "second_image_url",
+                         "github_url",
+                         "collection_url",
+                         "playground_url",
+                         "playable",
+                         "archived",
+                         "finished")
+                 VALUES (@name,
+                         nullif (@homepage, ''),
+                         nullif (@language, ''),
+                         nullif (@summary, ''),
+                         nullif (@content, ''),
+                         nullif (@estimated_time, 0),
+                         nullif (@first_image_url, ''),
+                         nullif (@second_image_url, ''),
+                         nullif (@github_url, ''),
+                         nullif (@collection_url, ''),
+                         nullif (@playground_url, ''),
+                         @playable,
+                         @archived,
+                         @finished)
+              RETURNING "id";`
+  ctx, cancel := context.WithTimeout(ctx, time.Second)
+  defer cancel()
+  var row = tx.QueryRowContext(ctx, query,
+    sql.Named("name", creation.Name),
+    sql.Named("homepage", creation.Homepage),
+    sql.Named("language", creation.Language),
+    sql.Named("summary", creation.Summary),
+    sql.Named("content", creation.Content),
+    sql.Named("estimated_time", creation.EstimatedTime),
+    sql.Named("first_image_url", creation.FirstImageURL),
+    sql.Named("second_image_url", creation.SecondImageURL),
+    sql.Named("github_url", creation.GitHubURL),
+    sql.Named("collection_url", creation.CollectionURL),
+    sql.Named("playground_url", creation.PlaygroundURL),
+    sql.Named("playable", creation.Playable),
+    sql.Named("archived", creation.Archived),
+    sql.Named("finished", creation.Finished))
+  err = row.Scan(&id)
+  if nil != err {
+    slog.Error(err.Error())
+    return "", err
+  }
+  if err = tx.Commit(); nil != err {
+    slog.Error(err.Error())
+    return "", err
+  }
+  return id, nil
 }
 
 func (r *projectsRepository) Update(ctx context.Context, id string, update *transfer.ProjectUpdate) (updated bool, err error) {
