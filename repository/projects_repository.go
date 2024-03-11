@@ -221,6 +221,23 @@ func (r *projectsRepository) Add(ctx context.Context, creation *transfer.Project
   return id, nil
 }
 
+func (r *projectsRepository) nothingToUpdate(current *model.Project, update *transfer.ProjectUpdate) bool {
+  return ("" == update.Name || update.Name == current.Name) &&
+    ("" == update.Homepage || update.Homepage == current.Homepage) &&
+    ("" == update.Language || nil != current.Language && update.Language == *current.Language) &&
+    ("" == update.Summary || update.Summary == current.Summary) &&
+    ("" == update.Content || update.Content == current.Content) &&
+    (0 == update.EstimatedTime || nil != current.EstimatedTime && update.EstimatedTime == *current.EstimatedTime) &&
+    ("" == update.FirstImageURL || update.FirstImageURL == current.FirstImageURL) &&
+    ("" == update.SecondImageURL || update.SecondImageURL == current.SecondImageURL) &&
+    ("" == update.GitHubURL || update.GitHubURL == current.GitHubURL) &&
+    ("" == update.CollectionURL || update.CollectionURL == current.CollectionURL) &&
+    ("" == update.PlaygroundURL || update.PlaygroundURL == current.PlaygroundURL) &&
+    (update.Playable == current.Playable) &&
+    (update.Archived == current.Archived) &&
+    (update.Finished == current.Finished)
+}
+
 func (r *projectsRepository) Update(ctx context.Context, id string, update *transfer.ProjectUpdate) (updated bool, err error) {
   // TODO implement me
   panic("implement me")
