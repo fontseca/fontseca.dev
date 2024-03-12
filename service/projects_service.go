@@ -3,6 +3,7 @@ package service
 import (
   "context"
   "fontseca/model"
+  "fontseca/repository"
   "fontseca/transfer"
 )
 
@@ -36,4 +37,60 @@ type ProjectsService interface {
 
   // RemoveTechnologyTag removes a technology tag that belongs to the project represented by projectID.
   RemoveTechnologyTag(ctx context.Context, projectID, technologyTagID string) (removed bool, err error)
+}
+
+type projectsService struct {
+  r repository.ProjectsRepository
+}
+
+func NewProjectsService(repository repository.ProjectsRepository) ProjectsService {
+  return &projectsService{repository}
+}
+
+func (s *projectsService) Get(ctx context.Context, archived ...bool) (projects []*model.Project, err error) {
+  var a = false
+  if 0 != len(archived) && archived[0] {
+    a = true
+  }
+  return s.r.Get(ctx, a)
+}
+
+func (s *projectsService) GetByID(ctx context.Context, id string) (project *model.Project, err error) {
+  // TODO implement me
+  panic("implement me")
+}
+
+func (s *projectsService) Add(ctx context.Context, creation *transfer.ProjectCreation) (id string, err error) {
+  // TODO implement me
+  panic("implement me")
+}
+
+func (s *projectsService) Exists(ctx context.Context, id string) (err error) {
+  // TODO implement me
+  panic("implement me")
+}
+
+func (s *projectsService) Update(ctx context.Context, id string, update *transfer.ProjectUpdate) (updated bool, err error) {
+  // TODO implement me
+  panic("implement me")
+}
+
+func (s *projectsService) Remove(ctx context.Context, id string) (err error) {
+  // TODO implement me
+  panic("implement me")
+}
+
+func (s *projectsService) ContainsTechnologyTag(ctx context.Context, projectID, technologyTagID string) (success bool, err error) {
+  // TODO implement me
+  panic("implement me")
+}
+
+func (s *projectsService) AddTechnologyTag(ctx context.Context, projectID, technologyTagID string) (added bool, err error) {
+  // TODO implement me
+  panic("implement me")
+}
+
+func (s *projectsService) RemoveTechnologyTag(ctx context.Context, projectID, technologyTagID string) (removed bool, err error) {
+  // TODO implement me
+  panic("implement me")
 }
