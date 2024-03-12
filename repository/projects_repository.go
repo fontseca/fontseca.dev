@@ -65,6 +65,7 @@ func (r *projectsRepository) Get(ctx context.Context, archived bool) (projects [
     slog.Error(err.Error())
     return nil, err
   }
+  defer rows.Close()
   projects = make([]*model.Project, 0)
   for rows.Next() {
     var (
@@ -239,8 +240,68 @@ func (r *projectsRepository) nothingToUpdate(current *model.Project, update *tra
 }
 
 func (r *projectsRepository) Update(ctx context.Context, id string, update *transfer.ProjectUpdate) (updated bool, err error) {
-  // TODO implement me
-  panic("implement me")
+  tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+  if nil != err {
+    slog.Error(err.Error())
+    return false, err
+  }
+  defer tx.Rollback()
+  current, err := r.GetByID(ctx, id)
+  if nil != err {
+    slog.Error(err.Error())
+    return false, err
+  }
+  if r.nothingToUpdate(current, update) {
+    return false, nil
+  }
+  var query = `
+  UPDATE "project"
+     SET "name" = coalesce (nullif (@name, ''), @current_name),
+         "homepage" = coalesce (nullif (@homepage, ''), @current_homepage),
+         "language" = coalesce (nullif (@language, ''), @current_language),
+         "summary" = coalesce (nullif (@summary, ''), @current_summary),
+         "content" = coalesce (nullif (@content, ''), @current_content),
+         "estimated_time" = CASE WHEN @estimated_time = @current_estimated_time OR 0 = @estimated_time THEN @current_estimated_time ELSE @estimated_time END,
+         "first_image_url" = coalesce (nullif (@first_image_url, ''), @current_first_image_url),
+         "second_image_url" = coalesce (nullif (@second_image_url, ''), @current_second_image_url),
+         "github_url" = coalesce (nullif (@github_url, ''), @current_github_url),
+         "collection_url" = coalesce (nullif (@collection_url, ''), @current_collection_url),
+         "playground_url" = coalesce (nullif (@playground_url, ''), @current_playground_url),
+         "playable" = @playable,
+         "archived" = @archived,
+         "finished" = @finished,
+         "updated_at" = current_timestamp
+   WHERE "id" = @id;`
+  ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+  defer cancel()
+  result, err := tx.ExecContext(ctx, query, sql.Named("id", id),
+    sql.Named("name", update.Name), sql.Named("current_name", current.Name),
+    sql.Named("homepage", update.Homepage), sql.Named("current_homepage", current.Homepage),
+    sql.Named("language", update.Language), sql.Named("current_language", current.Language),
+    sql.Named("summary", update.Summary), sql.Named("current_summary", current.Summary),
+    sql.Named("content", update.Content), sql.Named("current_content", current.Content),
+    sql.Named("estimated_time", update.EstimatedTime), sql.Named("current_estimated_time", current.EstimatedTime),
+    sql.Named("first_image_url", update.FirstImageURL), sql.Named("current_first_image_url", current.FirstImageURL),
+    sql.Named("second_image_url", update.SecondImageURL), sql.Named("current_second_image_url", current.SecondImageURL),
+    sql.Named("github_url", update.GitHubURL), sql.Named("current_github_url", current.GitHubURL),
+    sql.Named("collection_url", update.CollectionURL), sql.Named("current_collection_url", current.CollectionURL),
+    sql.Named("playground_url", update.PlaygroundURL), sql.Named("current_playground_url", current.PlaygroundURL),
+    sql.Named("playable", update.Playable),
+    sql.Named("archived", update.Archived),
+    sql.Named("finished", update.Finished))
+  if nil != err {
+    slog.Error(err.Error())
+    return false, err
+  }
+  var affected, _ = result.RowsAffected()
+  if 1 != affected {
+    return false, nil
+  }
+  if err = tx.Commit(); nil != err {
+    slog.Error(err.Error())
+    return false, err
+  }
+  return true, nil
 }
 
 func (r *projectsRepository) Remove(ctx context.Context, id string) (err error) {
