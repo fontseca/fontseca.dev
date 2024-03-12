@@ -23,6 +23,10 @@ type ProjectsRepository interface {
   // Add creates a project record with the provided creation data.projectID
   Add(ctx context.Context, creation *transfer.ProjectCreation) (id string, err error)
 
+  // Exists checks whether a project exists in the database.
+  // If it does, it returns nil; otherwise a not found error.
+  Exists(ctx context.Context, id string) (err error)
+
   // Update modifies an existing project record with the provided update data.
   Update(ctx context.Context, id string, update *transfer.ProjectUpdate) (updated bool, err error)
 
@@ -220,6 +224,26 @@ func (r *projectsRepository) Add(ctx context.Context, creation *transfer.Project
     return "", err
   }
   return id, nil
+}
+
+func (r *projectsRepository) Exists(ctx context.Context, id string) (err error) {
+  var query = `
+  SELECT count (1)
+    FROM "project"
+   WHERE "id" = @id;`
+  ctx, cancel := context.WithTimeout(ctx, time.Second)
+  defer cancel()
+  var row = r.db.QueryRowContext(ctx, query, sql.Named("id", id))
+  var exists bool
+  err = row.Scan(&exists)
+  if nil != err {
+    slog.Error(err.Error())
+    return err
+  }
+  if !exists {
+    return problem.NewNotFound(id, "project")
+  }
+  return nil
 }
 
 func (r *projectsRepository) nothingToUpdate(current *model.Project, update *transfer.ProjectUpdate) bool {
