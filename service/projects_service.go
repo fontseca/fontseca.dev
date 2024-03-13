@@ -56,8 +56,10 @@ func (s *projectsService) Get(ctx context.Context, archived ...bool) (projects [
 }
 
 func (s *projectsService) GetByID(ctx context.Context, id string) (project *model.Project, err error) {
-  // TODO implement me
-  panic("implement me")
+  if err = validateUUID(&id); err != nil {
+    return nil, err
+  }
+  return s.r.GetByID(ctx, id)
 }
 
 func (s *projectsService) Add(ctx context.Context, creation *transfer.ProjectCreation) (id string, err error) {
