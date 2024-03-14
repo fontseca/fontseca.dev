@@ -2,9 +2,13 @@ package service
 
 import (
   "context"
+  "errors"
   "fontseca/model"
+  "fontseca/problem"
   "fontseca/repository"
   "fontseca/transfer"
+  "log/slog"
+  "strings"
 )
 
 // ProjectsService provides methods for interacting with projects
@@ -63,36 +67,130 @@ func (s *projectsService) GetByID(ctx context.Context, id string) (project *mode
 }
 
 func (s *projectsService) Add(ctx context.Context, creation *transfer.ProjectCreation) (id string, err error) {
-  // TODO implement me
-  panic("implement me")
+  if nil == creation {
+    err = errors.New("nil value for parameter: creation")
+    slog.Error(err.Error())
+    return "", nil
+  }
+  creation.Name = strings.TrimSpace(creation.Name)
+  creation.Homepage = strings.TrimSpace(creation.Homepage)
+  creation.Language = strings.TrimSpace(creation.Language)
+  creation.Summary = strings.TrimSpace(creation.Summary)
+  creation.Content = strings.TrimSpace(creation.Content)
+  creation.FirstImageURL = strings.TrimSpace(creation.FirstImageURL)
+  creation.SecondImageURL = strings.TrimSpace(creation.SecondImageURL)
+  creation.GitHubURL = strings.TrimSpace(creation.GitHubURL)
+  creation.CollectionURL = strings.TrimSpace(creation.CollectionURL)
+  creation.PlaygroundURL = strings.TrimSpace(creation.PlaygroundURL)
+  switch {
+  case 0 != len(creation.Name) && 36 < len(creation.Name):
+    return "", problem.NewValidation([3]string{"name", "max", "36"})
+  case 0 != len(creation.Homepage) && 2048 < len(creation.Homepage):
+    return "", problem.NewValidation([3]string{"homepage", "max", "2048"})
+  case 0 != len(creation.Language) && 64 < len(creation.Language):
+    return "", problem.NewValidation([3]string{"language", "max", "64"})
+  case 0 != len(creation.Summary) && 1024 < len(creation.Summary):
+    return "", problem.NewValidation([3]string{"summary", "max", "1024"})
+  case 0 != len(creation.Content) && 3145728 < len(creation.Content):
+    return "", problem.NewValidation([3]string{"content", "max", "3145728"})
+  case 0 != len(creation.FirstImageURL) && 2048 < len(creation.FirstImageURL):
+    return "", problem.NewValidation([3]string{"first_image_url", "max", "2048"})
+  case 0 != len(creation.SecondImageURL) && 2048 < len(creation.SecondImageURL):
+    return "", problem.NewValidation([3]string{"second_image_url", "max", "2048"})
+  case 0 != len(creation.GitHubURL) && 2048 < len(creation.GitHubURL):
+    return "", problem.NewValidation([3]string{"github_url", "max", "2048"})
+  case 0 != len(creation.CollectionURL) && 2048 < len(creation.CollectionURL):
+    return "", problem.NewValidation([3]string{"collection_url", "max", "2048"})
+  case 0 != len(creation.PlaygroundURL) && 2048 < len(creation.PlaygroundURL):
+    return "", problem.NewValidation([3]string{"playground_url", "max", "2048"})
+  }
+  return s.r.Add(ctx, creation)
 }
 
 func (s *projectsService) Exists(ctx context.Context, id string) (err error) {
-  // TODO implement me
-  panic("implement me")
+  if err = validateUUID(&id); err != nil {
+    return err
+  }
+  return s.r.Exists(ctx, id)
 }
 
 func (s *projectsService) Update(ctx context.Context, id string, update *transfer.ProjectUpdate) (updated bool, err error) {
-  // TODO implement me
-  panic("implement me")
+  if nil == update {
+    err = errors.New("nil value for parameter: update")
+    slog.Error(err.Error())
+    return false, nil
+  }
+  if err = validateUUID(&id); err != nil {
+    return false, err
+  }
+  update.Name = strings.TrimSpace(update.Name)
+  update.Homepage = strings.TrimSpace(update.Homepage)
+  update.Language = strings.TrimSpace(update.Language)
+  update.Summary = strings.TrimSpace(update.Summary)
+  update.Content = strings.TrimSpace(update.Content)
+  update.FirstImageURL = strings.TrimSpace(update.FirstImageURL)
+  update.SecondImageURL = strings.TrimSpace(update.SecondImageURL)
+  update.GitHubURL = strings.TrimSpace(update.GitHubURL)
+  update.CollectionURL = strings.TrimSpace(update.CollectionURL)
+  update.PlaygroundURL = strings.TrimSpace(update.PlaygroundURL)
+  switch {
+  case 0 != len(update.Name) && 36 < len(update.Name):
+    return false, problem.NewValidation([3]string{"name", "max", "36"})
+  case 0 != len(update.Homepage) && 2048 < len(update.Homepage):
+    return false, problem.NewValidation([3]string{"homepage", "max", "2048"})
+  case 0 != len(update.Language) && 64 < len(update.Language):
+    return false, problem.NewValidation([3]string{"language", "max", "64"})
+  case 0 != len(update.Summary) && 1024 < len(update.Summary):
+    return false, problem.NewValidation([3]string{"summary", "max", "1024"})
+  case 0 != len(update.Content) && 3145728 < len(update.Content):
+    return false, problem.NewValidation([3]string{"content", "max", "3145728"})
+  case 0 != len(update.FirstImageURL) && 2048 < len(update.FirstImageURL):
+    return false, problem.NewValidation([3]string{"first_image_url", "max", "2048"})
+  case 0 != len(update.SecondImageURL) && 2048 < len(update.SecondImageURL):
+    return false, problem.NewValidation([3]string{"second_image_url", "max", "2048"})
+  case 0 != len(update.GitHubURL) && 2048 < len(update.GitHubURL):
+    return false, problem.NewValidation([3]string{"github_url", "max", "2048"})
+  case 0 != len(update.CollectionURL) && 2048 < len(update.CollectionURL):
+    return false, problem.NewValidation([3]string{"collection_url", "max", "2048"})
+  case 0 != len(update.PlaygroundURL) && 2048 < len(update.PlaygroundURL):
+    return false, problem.NewValidation([3]string{"playground_url", "max", "2048"})
+  }
+  return s.r.Update(ctx, id, update)
 }
 
 func (s *projectsService) Remove(ctx context.Context, id string) (err error) {
-  // TODO implement me
-  panic("implement me")
+  if err = validateUUID(&id); err != nil {
+    return err
+  }
+  return s.r.Remove(ctx, id)
 }
 
 func (s *projectsService) ContainsTechnologyTag(ctx context.Context, projectID, technologyTagID string) (success bool, err error) {
-  // TODO implement me
-  panic("implement me")
+  if err = validateUUID(&projectID); err != nil {
+    return false, err
+  }
+  if err = validateUUID(&technologyTagID); err != nil {
+    return false, err
+  }
+  return s.r.ContainsTechnologyTag(ctx, projectID, technologyTagID)
 }
 
 func (s *projectsService) AddTechnologyTag(ctx context.Context, projectID, technologyTagID string) (added bool, err error) {
-  // TODO implement me
-  panic("implement me")
+  if err = validateUUID(&projectID); err != nil {
+    return false, err
+  }
+  if err = validateUUID(&technologyTagID); err != nil {
+    return false, err
+  }
+  return s.r.AddTechnologyTag(ctx, projectID, technologyTagID)
 }
 
 func (s *projectsService) RemoveTechnologyTag(ctx context.Context, projectID, technologyTagID string) (removed bool, err error) {
-  // TODO implement me
-  panic("implement me")
+  if err = validateUUID(&projectID); err != nil {
+    return false, err
+  }
+  if err = validateUUID(&technologyTagID); err != nil {
+    return false, err
+  }
+  return s.r.RemoveTechnologyTag(ctx, projectID, technologyTagID)
 }
