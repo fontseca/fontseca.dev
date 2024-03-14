@@ -70,7 +70,7 @@ func (s *projectsService) Add(ctx context.Context, creation *transfer.ProjectCre
   if nil == creation {
     err = errors.New("nil value for parameter: creation")
     slog.Error(err.Error())
-    return "", nil
+    return "", err
   }
   creation.Name = strings.TrimSpace(creation.Name)
   creation.Homepage = strings.TrimSpace(creation.Homepage)
@@ -118,7 +118,7 @@ func (s *projectsService) Update(ctx context.Context, id string, update *transfe
   if nil == update {
     err = errors.New("nil value for parameter: update")
     slog.Error(err.Error())
-    return false, nil
+    return false, err
   }
   if err = validateUUID(&id); err != nil {
     return false, err
