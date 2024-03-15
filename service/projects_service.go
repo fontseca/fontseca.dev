@@ -8,6 +8,7 @@ import (
   "fontseca/repository"
   "fontseca/transfer"
   "log/slog"
+  "net/http"
   "strings"
 )
 
@@ -205,6 +206,19 @@ func (s *projectsService) AddTechnologyTag(ctx context.Context, projectID, techn
   }
   if err = validateUUID(&technologyTagID); err != nil {
     return false, err
+  }
+  conflict, err := s.ContainsTechnologyTag(ctx, projectID, technologyTagID)
+  if nil != err {
+    return false, err
+  }
+  if conflict {
+    var p problem.Problem
+    p.Status(http.StatusConflict)
+    p.Title("Duplicate technology tag.")
+    p.Detail("The specified technology tag is already associated with this project. Try using a different one.")
+    p.With("project_id", projectID)
+    p.With("technology_tag_id", projectID)
+    return false, &p
   }
   return s.r.AddTechnologyTag(ctx, projectID, technologyTagID)
 }
