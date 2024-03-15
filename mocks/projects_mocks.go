@@ -48,6 +48,11 @@ func (o *ProjectsRepository) Update(ctx context.Context, id string, update *tran
   return args.Bool(0), args.Error(1)
 }
 
+func (o *ProjectsRepository) Unarchive(ctx context.Context, id string) (unarchived bool, err error) {
+  var args = o.Called(ctx, id)
+  return args.Bool(0), args.Error(1)
+}
+
 func (o *ProjectsRepository) Remove(ctx context.Context, id string) (err error) {
   var args = o.Called(ctx, id)
   return args.Error(0)
@@ -106,6 +111,11 @@ func (o *ProjectsService) Exists(ctx context.Context, id string) (err error) {
 
 func (o *ProjectsService) Update(ctx context.Context, id string, update *transfer.ProjectUpdate) (updated bool, err error) {
   var args = o.Called(ctx, id, update)
+  return args.Bool(0), args.Error(1)
+}
+
+func (o *ProjectsService) Unarchive(ctx context.Context, id string) (unarchived bool, err error) {
+  var args = o.Called(ctx, id)
   return args.Bool(0), args.Error(1)
 }
 

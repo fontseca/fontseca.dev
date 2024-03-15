@@ -30,6 +30,9 @@ type ProjectsService interface {
   // Update modifies an existing project record with the provided update data.
   Update(ctx context.Context, id string, update *transfer.ProjectUpdate) (updated bool, err error)
 
+  // Unarchive makes a project not archived so that it can be normally listed.
+  Unarchive(ctx context.Context, id string) (unarchived bool, err error)
+
   // Remove deletes an existing project. If not found, returns a not found error.
   Remove(ctx context.Context, id string) (err error)
 
@@ -156,6 +159,13 @@ func (s *projectsService) Update(ctx context.Context, id string, update *transfe
     return false, problem.NewValidation([3]string{"playground_url", "max", "2048"})
   }
   return s.r.Update(ctx, id, update)
+}
+
+func (s *projectsService) Unarchive(ctx context.Context, id string) (unarchived bool, err error) {
+  if err = validateUUID(&id); err != nil {
+    return false, err
+  }
+  return s.r.Unarchive(ctx, id)
 }
 
 func (s *projectsService) Remove(ctx context.Context, id string) (err error) {

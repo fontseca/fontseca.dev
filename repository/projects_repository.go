@@ -30,6 +30,9 @@ type ProjectsRepository interface {
   // Update modifies an existing project record with the provided update data.
   Update(ctx context.Context, id string, update *transfer.ProjectUpdate) (updated bool, err error)
 
+  // Unarchive makes a project not archived so that it can be normally listed.
+  Unarchive(ctx context.Context, id string) (unarchived bool, err error)
+
   // Remove deletes an existing project type. If not found, returns a not found error.
   Remove(ctx context.Context, id string) (err error)
 
@@ -330,6 +333,10 @@ func (r *projectsRepository) doUpdate(ctx context.Context, id string, update *tr
 
 func (r *projectsRepository) Update(ctx context.Context, id string, update *transfer.ProjectUpdate) (updated bool, err error) {
   return r.doUpdate(ctx, id, update, false)
+}
+
+func (r *projectsRepository) Unarchive(ctx context.Context, id string) (updated bool, err error) {
+  return r.doUpdate(ctx, id, &transfer.ProjectUpdate{Archived: false}, true)
 }
 
 func (r *projectsRepository) Remove(ctx context.Context, id string) (err error) {
