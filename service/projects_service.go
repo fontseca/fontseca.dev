@@ -84,7 +84,6 @@ func (s *projectsService) Add(ctx context.Context, creation *transfer.ProjectCre
   creation.SecondImageURL = strings.TrimSpace(creation.SecondImageURL)
   creation.GitHubURL = strings.TrimSpace(creation.GitHubURL)
   creation.CollectionURL = strings.TrimSpace(creation.CollectionURL)
-  creation.PlaygroundURL = strings.TrimSpace(creation.PlaygroundURL)
   switch {
   case 0 != len(creation.Name) && 36 < len(creation.Name):
     return "", problem.NewValidation([3]string{"name", "max", "36"})
@@ -104,8 +103,14 @@ func (s *projectsService) Add(ctx context.Context, creation *transfer.ProjectCre
     return "", problem.NewValidation([3]string{"github_url", "max", "2048"})
   case 0 != len(creation.CollectionURL) && 2048 < len(creation.CollectionURL):
     return "", problem.NewValidation([3]string{"collection_url", "max", "2048"})
-  case 0 != len(creation.PlaygroundURL) && 2048 < len(creation.PlaygroundURL):
-    return "", problem.NewValidation([3]string{"playground_url", "max", "2048"})
+  }
+  err = sanitizeURL(
+    &creation.FirstImageURL,
+    &creation.SecondImageURL,
+    &creation.GitHubURL,
+    &creation.CollectionURL)
+  if nil != err {
+    return "", err
   }
   return s.r.Add(ctx, creation)
 }
@@ -157,6 +162,15 @@ func (s *projectsService) Update(ctx context.Context, id string, update *transfe
     return false, problem.NewValidation([3]string{"collection_url", "max", "2048"})
   case 0 != len(update.PlaygroundURL) && 2048 < len(update.PlaygroundURL):
     return false, problem.NewValidation([3]string{"playground_url", "max", "2048"})
+  }
+  err = sanitizeURL(
+    &update.FirstImageURL,
+    &update.SecondImageURL,
+    &update.GitHubURL,
+    &update.CollectionURL,
+    &update.PlaygroundURL)
+  if nil != err {
+    return false, err
   }
   return s.r.Update(ctx, id, update)
 }
