@@ -250,19 +250,18 @@ func (r *projectsRepository) nothingToUpdate(current *model.Project, update *tra
     ("" == update.GitHubURL || update.GitHubURL == current.GitHubURL) &&
     ("" == update.CollectionURL || update.CollectionURL == current.CollectionURL) &&
     ("" == update.PlaygroundURL || update.PlaygroundURL == current.PlaygroundURL) &&
-    (update.Playable == current.Playable) &&
     (update.Archived == current.Archived) &&
     (update.Finished == current.Finished)
 }
 
-func (r *projectsRepository) Update(ctx context.Context, id string, update *transfer.ProjectUpdate) (updated bool, err error) {
+func (r *projectsRepository) doUpdate(ctx context.Context, id string, update *transfer.ProjectUpdate, ignoreArchived bool) (updated bool, err error) {
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
   if nil != err {
     slog.Error(err.Error())
     return false, err
   }
   defer tx.Rollback()
-  current, err := r.GetByID(ctx, id)
+  current, err := r.doGetByID(ctx, id, ignoreArchived)
   if nil != err {
     return false, err
   }
@@ -287,6 +286,16 @@ func (r *projectsRepository) Update(ctx context.Context, id string, update *tran
          "finished" = @finished,
          "updated_at" = current_timestamp
    WHERE "id" = @id;`
+  var playable = current.Playable
+  if "" != update.PlaygroundURL {
+    var wantsToDefaultPlaygroundURL = "about:blank" == update.PlaygroundURL
+    var notSamePlaygroundURLs = update.PlaygroundURL != current.PlaygroundURL
+    if playable && wantsToDefaultPlaygroundURL && notSamePlaygroundURLs {
+      playable = false
+    } else if !playable && notSamePlaygroundURLs {
+      playable = true
+    }
+  }
   ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
   defer cancel()
   result, err := tx.ExecContext(ctx, query, sql.Named("id", id),
@@ -301,7 +310,7 @@ func (r *projectsRepository) Update(ctx context.Context, id string, update *tran
     sql.Named("github_url", update.GitHubURL), sql.Named("current_github_url", current.GitHubURL),
     sql.Named("collection_url", update.CollectionURL), sql.Named("current_collection_url", current.CollectionURL),
     sql.Named("playground_url", update.PlaygroundURL), sql.Named("current_playground_url", current.PlaygroundURL),
-    sql.Named("playable", update.Playable),
+    sql.Named("playable", playable),
     sql.Named("archived", update.Archived),
     sql.Named("finished", update.Finished))
   if nil != err {
@@ -317,6 +326,10 @@ func (r *projectsRepository) Update(ctx context.Context, id string, update *tran
     return false, err
   }
   return true, nil
+}
+
+func (r *projectsRepository) Update(ctx context.Context, id string, update *transfer.ProjectUpdate) (updated bool, err error) {
+  return r.doUpdate(ctx, id, update, false)
 }
 
 func (r *projectsRepository) Remove(ctx context.Context, id string) (err error) {
