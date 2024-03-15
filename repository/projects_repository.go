@@ -181,11 +181,7 @@ func (r *projectsRepository) Add(ctx context.Context, creation *transfer.Project
                          "first_image_url",
                          "second_image_url",
                          "github_url",
-                         "collection_url",
-                         "playground_url",
-                         "playable",
-                         "archived",
-                         "finished")
+                         "collection_url")
                  VALUES (@name,
                          nullif (@homepage, ''),
                          nullif (@language, ''),
@@ -195,11 +191,7 @@ func (r *projectsRepository) Add(ctx context.Context, creation *transfer.Project
                          nullif (@first_image_url, ''),
                          nullif (@second_image_url, ''),
                          nullif (@github_url, ''),
-                         nullif (@collection_url, ''),
-                         nullif (@playground_url, ''),
-                         @playable,
-                         @archived,
-                         @finished)
+                         nullif (@collection_url, ''))
               RETURNING "id";`
   ctx, cancel := context.WithTimeout(ctx, time.Second)
   defer cancel()
@@ -213,11 +205,7 @@ func (r *projectsRepository) Add(ctx context.Context, creation *transfer.Project
     sql.Named("first_image_url", creation.FirstImageURL),
     sql.Named("second_image_url", creation.SecondImageURL),
     sql.Named("github_url", creation.GitHubURL),
-    sql.Named("collection_url", creation.CollectionURL),
-    sql.Named("playground_url", creation.PlaygroundURL),
-    sql.Named("playable", creation.Playable),
-    sql.Named("archived", creation.Archived),
-    sql.Named("finished", creation.Finished))
+    sql.Named("collection_url", creation.CollectionURL))
   err = row.Scan(&id)
   if nil != err {
     slog.Error(err.Error())
