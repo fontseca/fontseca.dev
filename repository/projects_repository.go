@@ -107,7 +107,7 @@ func (r *projectsRepository) Get(ctx context.Context, archived bool) (projects [
   return projects, nil
 }
 
-func (r *projectsRepository) GetByID(ctx context.Context, id string) (project *model.Project, err error) {
+func (r *projectsRepository) doGetByID(ctx context.Context, id string, ignoreArchived bool) (project *model.Project, err error) {
   var query = `
      SELECT p.*, group_concat (tt."name")
        FROM "project" p
@@ -115,12 +115,12 @@ func (r *projectsRepository) GetByID(ctx context.Context, id string) (project *m
          ON ptt."project_id" = p."id"
   LEFT JOIN "technology_tag" tt
          ON tt."id" = ptt."technology_tag_id"
-      WHERE p."archived" IS FALSE
+      WHERE p."archived" IS @archived
         AND p."id" = @project_id
    GROUP BY p."id";`
   ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
   defer cancel()
-  var result = r.db.QueryRowContext(ctx, query, sql.Named("project_id", id))
+  var result = r.db.QueryRowContext(ctx, query, sql.Named("project_id", id), sql.Named("archived", ignoreArchived))
   if nil != err {
     slog.Error(err.Error())
     return nil, err
@@ -158,6 +158,10 @@ func (r *projectsRepository) GetByID(ctx context.Context, id string) (project *m
     project.TechnologyTags = strings.Split(*tags, ",")
   }
   return project, nil
+}
+
+func (r *projectsRepository) GetByID(ctx context.Context, id string) (project *model.Project, err error) {
+  return r.doGetByID(ctx, id, false)
 }
 
 func (r *projectsRepository) Add(ctx context.Context, creation *transfer.ProjectCreation) (id string, err error) {
