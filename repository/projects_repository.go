@@ -272,7 +272,6 @@ func (r *projectsRepository) Update(ctx context.Context, id string, update *tran
   defer tx.Rollback()
   current, err := r.GetByID(ctx, id)
   if nil != err {
-    slog.Error(err.Error())
     return false, err
   }
   if r.nothingToUpdate(current, update) {
