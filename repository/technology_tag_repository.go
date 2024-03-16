@@ -38,7 +38,10 @@ func NewTechnologyTagRepository(db *sql.DB) TechnologyTagRepository {
 }
 
 func (r *technologyTagRepository) Get(ctx context.Context) (technologies []*model.TechnologyTag, err error) {
-  var query = `SELECT * FROM "technology_tag";`
+  var query = `
+  SELECT *
+    FROM "technology_tag"
+ORDER BY "technology_tag"."created_at" DESC;`
   ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
   defer cancel()
   rows, err := r.db.QueryContext(ctx, query)
