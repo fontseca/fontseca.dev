@@ -189,7 +189,7 @@ func TestExperienceHandler_Set(t *testing.T) {
     var recorder = httptest.NewRecorder()
     engine.ServeHTTP(recorder, request)
     assert.Equal(t, http.StatusBadRequest, recorder.Code)
-    assert.Contains(t, recorder.Body.String(), "The 'id' parameter is missing or not provided in the form data.")
+    assert.Contains(t, recorder.Body.String(), "The 'id' parameter is required but was not found in the request form data.")
   })
 
   request.PostForm.Add("id", id)
