@@ -128,17 +128,19 @@ func (r *technologyTagRepository) Update(ctx context.Context, id string, update 
     slog.Error(err.Error())
     return false, err
   }
+  if update.Name == currentName {
+    return false, nil
+  }
   query = `
   UPDATE "technology_tag"
-     SET "name" = coalesce (nullif (@new_name, ''), @current_name),
+     SET "name" = @name,
          "updated_at" = current_timestamp
    WHERE "id" = @id;`
   ctx, cancel = context.WithTimeout(ctx, time.Second)
   defer cancel()
   result, err := tx.ExecContext(ctx, query,
     sql.Named("id", id),
-    sql.Named("new_name", update.Name),
-    sql.Named("current_name", currentName))
+    sql.Named("name", update.Name))
   if nil != err {
     slog.Error(err.Error())
     return false, err
