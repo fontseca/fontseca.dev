@@ -211,3 +211,16 @@ func (h *ProjectsHandler) SetCollectionURL(c *gin.Context) {
   }
   h.setURL(c, id, &transfer.ProjectUpdate{CollectionURL: url})
 }
+
+func (h *ProjectsHandler) Remove(c *gin.Context) {
+  var id, success = c.GetPostForm("id")
+  if !success {
+    problem.NewMissingParameter("id").Emit(c.Writer)
+    return
+  }
+  err := h.s.Remove(c, id)
+  if check(err, c.Writer) {
+    return
+  }
+  c.Status(http.StatusNoContent)
+}
