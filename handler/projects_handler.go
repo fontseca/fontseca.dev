@@ -23,3 +23,11 @@ func (h *ProjectsHandler) Get(c *gin.Context) {
   }
   c.JSON(http.StatusOK, projects)
 }
+
+func (h *ProjectsHandler) GetArchived(c *gin.Context) {
+  var projects, err = h.s.Get(c, true)
+  if check(err, c.Writer) {
+    return
+  }
+  c.JSON(http.StatusOK, projects)
+}
