@@ -1,6 +1,7 @@
 package handler
 
 import (
+  "fontseca/problem"
   "fontseca/service"
   "fontseca/transfer"
   "github.com/gin-gonic/gin"
@@ -55,4 +56,28 @@ func (h *ProjectsHandler) Add(c *gin.Context) {
     return
   }
   c.JSON(http.StatusOK, gin.H{"inserted_id": insertedID})
+}
+
+func (h *ProjectsHandler) Set(c *gin.Context) {
+  var id, success = c.GetPostForm("id")
+  if !success {
+    problem.NewMissingParameter("id").Emit(c.Writer)
+    return
+  }
+  var update transfer.ProjectUpdate
+  if err := bindPostForm(c, &update); check(err, c.Writer) {
+    return
+  }
+  if err := validateStruct(&update); check(err, c.Writer) {
+    return
+  }
+  var updated, err = h.s.Update(c, id, &update)
+  if check(err, c.Writer) {
+    return
+  }
+  if updated {
+    c.Status(http.StatusNoContent)
+  } else {
+    c.Redirect(http.StatusSeeOther, "/me.projects.info?id="+id)
+  }
 }
