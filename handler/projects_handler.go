@@ -224,3 +224,25 @@ func (h *ProjectsHandler) Remove(c *gin.Context) {
   }
   c.Status(http.StatusNoContent)
 }
+
+func (h *ProjectsHandler) AddTechnologyTag(c *gin.Context) {
+  var projectID, success = c.GetPostForm("id")
+  if !success {
+    problem.NewMissingParameter("id").Emit(c.Writer)
+    return
+  }
+  technologyTagID, success := c.GetPostForm("technology_id")
+  if !success {
+    problem.NewMissingParameter("technology_id").Emit(c.Writer)
+    return
+  }
+  var added, err = h.s.AddTechnologyTag(c, projectID, technologyTagID)
+  if check(err, c.Writer) {
+    return
+  }
+  if added {
+    c.Status(http.StatusNoContent)
+  } else {
+    c.Status(http.StatusConflict)
+  }
+}
