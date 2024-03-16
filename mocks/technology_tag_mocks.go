@@ -62,7 +62,7 @@ func (o *TechnologyTagService) Get(ctx context.Context) (technologies []*model.T
 }
 
 func (o *TechnologyTagService) Add(ctx context.Context, creation *transfer.TechnologyTagCreation) (id string, err error) {
-  var args = o.Called(ctx, id, creation)
+  var args = o.Called(ctx, creation)
   return args.String(0), args.Error(1)
 }
 
