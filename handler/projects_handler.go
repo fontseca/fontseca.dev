@@ -31,3 +31,12 @@ func (h *ProjectsHandler) GetArchived(c *gin.Context) {
   }
   c.JSON(http.StatusOK, projects)
 }
+
+func (h *ProjectsHandler) GetByID(c *gin.Context) {
+  var id = c.Query("id")
+  var project, err = h.s.GetByID(c, id)
+  if check(err, c.Writer) {
+    return
+  }
+  c.JSON(http.StatusOK, project)
+}
