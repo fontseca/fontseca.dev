@@ -57,6 +57,10 @@ func (s *technologyTagService) Add(ctx context.Context, creation *transfer.Techn
 }
 
 func (s *technologyTagService) Exists(ctx context.Context, id string) (err error) {
+  err = validateUUID(&id)
+  if nil != err {
+    return err
+  }
   return s.r.Exists(ctx, id)
 }
 
@@ -64,6 +68,10 @@ func (s *technologyTagService) Update(ctx context.Context, id string, update *tr
   if nil == update {
     err = errors.New("nil value for parameter: update")
     slog.Error(err.Error())
+    return false, err
+  }
+  err = validateUUID(&id)
+  if nil != err {
     return false, err
   }
   update.Name = strings.TrimSpace(update.Name)
@@ -74,5 +82,9 @@ func (s *technologyTagService) Update(ctx context.Context, id string, update *tr
 }
 
 func (s *technologyTagService) Remove(ctx context.Context, id string) (err error) {
+  err = validateUUID(&id)
+  if nil != err {
+    return err
+  }
   return s.r.Remove(ctx, id)
 }
