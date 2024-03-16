@@ -511,3 +511,363 @@ func TestProjectsHandler_Unfinish(t *testing.T) {
     assert.Contains(t, recorder.Body.String(), "An unexpected error occurred while processing your request")
   })
 }
+
+func TestProjectsHandler_SetPlaygroundURL(t *testing.T) {
+  const routine = "Update"
+  const method = http.MethodPost
+  const target = "/me.projects.setPlaygroundURL"
+  var update = &transfer.ProjectUpdate{PlaygroundURL: "https://PlaygroundURL.com"}
+  var request = httptest.NewRequest(method, target, nil)
+  _ = request.ParseForm()
+
+  t.Run("missing 'id' parameter", func(t *testing.T) {
+    var s = mocks.NewProjectsService()
+    s.AssertNotCalled(t, routine)
+    var engine = gin.Default()
+    engine.POST(target, NewProjectsHandler(s).SetPlaygroundURL)
+    var recorder = httptest.NewRecorder()
+    engine.ServeHTTP(recorder, request)
+    assert.Equal(t, http.StatusBadRequest, recorder.Code)
+    assert.Contains(t, recorder.Body.String(), "The 'id' parameter is required but was not found in the request form data.")
+  })
+
+  var id = uuid.New().String()
+  request.PostForm.Add("id", id)
+  request.PostForm.Add("url", update.PlaygroundURL)
+
+  t.Run("success", func(t *testing.T) {
+    var s = mocks.NewProjectsService()
+    s.On(routine, mock.AnythingOfType("*gin.Context"), id, update).Return(true, nil)
+    var engine = gin.Default()
+    engine.POST(target, NewProjectsHandler(s).SetPlaygroundURL)
+    var recorder = httptest.NewRecorder()
+    engine.ServeHTTP(recorder, request)
+    assert.Equal(t, http.StatusNoContent, recorder.Code)
+    assert.Empty(t, recorder.Body.String())
+  })
+
+  t.Run("expected problem detail", func(t *testing.T) {
+    var expected = &problem.Problem{}
+    expected.Status(http.StatusGone)
+    expected.Detail("Expected problem detail.")
+    var s = mocks.NewProjectsService()
+    s.On(routine, mock.AnythingOfType("*gin.Context"), mock.Anything, mock.Anything).Return(false, expected)
+    var engine = gin.Default()
+    engine.POST(target, NewProjectsHandler(s).SetPlaygroundURL)
+    var recorder = httptest.NewRecorder()
+    engine.ServeHTTP(recorder, request)
+    assert.Equal(t, http.StatusGone, recorder.Code)
+    assert.Contains(t, recorder.Body.String(), "Expected problem detail.")
+  })
+
+  t.Run("failed update without error: conflicts with current resource state", func(t *testing.T) {
+    var s = mocks.NewProjectsService()
+    s.On(routine, mock.AnythingOfType("*gin.Context"), id, update).Return(false, nil)
+    var engine = gin.Default()
+    engine.POST(target, NewProjectsHandler(s).SetPlaygroundURL)
+    var recorder = httptest.NewRecorder()
+    engine.ServeHTTP(recorder, request)
+    assert.Equal(t, http.StatusConflict, recorder.Code)
+    assert.Empty(t, recorder.Body.String())
+  })
+
+  t.Run("unexpected error", func(t *testing.T) {
+    var unexpected = errors.New("unexpected error")
+    var s = mocks.NewProjectsService()
+    s.On(routine, mock.AnythingOfType("*gin.Context"), mock.Anything, mock.Anything).Return(false, unexpected)
+    var engine = gin.Default()
+    engine.POST(target, NewProjectsHandler(s).SetPlaygroundURL)
+    var recorder = httptest.NewRecorder()
+    engine.ServeHTTP(recorder, request)
+    assert.Equal(t, http.StatusInternalServerError, recorder.Code)
+    assert.Contains(t, recorder.Body.String(), "An unexpected error occurred while processing your request")
+  })
+}
+
+func TestProjectsHandler_SetFirstImageURL(t *testing.T) {
+  const routine = "Update"
+  const method = http.MethodPost
+  const target = "/me.projects.setFirstImageURL"
+  var update = &transfer.ProjectUpdate{FirstImageURL: "https://FirstImageURL.com"}
+  var request = httptest.NewRequest(method, target, nil)
+  _ = request.ParseForm()
+
+  t.Run("missing 'id' parameter", func(t *testing.T) {
+    var s = mocks.NewProjectsService()
+    s.AssertNotCalled(t, routine)
+    var engine = gin.Default()
+    engine.POST(target, NewProjectsHandler(s).SetFirstImageURL)
+    var recorder = httptest.NewRecorder()
+    engine.ServeHTTP(recorder, request)
+    assert.Equal(t, http.StatusBadRequest, recorder.Code)
+    assert.Contains(t, recorder.Body.String(), "The 'id' parameter is required but was not found in the request form data.")
+  })
+
+  var id = uuid.New().String()
+  request.PostForm.Add("id", id)
+  request.PostForm.Add("url", update.FirstImageURL)
+
+  t.Run("success", func(t *testing.T) {
+    var s = mocks.NewProjectsService()
+    s.On(routine, mock.AnythingOfType("*gin.Context"), id, update).Return(true, nil)
+    var engine = gin.Default()
+    engine.POST(target, NewProjectsHandler(s).SetFirstImageURL)
+    var recorder = httptest.NewRecorder()
+    engine.ServeHTTP(recorder, request)
+    assert.Equal(t, http.StatusNoContent, recorder.Code)
+    assert.Empty(t, recorder.Body.String())
+  })
+
+  t.Run("expected problem detail", func(t *testing.T) {
+    var expected = &problem.Problem{}
+    expected.Status(http.StatusGone)
+    expected.Detail("Expected problem detail.")
+    var s = mocks.NewProjectsService()
+    s.On(routine, mock.AnythingOfType("*gin.Context"), mock.Anything, mock.Anything).Return(false, expected)
+    var engine = gin.Default()
+    engine.POST(target, NewProjectsHandler(s).SetFirstImageURL)
+    var recorder = httptest.NewRecorder()
+    engine.ServeHTTP(recorder, request)
+    assert.Equal(t, http.StatusGone, recorder.Code)
+    assert.Contains(t, recorder.Body.String(), "Expected problem detail.")
+  })
+
+  t.Run("failed update without error: conflicts with current resource state", func(t *testing.T) {
+    var s = mocks.NewProjectsService()
+    s.On(routine, mock.AnythingOfType("*gin.Context"), id, update).Return(false, nil)
+    var engine = gin.Default()
+    engine.POST(target, NewProjectsHandler(s).SetFirstImageURL)
+    var recorder = httptest.NewRecorder()
+    engine.ServeHTTP(recorder, request)
+    assert.Equal(t, http.StatusConflict, recorder.Code)
+    assert.Empty(t, recorder.Body.String())
+  })
+
+  t.Run("unexpected error", func(t *testing.T) {
+    var unexpected = errors.New("unexpected error")
+    var s = mocks.NewProjectsService()
+    s.On(routine, mock.AnythingOfType("*gin.Context"), mock.Anything, mock.Anything).Return(false, unexpected)
+    var engine = gin.Default()
+    engine.POST(target, NewProjectsHandler(s).SetFirstImageURL)
+    var recorder = httptest.NewRecorder()
+    engine.ServeHTTP(recorder, request)
+    assert.Equal(t, http.StatusInternalServerError, recorder.Code)
+    assert.Contains(t, recorder.Body.String(), "An unexpected error occurred while processing your request")
+  })
+}
+
+func TestProjectsHandler_SetSecondImageURL(t *testing.T) {
+  const routine = "Update"
+  const method = http.MethodPost
+  const target = "/me.projects.setSecondImageURL"
+  var update = &transfer.ProjectUpdate{SecondImageURL: "https://SecondImageURL.com"}
+  var request = httptest.NewRequest(method, target, nil)
+  _ = request.ParseForm()
+
+  t.Run("missing 'id' parameter", func(t *testing.T) {
+    var s = mocks.NewProjectsService()
+    s.AssertNotCalled(t, routine)
+    var engine = gin.Default()
+    engine.POST(target, NewProjectsHandler(s).SetSecondImageURL)
+    var recorder = httptest.NewRecorder()
+    engine.ServeHTTP(recorder, request)
+    assert.Equal(t, http.StatusBadRequest, recorder.Code)
+    assert.Contains(t, recorder.Body.String(), "The 'id' parameter is required but was not found in the request form data.")
+  })
+
+  var id = uuid.New().String()
+  request.PostForm.Add("id", id)
+  request.PostForm.Add("url", update.SecondImageURL)
+
+  t.Run("success", func(t *testing.T) {
+    var s = mocks.NewProjectsService()
+    s.On(routine, mock.AnythingOfType("*gin.Context"), id, update).Return(true, nil)
+    var engine = gin.Default()
+    engine.POST(target, NewProjectsHandler(s).SetSecondImageURL)
+    var recorder = httptest.NewRecorder()
+    engine.ServeHTTP(recorder, request)
+    assert.Equal(t, http.StatusNoContent, recorder.Code)
+    assert.Empty(t, recorder.Body.String())
+  })
+
+  t.Run("expected problem detail", func(t *testing.T) {
+    var expected = &problem.Problem{}
+    expected.Status(http.StatusGone)
+    expected.Detail("Expected problem detail.")
+    var s = mocks.NewProjectsService()
+    s.On(routine, mock.AnythingOfType("*gin.Context"), mock.Anything, mock.Anything).Return(false, expected)
+    var engine = gin.Default()
+    engine.POST(target, NewProjectsHandler(s).SetSecondImageURL)
+    var recorder = httptest.NewRecorder()
+    engine.ServeHTTP(recorder, request)
+    assert.Equal(t, http.StatusGone, recorder.Code)
+    assert.Contains(t, recorder.Body.String(), "Expected problem detail.")
+  })
+
+  t.Run("failed update without error: conflicts with current resource state", func(t *testing.T) {
+    var s = mocks.NewProjectsService()
+    s.On(routine, mock.AnythingOfType("*gin.Context"), id, update).Return(false, nil)
+    var engine = gin.Default()
+    engine.POST(target, NewProjectsHandler(s).SetSecondImageURL)
+    var recorder = httptest.NewRecorder()
+    engine.ServeHTTP(recorder, request)
+    assert.Equal(t, http.StatusConflict, recorder.Code)
+    assert.Empty(t, recorder.Body.String())
+  })
+
+  t.Run("unexpected error", func(t *testing.T) {
+    var unexpected = errors.New("unexpected error")
+    var s = mocks.NewProjectsService()
+    s.On(routine, mock.AnythingOfType("*gin.Context"), mock.Anything, mock.Anything).Return(false, unexpected)
+    var engine = gin.Default()
+    engine.POST(target, NewProjectsHandler(s).SetSecondImageURL)
+    var recorder = httptest.NewRecorder()
+    engine.ServeHTTP(recorder, request)
+    assert.Equal(t, http.StatusInternalServerError, recorder.Code)
+    assert.Contains(t, recorder.Body.String(), "An unexpected error occurred while processing your request")
+  })
+}
+
+func TestProjectsHandler_SetGitHubURL(t *testing.T) {
+  const routine = "Update"
+  const method = http.MethodPost
+  const target = "/me.projects.setGitHubURL"
+  var update = &transfer.ProjectUpdate{GitHubURL: "https://GitHubURL.com"}
+  var request = httptest.NewRequest(method, target, nil)
+  _ = request.ParseForm()
+
+  t.Run("missing 'id' parameter", func(t *testing.T) {
+    var s = mocks.NewProjectsService()
+    s.AssertNotCalled(t, routine)
+    var engine = gin.Default()
+    engine.POST(target, NewProjectsHandler(s).SetGitHubURL)
+    var recorder = httptest.NewRecorder()
+    engine.ServeHTTP(recorder, request)
+    assert.Equal(t, http.StatusBadRequest, recorder.Code)
+    assert.Contains(t, recorder.Body.String(), "The 'id' parameter is required but was not found in the request form data.")
+  })
+
+  var id = uuid.New().String()
+  request.PostForm.Add("id", id)
+  request.PostForm.Add("url", update.GitHubURL)
+
+  t.Run("success", func(t *testing.T) {
+    var s = mocks.NewProjectsService()
+    s.On(routine, mock.AnythingOfType("*gin.Context"), id, update).Return(true, nil)
+    var engine = gin.Default()
+    engine.POST(target, NewProjectsHandler(s).SetGitHubURL)
+    var recorder = httptest.NewRecorder()
+    engine.ServeHTTP(recorder, request)
+    assert.Equal(t, http.StatusNoContent, recorder.Code)
+    assert.Empty(t, recorder.Body.String())
+  })
+
+  t.Run("expected problem detail", func(t *testing.T) {
+    var expected = &problem.Problem{}
+    expected.Status(http.StatusGone)
+    expected.Detail("Expected problem detail.")
+    var s = mocks.NewProjectsService()
+    s.On(routine, mock.AnythingOfType("*gin.Context"), mock.Anything, mock.Anything).Return(false, expected)
+    var engine = gin.Default()
+    engine.POST(target, NewProjectsHandler(s).SetGitHubURL)
+    var recorder = httptest.NewRecorder()
+    engine.ServeHTTP(recorder, request)
+    assert.Equal(t, http.StatusGone, recorder.Code)
+    assert.Contains(t, recorder.Body.String(), "Expected problem detail.")
+  })
+
+  t.Run("failed update without error: conflicts with current resource state", func(t *testing.T) {
+    var s = mocks.NewProjectsService()
+    s.On(routine, mock.AnythingOfType("*gin.Context"), id, update).Return(false, nil)
+    var engine = gin.Default()
+    engine.POST(target, NewProjectsHandler(s).SetGitHubURL)
+    var recorder = httptest.NewRecorder()
+    engine.ServeHTTP(recorder, request)
+    assert.Equal(t, http.StatusConflict, recorder.Code)
+    assert.Empty(t, recorder.Body.String())
+  })
+
+  t.Run("unexpected error", func(t *testing.T) {
+    var unexpected = errors.New("unexpected error")
+    var s = mocks.NewProjectsService()
+    s.On(routine, mock.AnythingOfType("*gin.Context"), mock.Anything, mock.Anything).Return(false, unexpected)
+    var engine = gin.Default()
+    engine.POST(target, NewProjectsHandler(s).SetGitHubURL)
+    var recorder = httptest.NewRecorder()
+    engine.ServeHTTP(recorder, request)
+    assert.Equal(t, http.StatusInternalServerError, recorder.Code)
+    assert.Contains(t, recorder.Body.String(), "An unexpected error occurred while processing your request")
+  })
+}
+
+func TestProjectsHandler_SetCollectionURL(t *testing.T) {
+  const routine = "Update"
+  const method = http.MethodPost
+  const target = "/me.projects.setCollectionURL"
+  var update = &transfer.ProjectUpdate{CollectionURL: "https://CollectionURL.com"}
+  var request = httptest.NewRequest(method, target, nil)
+  _ = request.ParseForm()
+
+  t.Run("missing 'id' parameter", func(t *testing.T) {
+    var s = mocks.NewProjectsService()
+    s.AssertNotCalled(t, routine)
+    var engine = gin.Default()
+    engine.POST(target, NewProjectsHandler(s).SetCollectionURL)
+    var recorder = httptest.NewRecorder()
+    engine.ServeHTTP(recorder, request)
+    assert.Equal(t, http.StatusBadRequest, recorder.Code)
+    assert.Contains(t, recorder.Body.String(), "The 'id' parameter is required but was not found in the request form data.")
+  })
+
+  var id = uuid.New().String()
+  request.PostForm.Add("id", id)
+  request.PostForm.Add("url", update.CollectionURL)
+
+  t.Run("success", func(t *testing.T) {
+    var s = mocks.NewProjectsService()
+    s.On(routine, mock.AnythingOfType("*gin.Context"), id, update).Return(true, nil)
+    var engine = gin.Default()
+    engine.POST(target, NewProjectsHandler(s).SetCollectionURL)
+    var recorder = httptest.NewRecorder()
+    engine.ServeHTTP(recorder, request)
+    assert.Equal(t, http.StatusNoContent, recorder.Code)
+    assert.Empty(t, recorder.Body.String())
+  })
+
+  t.Run("expected problem detail", func(t *testing.T) {
+    var expected = &problem.Problem{}
+    expected.Status(http.StatusGone)
+    expected.Detail("Expected problem detail.")
+    var s = mocks.NewProjectsService()
+    s.On(routine, mock.AnythingOfType("*gin.Context"), mock.Anything, mock.Anything).Return(false, expected)
+    var engine = gin.Default()
+    engine.POST(target, NewProjectsHandler(s).SetCollectionURL)
+    var recorder = httptest.NewRecorder()
+    engine.ServeHTTP(recorder, request)
+    assert.Equal(t, http.StatusGone, recorder.Code)
+    assert.Contains(t, recorder.Body.String(), "Expected problem detail.")
+  })
+
+  t.Run("failed update without error: conflicts with current resource state", func(t *testing.T) {
+    var s = mocks.NewProjectsService()
+    s.On(routine, mock.AnythingOfType("*gin.Context"), id, update).Return(false, nil)
+    var engine = gin.Default()
+    engine.POST(target, NewProjectsHandler(s).SetCollectionURL)
+    var recorder = httptest.NewRecorder()
+    engine.ServeHTTP(recorder, request)
+    assert.Equal(t, http.StatusConflict, recorder.Code)
+    assert.Empty(t, recorder.Body.String())
+  })
+
+  t.Run("unexpected error", func(t *testing.T) {
+    var unexpected = errors.New("unexpected error")
+    var s = mocks.NewProjectsService()
+    s.On(routine, mock.AnythingOfType("*gin.Context"), mock.Anything, mock.Anything).Return(false, unexpected)
+    var engine = gin.Default()
+    engine.POST(target, NewProjectsHandler(s).SetCollectionURL)
+    var recorder = httptest.NewRecorder()
+    engine.ServeHTTP(recorder, request)
+    assert.Equal(t, http.StatusInternalServerError, recorder.Code)
+    assert.Contains(t, recorder.Body.String(), "An unexpected error occurred while processing your request")
+  })
+}

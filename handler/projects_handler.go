@@ -145,3 +145,69 @@ func (h *ProjectsHandler) Unfinish(c *gin.Context) {
     c.Redirect(http.StatusSeeOther, "/me.projects.info?id="+id)
   }
 }
+
+func (h *ProjectsHandler) getIDAndURLParameters(c *gin.Context) (id string, url string, ok bool) {
+  id, success := c.GetPostForm("id")
+  if !success {
+    problem.NewMissingParameter("id").Emit(c.Writer)
+    return "", "", false
+  }
+  url, success = c.GetPostForm("url")
+  if !success {
+    problem.NewMissingParameter("url").Emit(c.Writer)
+    return "", "", false
+  }
+  return id, url, true
+}
+
+func (h *ProjectsHandler) setURL(c *gin.Context, id string, update *transfer.ProjectUpdate) {
+  var updated, err = h.s.Update(c, id, update)
+  if check(err, c.Writer) {
+    return
+  }
+  if updated {
+    c.Status(http.StatusNoContent)
+  } else {
+    c.Status(http.StatusConflict)
+  }
+}
+
+func (h *ProjectsHandler) SetPlaygroundURL(c *gin.Context) {
+  id, url, ok := h.getIDAndURLParameters(c)
+  if !ok {
+    return
+  }
+  h.setURL(c, id, &transfer.ProjectUpdate{PlaygroundURL: url})
+}
+
+func (h *ProjectsHandler) SetFirstImageURL(c *gin.Context) {
+  id, url, ok := h.getIDAndURLParameters(c)
+  if !ok {
+    return
+  }
+  h.setURL(c, id, &transfer.ProjectUpdate{FirstImageURL: url})
+}
+
+func (h *ProjectsHandler) SetSecondImageURL(c *gin.Context) {
+  id, url, ok := h.getIDAndURLParameters(c)
+  if !ok {
+    return
+  }
+  h.setURL(c, id, &transfer.ProjectUpdate{SecondImageURL: url})
+}
+
+func (h *ProjectsHandler) SetGitHubURL(c *gin.Context) {
+  id, url, ok := h.getIDAndURLParameters(c)
+  if !ok {
+    return
+  }
+  h.setURL(c, id, &transfer.ProjectUpdate{GitHubURL: url})
+}
+
+func (h *ProjectsHandler) SetCollectionURL(c *gin.Context) {
+  id, url, ok := h.getIDAndURLParameters(c)
+  if !ok {
+    return
+  }
+  h.setURL(c, id, &transfer.ProjectUpdate{CollectionURL: url})
+}
