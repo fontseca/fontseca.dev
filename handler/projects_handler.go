@@ -111,3 +111,37 @@ func (h *ProjectsHandler) Unarchive(c *gin.Context) {
     c.Redirect(http.StatusSeeOther, "/me.projects.info?id="+id)
   }
 }
+
+func (h *ProjectsHandler) Finish(c *gin.Context) {
+  var id, success = c.GetPostForm("id")
+  if !success {
+    problem.NewMissingParameter("id").Emit(c.Writer)
+    return
+  }
+  var updated, err = h.s.Update(c, id, &transfer.ProjectUpdate{Finished: true})
+  if check(err, c.Writer) {
+    return
+  }
+  if updated {
+    c.Status(http.StatusNoContent)
+  } else {
+    c.Redirect(http.StatusSeeOther, "/me.projects.info?id="+id)
+  }
+}
+
+func (h *ProjectsHandler) Unfinish(c *gin.Context) {
+  var id, success = c.GetPostForm("id")
+  if !success {
+    problem.NewMissingParameter("id").Emit(c.Writer)
+    return
+  }
+  var updated, err = h.s.Update(c, id, &transfer.ProjectUpdate{Finished: false})
+  if check(err, c.Writer) {
+    return
+  }
+  if updated {
+    c.Status(http.StatusNoContent)
+  } else {
+    c.Redirect(http.StatusSeeOther, "/me.projects.info?id="+id)
+  }
+}
