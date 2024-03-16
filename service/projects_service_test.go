@@ -82,19 +82,15 @@ func TestProjectsService_Add(t *testing.T) {
   t.Run("success", func(t *testing.T) {
     var creation = transfer.ProjectCreation{
       Name:           "Name",
-      Homepage:       "Homepage",
+      Homepage:       "https://Homepage.com",
       Language:       "Language",
       Summary:        "Summary",
       Content:        "Content",
       EstimatedTime:  0,
-      FirstImageURL:  "FirstImageURL",
-      SecondImageURL: "SecondImageURL",
-      GitHubURL:      "GitHubURL",
-      CollectionURL:  "CollectionURL",
-      PlaygroundURL:  "PlaygroundURL",
-      Playable:       false,
-      Archived:       false,
-      Finished:       false,
+      FirstImageURL:  "https://FirstImageURL.com",
+      SecondImageURL: "https://SecondImageURL.com",
+      GitHubURL:      "https://GitHubURL.com",
+      CollectionURL:  "https://CollectionURL.com",
     }
     var dirty = transfer.ProjectCreation{
       Name:           " \n\t " + creation.Name + " \n\t ",
@@ -107,10 +103,6 @@ func TestProjectsService_Add(t *testing.T) {
       SecondImageURL: " \n\t " + creation.SecondImageURL + " \n\t ",
       GitHubURL:      " \n\t " + creation.GitHubURL + " \n\t ",
       CollectionURL:  " \n\t " + creation.CollectionURL + " \n\t ",
-      PlaygroundURL:  " \n\t " + creation.PlaygroundURL + " \n\t ",
-      Playable:       creation.Playable,
-      Archived:       creation.Archived,
-      Finished:       creation.Finished,
     }
     var r = mocks.NewProjectsRepository()
     r.On(routine, ctx, &creation).Return(id, nil)
@@ -138,7 +130,7 @@ func TestProjectsService_Add(t *testing.T) {
       assert.NoError(t, err)
       assert.Equal(t, id, res)
 
-      creation.Name = strings.Repeat("x", 1+36)
+      creation.Name = "https://" + strings.Repeat("x", 1+2036) + ".com"
       r = mocks.NewProjectsRepository()
       r.On(routine, ctx, &creation).Return(id, nil)
       res, err = NewProjectsService(r).Add(ctx, &creation)
@@ -149,14 +141,14 @@ func TestProjectsService_Add(t *testing.T) {
     t.Run("len(creation.Homepage)<=2048", func(t *testing.T) {
       var creation = transfer.ProjectCreation{}
 
-      creation.Homepage = strings.Repeat("x", 2048)
+      creation.Homepage = "https://" + strings.Repeat("x", 2036) + ".com"
       var r = mocks.NewProjectsRepository()
       r.On(routine, ctx, &creation).Return(id, nil)
       res, err := NewProjectsService(r).Add(ctx, &creation)
       assert.NoError(t, err)
       assert.Equal(t, id, res)
 
-      creation.Homepage = strings.Repeat("x", 1+2048)
+      creation.Homepage = "https://" + strings.Repeat("x", 1+2036) + ".com"
       r = mocks.NewProjectsRepository()
       r.On(routine, ctx, &creation).Return(id, nil)
       res, err = NewProjectsService(r).Add(ctx, &creation)
@@ -221,14 +213,14 @@ func TestProjectsService_Add(t *testing.T) {
     t.Run("len(creation.FirstImageURL)<=2048", func(t *testing.T) {
       var creation = transfer.ProjectCreation{}
 
-      creation.FirstImageURL = strings.Repeat("x", 2048)
+      creation.FirstImageURL = "https://" + strings.Repeat("x", 2036) + ".com"
       var r = mocks.NewProjectsRepository()
       r.On(routine, ctx, &creation).Return(id, nil)
       res, err := NewProjectsService(r).Add(ctx, &creation)
       assert.NoError(t, err)
       assert.Equal(t, id, res)
 
-      creation.FirstImageURL = strings.Repeat("x", 1+2048)
+      creation.FirstImageURL = "https://" + strings.Repeat("x", 1+2036) + ".com"
       r = mocks.NewProjectsRepository()
       r.On(routine, ctx, &creation).Return(id, nil)
       res, err = NewProjectsService(r).Add(ctx, &creation)
@@ -239,14 +231,14 @@ func TestProjectsService_Add(t *testing.T) {
     t.Run("len(creation.SecondImageURL)<=2048", func(t *testing.T) {
       var creation = transfer.ProjectCreation{}
 
-      creation.SecondImageURL = strings.Repeat("x", 2048)
+      creation.SecondImageURL = "https://" + strings.Repeat("x", 2036) + ".com"
       var r = mocks.NewProjectsRepository()
       r.On(routine, ctx, &creation).Return(id, nil)
       res, err := NewProjectsService(r).Add(ctx, &creation)
       assert.NoError(t, err)
       assert.Equal(t, id, res)
 
-      creation.SecondImageURL = strings.Repeat("x", 1+2048)
+      creation.SecondImageURL = "https://" + strings.Repeat("x", 1+2036) + ".com"
       r = mocks.NewProjectsRepository()
       r.On(routine, ctx, &creation).Return(id, nil)
       res, err = NewProjectsService(r).Add(ctx, &creation)
@@ -257,14 +249,14 @@ func TestProjectsService_Add(t *testing.T) {
     t.Run("len(creation.GitHubURL)<=2048", func(t *testing.T) {
       var creation = transfer.ProjectCreation{}
 
-      creation.GitHubURL = strings.Repeat("x", 2048)
+      creation.GitHubURL = "https://" + strings.Repeat("x", 2036) + ".com"
       var r = mocks.NewProjectsRepository()
       r.On(routine, ctx, &creation).Return(id, nil)
       res, err := NewProjectsService(r).Add(ctx, &creation)
       assert.NoError(t, err)
       assert.Equal(t, id, res)
 
-      creation.GitHubURL = strings.Repeat("x", 1+2048)
+      creation.GitHubURL = "https://" + strings.Repeat("x", 1+2036) + ".com"
       r = mocks.NewProjectsRepository()
       r.On(routine, ctx, &creation).Return(id, nil)
       res, err = NewProjectsService(r).Add(ctx, &creation)
@@ -275,32 +267,14 @@ func TestProjectsService_Add(t *testing.T) {
     t.Run("len(creation.CollectionURL)<=2048", func(t *testing.T) {
       var creation = transfer.ProjectCreation{}
 
-      creation.CollectionURL = strings.Repeat("x", 2048)
+      creation.CollectionURL = "https://" + strings.Repeat("x", 2036) + ".com"
       var r = mocks.NewProjectsRepository()
       r.On(routine, ctx, &creation).Return(id, nil)
       res, err := NewProjectsService(r).Add(ctx, &creation)
       assert.NoError(t, err)
       assert.Equal(t, id, res)
 
-      creation.CollectionURL = strings.Repeat("x", 1+2048)
-      r = mocks.NewProjectsRepository()
-      r.On(routine, ctx, &creation).Return(id, nil)
-      res, err = NewProjectsService(r).Add(ctx, &creation)
-      assert.Error(t, err)
-      assert.Empty(t, res)
-    })
-
-    t.Run("len(creation.PlaygroundURL)<=2048", func(t *testing.T) {
-      var creation = transfer.ProjectCreation{}
-
-      creation.PlaygroundURL = strings.Repeat("x", 2048)
-      var r = mocks.NewProjectsRepository()
-      r.On(routine, ctx, &creation).Return(id, nil)
-      res, err := NewProjectsService(r).Add(ctx, &creation)
-      assert.NoError(t, err)
-      assert.Equal(t, id, res)
-
-      creation.PlaygroundURL = strings.Repeat("x", 1+2048)
+      creation.CollectionURL = "https://" + strings.Repeat("x", 1+2036) + ".com"
       r = mocks.NewProjectsRepository()
       r.On(routine, ctx, &creation).Return(id, nil)
       res, err = NewProjectsService(r).Add(ctx, &creation)
@@ -357,17 +331,16 @@ func TestProjectsService_Update(t *testing.T) {
   t.Run("success", func(t *testing.T) {
     var update = transfer.ProjectUpdate{
       Name:           "Name",
-      Homepage:       "Homepage",
+      Homepage:       "https://Homepage.com",
       Language:       "Language",
       Summary:        "Summary",
       Content:        "Content",
       EstimatedTime:  0,
-      FirstImageURL:  "FirstImageURL",
-      SecondImageURL: "SecondImageURL",
-      GitHubURL:      "GitHubURL",
-      CollectionURL:  "CollectionURL",
-      PlaygroundURL:  "PlaygroundURL",
-      Playable:       false,
+      FirstImageURL:  "https://FirstImageURL.com",
+      SecondImageURL: "https://SecondImageURL.com",
+      GitHubURL:      "https://GitHubURL.com",
+      CollectionURL:  "https://CollectionURL.com",
+      PlaygroundURL:  "https://PlaygroundURL.com",
       Archived:       false,
       Finished:       false,
     }
@@ -383,7 +356,6 @@ func TestProjectsService_Update(t *testing.T) {
       GitHubURL:      " \n\t " + update.GitHubURL + " \n\t ",
       CollectionURL:  " \n\t " + update.CollectionURL + " \n\t ",
       PlaygroundURL:  " \n\t " + update.PlaygroundURL + " \n\t ",
-      Playable:       update.Playable,
       Archived:       update.Archived,
       Finished:       update.Finished,
     }
@@ -424,14 +396,14 @@ func TestProjectsService_Update(t *testing.T) {
     t.Run("len(update.Homepage)<=2048", func(t *testing.T) {
       var update = transfer.ProjectUpdate{}
 
-      update.Homepage = strings.Repeat("x", 2048)
+      update.Homepage = "https://" + strings.Repeat("x", 2036) + ".com"
       var r = mocks.NewProjectsRepository()
       r.On(routine, ctx, id, &update).Return(true, nil)
       res, err := NewProjectsService(r).Update(ctx, id, &update)
       assert.NoError(t, err)
       assert.True(t, res)
 
-      update.Homepage = strings.Repeat("x", 1+2048)
+      update.Homepage = "https://" + strings.Repeat("x", 1+2036) + ".com"
       r = mocks.NewProjectsRepository()
       r.On(routine, ctx, id, &update).Return(false, nil)
       res, err = NewProjectsService(r).Update(ctx, id, &update)
@@ -496,14 +468,14 @@ func TestProjectsService_Update(t *testing.T) {
     t.Run("len(update.FirstImageURL)<=2048", func(t *testing.T) {
       var update = transfer.ProjectUpdate{}
 
-      update.FirstImageURL = strings.Repeat("x", 2048)
+      update.FirstImageURL = "https://" + strings.Repeat("x", 2036) + ".com"
       var r = mocks.NewProjectsRepository()
       r.On(routine, ctx, id, &update).Return(true, nil)
       res, err := NewProjectsService(r).Update(ctx, id, &update)
       assert.NoError(t, err)
       assert.True(t, res)
 
-      update.FirstImageURL = strings.Repeat("x", 1+2048)
+      update.FirstImageURL = "https://" + strings.Repeat("x", 1+2036) + ".com"
       r = mocks.NewProjectsRepository()
       r.On(routine, ctx, id, &update).Return(false, nil)
       res, err = NewProjectsService(r).Update(ctx, id, &update)
@@ -514,14 +486,14 @@ func TestProjectsService_Update(t *testing.T) {
     t.Run("len(update.SecondImageURL)<=2048", func(t *testing.T) {
       var update = transfer.ProjectUpdate{}
 
-      update.SecondImageURL = strings.Repeat("x", 2048)
+      update.SecondImageURL = "https://" + strings.Repeat("x", 2036) + ".com"
       var r = mocks.NewProjectsRepository()
       r.On(routine, ctx, id, &update).Return(true, nil)
       res, err := NewProjectsService(r).Update(ctx, id, &update)
       assert.NoError(t, err)
       assert.True(t, res)
 
-      update.SecondImageURL = strings.Repeat("x", 1+2048)
+      update.SecondImageURL = "https://" + strings.Repeat("x", 1+2036) + ".com"
       r = mocks.NewProjectsRepository()
       r.On(routine, ctx, id, &update).Return(false, nil)
       res, err = NewProjectsService(r).Update(ctx, id, &update)
@@ -532,14 +504,14 @@ func TestProjectsService_Update(t *testing.T) {
     t.Run("len(creation.GitHubURL)<=2048", func(t *testing.T) {
       var update = transfer.ProjectUpdate{}
 
-      update.GitHubURL = strings.Repeat("x", 2048)
+      update.GitHubURL = "https://" + strings.Repeat("x", 2036) + ".com"
       var r = mocks.NewProjectsRepository()
       r.On(routine, ctx, id, &update).Return(true, nil)
       res, err := NewProjectsService(r).Update(ctx, id, &update)
       assert.NoError(t, err)
       assert.True(t, res)
 
-      update.GitHubURL = strings.Repeat("x", 1+2048)
+      update.GitHubURL = "https://" + strings.Repeat("x", 1+2036) + ".com"
       r = mocks.NewProjectsRepository()
       r.On(routine, ctx, id, &update).Return(false, nil)
       res, err = NewProjectsService(r).Update(ctx, id, &update)
@@ -550,14 +522,14 @@ func TestProjectsService_Update(t *testing.T) {
     t.Run("len(update.CollectionURL)<=2048", func(t *testing.T) {
       var update = transfer.ProjectUpdate{}
 
-      update.CollectionURL = strings.Repeat("x", 2048)
+      update.CollectionURL = "https://" + strings.Repeat("x", 2036) + ".com"
       var r = mocks.NewProjectsRepository()
       r.On(routine, ctx, id, &update).Return(true, nil)
       res, err := NewProjectsService(r).Update(ctx, id, &update)
       assert.NoError(t, err)
       assert.True(t, res)
 
-      update.CollectionURL = strings.Repeat("x", 1+2048)
+      update.CollectionURL = "https://" + strings.Repeat("x", 1+2036) + ".com"
       r = mocks.NewProjectsRepository()
       r.On(routine, ctx, id, &update).Return(false, nil)
       res, err = NewProjectsService(r).Update(ctx, id, &update)
@@ -568,14 +540,14 @@ func TestProjectsService_Update(t *testing.T) {
     t.Run("len(update.PlaygroundURL)<=2048", func(t *testing.T) {
       var update = transfer.ProjectUpdate{}
 
-      update.PlaygroundURL = strings.Repeat("x", 2048)
+      update.PlaygroundURL = "https://" + strings.Repeat("x", 2036) + ".com"
       var r = mocks.NewProjectsRepository()
       r.On(routine, ctx, id, &update).Return(true, nil)
       res, err := NewProjectsService(r).Update(ctx, id, &update)
       assert.NoError(t, err)
       assert.True(t, res)
 
-      update.PlaygroundURL = strings.Repeat("x", 1+2048)
+      update.PlaygroundURL = "https://" + strings.Repeat("x", 1+2036) + ".com"
       r = mocks.NewProjectsRepository()
       r.On(routine, ctx, id, &update).Return(false, nil)
       res, err = NewProjectsService(r).Update(ctx, id, &update)
