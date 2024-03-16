@@ -106,6 +106,7 @@ func (s *projectsService) Add(ctx context.Context, creation *transfer.ProjectCre
     return "", problem.NewValidation([3]string{"collection_url", "max", "2048"})
   }
   err = sanitizeURL(
+    &creation.Homepage,
     &creation.FirstImageURL,
     &creation.SecondImageURL,
     &creation.GitHubURL,
@@ -165,6 +166,7 @@ func (s *projectsService) Update(ctx context.Context, id string, update *transfe
     return false, problem.NewValidation([3]string{"playground_url", "max", "2048"})
   }
   err = sanitizeURL(
+    &update.Homepage,
     &update.FirstImageURL,
     &update.SecondImageURL,
     &update.GitHubURL,
