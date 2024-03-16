@@ -62,3 +62,16 @@ func (h *TechnologyTagHandler) Set(c *gin.Context) {
     c.Status(http.StatusConflict)
   }
 }
+
+func (h *TechnologyTagHandler) Remove(c *gin.Context) {
+  var id, success = c.GetPostForm("id")
+  if !success {
+    problem.NewMissingParameter("id").Emit(c.Writer)
+    return
+  }
+  err := h.s.Remove(c, id)
+  if check(err, c.Writer) {
+    return
+  }
+  c.Status(http.StatusNoContent)
+}
