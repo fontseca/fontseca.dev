@@ -2,6 +2,7 @@ package handler
 
 import (
   "fontseca/service"
+  "fontseca/transfer"
   "github.com/gin-gonic/gin"
   "net/http"
 )
@@ -20,4 +21,19 @@ func (h *TechnologyTagHandler) Get(c *gin.Context) {
     return
   }
   c.JSON(http.StatusOK, tags)
+}
+
+func (h *TechnologyTagHandler) Add(c *gin.Context) {
+  var creation transfer.TechnologyTagCreation
+  if err := bindPostForm(c, &creation); check(err, c.Writer) {
+    return
+  }
+  if err := validateStruct(&creation); check(err, c.Writer) {
+    return
+  }
+  insertedID, err := h.s.Add(c, &creation)
+  if check(err, c.Writer) {
+    return
+  }
+  c.JSON(http.StatusOK, gin.H{"inserted_id": insertedID})
 }
