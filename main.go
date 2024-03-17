@@ -6,6 +6,7 @@ import (
   "encoding/json"
   "fmt"
   "fontseca/handler"
+  "fontseca/problem"
   "fontseca/repository"
   "fontseca/service"
   "github.com/gin-gonic/gin"
@@ -427,6 +428,33 @@ func main() {
 
   engine.GET("/", webHandler.RenderMe)
   engine.GET("/experience", webHandler.RenderExperience)
+
+  engine.NoRoute(func(c *gin.Context) {
+    var p problem.Problem
+    p.Status(http.StatusNotFound)
+    p.Title("Target not found.")
+    p.Detail("Could not find the requested target resource. Possible causes: invalid URL, this resource no longer exists, or a temporary server issue.")
+    p.Instance(c.Request.URL.String())
+    p.Emit(c.Writer)
+  })
+
+  engine.HandleMethodNotAllowed = true
+  var routes = engine.Routes()
+  engine.NoMethod(func(c *gin.Context) {
+    var allowedMethods = make([]string, 0, 1)
+    for _, route := range routes {
+      if route.Path == c.Request.URL.Path {
+        allowedMethods = append(allowedMethods, route.Method)
+      }
+    }
+    c.Header("Allow", strings.Join(allowedMethods, ","))
+    var p problem.Problem
+    p.Status(http.StatusMethodNotAllowed)
+    p.Title("Unsupported HTTP method.")
+    p.Detail(fmt.Sprintf("The target resource doesn't support this method (%s). Check the 'Allow' header in the response for a list of supported methods.", c.Request.Method))
+    p.Instance(c.Request.URL.String())
+    p.Emit(c.Writer)
+  })
 
   var port = strings.TrimSpace(os.Getenv("SERVER_PORT"))
   if "" == port {
