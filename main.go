@@ -421,6 +421,40 @@ func main() {
   engine.POST("/me.experience.quit", experienceHandler.Quit)
   engine.POST("/me.experience.remove", experienceHandler.Remove)
 
+  var (
+    technologyTagRepository = repository.NewTechnologyTagRepository(db)
+    technologyTagService    = service.NewTechnologyTagService(technologyTagRepository)
+    technologyTagHandler    = handler.NewTechnologyTagHandler(technologyTagService)
+  )
+
+  engine.GET("/technologies.list", technologyTagHandler.Get)
+  engine.POST("/technologies.add", technologyTagHandler.Add)
+  engine.POST("/technologies.set", technologyTagHandler.Set)
+  engine.POST("/technologies.remove", technologyTagHandler.Remove)
+
+  var (
+    projectsRepository = repository.NewProjectsRepository(db)
+    projectsService    = service.NewProjectsService(projectsRepository)
+    projectsHandler    = handler.NewProjectsHandler(projectsService)
+  )
+
+  engine.GET("/me.projects.list", projectsHandler.Get)
+  engine.GET("/me.projects.info", projectsHandler.GetByID)
+  engine.GET("/me.projects.archived.list", projectsHandler.GetArchived)
+  engine.POST("/me.projects.add", projectsHandler.Add)
+  engine.POST("/me.projects.set", projectsHandler.Set)
+  engine.POST("/me.projects.archive", projectsHandler.Archive)
+  engine.POST("/me.projects.unarchive", projectsHandler.Unarchive)
+  engine.POST("/me.projects.finish", projectsHandler.Finish)
+  engine.POST("/me.projects.unfinish", projectsHandler.Unfinish)
+  engine.POST("/me.projects.setPlaygroundURL", projectsHandler.SetPlaygroundURL)
+  engine.POST("/me.projects.setFirstImageURL", projectsHandler.SetFirstImageURL)
+  engine.POST("/me.projects.setSecondImageURL", projectsHandler.SetSecondImageURL)
+  engine.POST("/me.projects.setGitHubURL", projectsHandler.SetGitHubURL)
+  engine.POST("/me.projects.setCollectionURL", projectsHandler.SetCollectionURL)
+  engine.POST("/me.projects.technologies.add", projectsHandler.AddTechnologyTag)
+  engine.POST("/me.projects.technologies.remove", projectsHandler.RemoveTechnologyTag)
+
   var webHandler = handler.NewWebHandler(
     meService,
     experienceService,
