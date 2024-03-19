@@ -540,3 +540,154 @@ body {
     padding-top: 1rem;
   }
 }
+
+/* Projects page.  */
+
+.project-tile {
+  display: flex;
+  height: 360px;
+  padding-bottom: 3rem;
+}
+
+.project-tile .content-container {
+  padding-right: 2rem;
+  width: 60%;
+}
+
+.project-tile .content-container .name {
+  font-size: 25px;
+  font-weight: 700;
+  margin-bottom: 1.6rem;
+}
+
+.project-tile .content-container .summary {
+  font-family: 'Source Serif 4', sans-serif;
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.project-tile .content-container .tags {
+  display: flex;
+  padding: 1rem 0 1rem 0;
+}
+
+.project-tile .content-container .tags .tag {
+  font-weight: 600;
+}
+
+.project-tile .content-container .tags .tag:not(:first-child) {
+  margin-left: 1rem;
+}
+
+.project-tile .content-container .buttons {
+  padding-bottom: .6rem;
+}
+
+.project-tile .content-container .buttons .btn {
+  display: block;
+}
+
+.project-tile .content-container .buttons .btn:nth-child(1) {
+  width: 150px;
+}
+
+.project-tile .content-container .buttons .btn:nth-child(2) {
+  margin-top: .5rem;
+  width: 200px;
+}
+
+.project-tile .links-container {
+  background-color: black;
+  width: .1%;
+  position: relative;
+  height: 116%;
+}
+
+.project-tile .links-container .links {
+  position: absolute;
+  width: 220px;
+  bottom: 70px;
+  right: -17px;
+  text-align: right;
+}
+
+.project-tile .links-container .links a {
+  display: flex;
+  color: black;
+  text-decoration: none;
+  font-weight: 700;
+  width: 100%;
+  justify-content: right;
+  align-items: center;
+}
+
+.project-tile .links-container .links a:hover {
+  text-decoration: underline;
+}
+
+.project-tile .links-container .links a i {
+  background-color: black;
+  color: white;
+  width: 35px;
+  height: 35px;
+  text-align: center;
+  line-height: 35px;
+  margin-left: .5rem;
+}
+
+.project-tile .links-container .links .github-url {
+  background-color: black;
+  color: white;
+}
+
+.project-tile .links-container .links .github-url i {
+  background-color: white;
+  color: black;
+}
+
+.project-tile .images-container {
+  padding-left: 2rem;
+  width: 40%;
+}
+
+.project-tile .images-container img {
+  width: 100%;
+}
+
+.project-tile .images-container .first-image {
+  height: 250px;
+  width: 100%;
+  position: relative;
+  border-top-left-radius: 5px;
+  border-top-right-radius: 5px;
+  border-bottom-left-radius: 5px;
+}
+
+.project-tile .images-container .first-image img {
+  height: 100%;
+  border-top-left-radius: 5px;
+  border-top-right-radius: 5px;
+  border-bottom-left-radius: 5px;
+}
+
+.project-tile .images-container .second-image {
+  width: 100%;
+  height: 250px;
+  position: absolute;
+  bottom: -35%;
+  right: 0;
+  z-index: 1;
+  overflow-x: hidden;
+  border-top-left-radius: 5px;
+  border-bottom-right-radius: 5px;
+}
+
+.project-tile .images-container .second-image img {
+  margin-left: 25%;
+  border-top-left-radius: 5px;
+  border-bottom-left-radius: 5px;
+  border-bottom-right-radius: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}

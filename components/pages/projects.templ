@@ -1,0 +1,67 @@
+package pages
+
+import (
+  "fontseca/model"
+  "fontseca/components/layout"
+  "fontseca/components/ui"
+)
+
+templ Projects(projects []*model.Project) {
+  @layout.Layout("projects", 2) {
+    <section class="projects">
+      @ui.TitleHeader("projects", "/me.projects.list")
+      <section class="projects-list">
+        for _, project := range projects {
+          <article class="project-tile">
+            <div class="content-container">
+              <p class="name">{ project.Name }</p>
+              <p class="summary">{ project.Summary }</p>
+              <div class="tags">
+                for _, tag := range project.TechnologyTags {
+                  <span class="tag">{ tag }</span>
+                }
+              </div>
+              <div class="buttons">
+                @ui.Button("See more details", false, "", nil)
+                if (project.Playable) {
+                  @ui.Button("Try it out in playground", true, "", nil)
+                }
+              </div>
+            </div>
+            <div class="links-container">
+              if (0 != len(project.CollectionURL) && "about:blank" != project.CollectionURL) ||
+                (0 != len(project.GitHubURL) && "about:blank" != project.GitHubURL) {
+                <div class="links">
+                  if (0 != len(project.CollectionURL) && "about:blank" != project.CollectionURL) {
+                    <a class="collection-url"
+                       href={ templ.URL(project.CollectionURL) }
+                       target="_blank">
+                      <span>Get collection file</span>
+                      <i class="fa fa-arrow-down"></i>
+                    </a>
+                  }
+                  if (0 != len(project.GitHubURL) && "about:blank" != project.GitHubURL) {
+                    <a class="github-url"
+                       href={ templ.URL(project.GitHubURL) }
+                       target="_blank">
+                      <span>See project in GitHub</span>
+                      <i class="fa-brands fa-github"></i>
+                    </a>
+                  }
+                </div>
+              }
+            </div>
+            <div class="images-container">
+              <div class="first-image">
+                <img src={ project.FirstImageURL } alt="First project image." />
+                <div class="second-image">
+                  <img src={ project.SecondImageURL } alt="Second project image." />
+                </div>
+              </div>
+            </div>
+          </article>
+        }
+      </section>
+    </section>
+  }
+}
