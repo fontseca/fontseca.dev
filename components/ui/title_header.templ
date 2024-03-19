@@ -1,7 +1,17 @@
 package ui
 
-templ TitleHeader(value string) {
+templ TitleHeader(value string, endpoint ...string) {
   <header class="title-header">
-    <p class="title-header-text"><span>about:</span>{ value }</p>
+    <p class="title-header-text">
+      <span>about:</span>{ value }
+      if 0 != len(endpoint) {
+        <a class="api-endpoint"
+           href={ templ.URL(endpoint[0]) }
+           target="_blank"
+           title="See in JSON format">
+          <i class="fa fa-external-link"></i>
+        </a>
+      }
+    </p>
   </header>
 }

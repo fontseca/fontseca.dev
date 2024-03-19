@@ -10,7 +10,7 @@ import (
 templ Experience(exp []*model.Experience) {
   @layout.Layout("experience", 1) {
     <section class="experience">
-      @ui.TitleHeader("experience")
+      @ui.TitleHeader("experience", "/me.experience.list")
       <section class="experience-list">
         for i, e := range exp {
           <article class="experience-list-tile">

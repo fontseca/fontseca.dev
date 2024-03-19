@@ -75,6 +75,16 @@ body {
   font-weight: 700;
 }
 
+.title-header .api-endpoint {
+  font-size: clamp(.8rem, 1vw, 1vw);
+  color: rgba(0, 0, 0, 0.5);
+  text-decoration: none;
+}
+
+
+.title-header .api-endpoint:hover {
+  color: black;
+}
 
 /* Wrapper.  */
 
