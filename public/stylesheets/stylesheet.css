@@ -42,17 +42,20 @@ body {
 /* Button.  */
 
 .btn {
-  padding: .7rem 2rem .7rem 2rem;
+  display: inline-block;
+  text-align: center;
+  vertical-align: middle;
+  padding: .5rem;
   background-color: white;
   color: black;
   cursor: pointer;
   border: 1px solid black;
   text-decoration: none;
+  font-weight: 700;
 }
 
 .btn:hover {
-  background-color: black;
-  color: white;
+  text-decoration: underline;
 }
 
 .btn.filled {
