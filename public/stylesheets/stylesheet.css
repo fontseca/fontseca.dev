@@ -372,12 +372,12 @@ body {
   padding-bottom: 1rem;
 }
 
-.info-article .buttons-container {
+.info-article .buttons {
   margin-top: 1rem;
   margin-bottom: 2rem;
 }
 
-.info-article .buttons-container * {
+.info-article .buttons * {
   margin-right: 1rem;
 }
 
@@ -386,12 +386,12 @@ body {
     width: 100% !important;
   }
 
-  .info-article .buttons-container {
+  .info-article .buttons {
     display: flex;
     flex-wrap: wrap;
   }
 
-  .info-article .buttons-container * {
+  .info-article .buttons * {
     margin-right: 0;
     margin-bottom: 1rem;
     width: 100%;
