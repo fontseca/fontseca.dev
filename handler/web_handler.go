@@ -9,15 +9,18 @@ import (
 type WebHandler struct {
   meService         service.MeService
   experienceService service.ExperienceService
+  projectsService   service.ProjectsService
 }
 
 func NewWebHandler(
   meService service.MeService,
   experienceService service.ExperienceService,
+  projectsService service.ProjectsService,
 ) *WebHandler {
   return &WebHandler{
     meService:         meService,
     experienceService: experienceService,
+    projectsService:   projectsService,
   }
 }
 
@@ -35,4 +38,12 @@ func (h *WebHandler) RenderExperience(c *gin.Context) {
     return
   }
   pages.Experience(exp).Render(c, c.Writer)
+}
+
+func (h *WebHandler) RenderProjects(c *gin.Context) {
+  var projects, err = h.projectsService.Get(c, false)
+  if nil != err {
+    return
+  }
+  pages.Projects(projects).Render(c, c.Writer)
 }

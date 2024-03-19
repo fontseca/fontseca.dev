@@ -458,10 +458,12 @@ func main() {
   var webHandler = handler.NewWebHandler(
     meService,
     experienceService,
+    projectsService,
   )
 
   engine.GET("/", webHandler.RenderMe)
   engine.GET("/experience", webHandler.RenderExperience)
+  engine.GET("/projects", webHandler.RenderProjects)
 
   engine.NoRoute(func(c *gin.Context) {
     var p problem.Problem
