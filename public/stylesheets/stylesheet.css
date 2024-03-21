@@ -547,22 +547,50 @@ body {
 
 .project-tile {
   display: flex;
-  height: 360px;
-  padding-bottom: 3rem;
 }
 
 .project-tile .content-container {
   padding-right: 2rem;
-  width: 60%;
+  width: 65%;
+}
+
+.project-tile:not(:last-child) .content-container {
+  padding-bottom: 3rem;
 }
 
 .project-tile .content-container .name {
+  width: calc(100% - 170px - .5rem);
   font-size: 25px;
   font-weight: 700;
-  margin-bottom: 1.6rem;
+  margin-bottom: 1.5rem;
+}
+
+.project-tile .content-container .language,
+.project-tile .content-container .homepage {
+  font-weight: 500;
+  margin-top: .4rem;
+}
+
+.project-tile .content-container .homepage {
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  width: 100%;
+  display: block;
+  overflow: hidden;
+}
+
+.project-tile .content-container .homepage a {
+  color: black;
+  font-weight: bolder;
+  text-decoration: none;
+}
+
+.project-tile .content-container .homepage a:hover {
+  text-decoration: underline;
 }
 
 .project-tile .content-container .summary {
+  margin-top: 1rem;
   font-family: 'Source Serif 4', sans-serif;
   display: -webkit-box;
   -webkit-line-clamp: 5;
@@ -571,46 +599,31 @@ body {
 }
 
 .project-tile .content-container .tags {
+  padding-top: 1rem;
+  padding-bottom: 1rem;
   display: flex;
-  padding: 1rem 0 1rem 0;
+  column-gap: .7rem;
+  row-gap: .2rem;
+  flex-wrap: wrap;
 }
 
 .project-tile .content-container .tags .tag {
   font-weight: 600;
 }
 
-.project-tile .content-container .tags .tag:not(:first-child) {
-  margin-left: 1rem;
-}
-
-.project-tile .content-container .buttons {
-  padding-bottom: .6rem;
-}
-
-.project-tile .content-container .buttons .btn {
-  display: block;
-}
-
-.project-tile .content-container .buttons .btn:nth-child(1) {
-  width: 150px;
-}
-
 .project-tile .content-container .buttons .btn:nth-child(2) {
-  margin-top: .5rem;
-  width: 200px;
+  margin-left: .5rem;
 }
 
 .project-tile .links-container {
   background-color: black;
-  width: .1%;
+  width: 1px;
   position: relative;
-  height: 116%;
 }
 
 .project-tile .links-container .links {
   position: absolute;
   width: 220px;
-  bottom: 70px;
   right: -17px;
   text-align: right;
 }
@@ -647,11 +660,13 @@ body {
 .project-tile .links-container .links .github-url i {
   background-color: white;
   color: black;
+  font-size: 22px;
 }
 
 .project-tile .images-container {
   padding-left: 2rem;
-  width: 40%;
+  padding-bottom: 3rem;
+  width: 35%;
 }
 
 .project-tile .images-container img {
@@ -659,7 +674,6 @@ body {
 }
 
 .project-tile .images-container .first-image {
-  height: 250px;
   width: 100%;
   position: relative;
   border-top-left-radius: 5px;
@@ -668,7 +682,7 @@ body {
 }
 
 .project-tile .images-container .first-image img {
-  height: 100%;
+  height: auto;
   border-top-left-radius: 5px;
   border-top-right-radius: 5px;
   border-bottom-left-radius: 5px;
@@ -676,11 +690,9 @@ body {
 
 .project-tile .images-container .second-image {
   width: 100%;
-  height: 250px;
   position: absolute;
-  bottom: -35%;
+  bottom: -3rem;
   right: 0;
-  z-index: 1;
   overflow-x: hidden;
   border-top-left-radius: 5px;
   border-bottom-right-radius: 5px;
@@ -692,4 +704,78 @@ body {
   border-bottom-left-radius: 5px;
   border-bottom-right-radius: 5px;
   border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+@media screen and (max-width: 1420px) {
+  .project-tile .content-container {
+    width: 55%;
+  }
+
+  .project-tile .images-container {
+    width: 45%;
+  }
+}
+
+@media screen and (max-width: 1120px) {
+  .project-tile:not(:last-child) .content-container {
+    padding-bottom: 0;
+  }
+
+  .project-tile {
+    flex-wrap: wrap;
+    height: auto;
+    position: relative;
+  }
+
+  .project-tile .content-container {
+    width: 100%;
+  }
+
+  .project-tile .links-container {
+    position: absolute;
+    right: 0;
+    height: 100%;
+  }
+
+  .project-tile .images-container {
+    padding-top: 20px;
+    padding-left: 0;
+    padding-bottom: calc(3rem + 20px);
+    width: 90%;
+  }
+}
+
+@media screen and (max-width: 610px) {
+  .project-tile .images-container {
+    padding-right: 10px;
+    width: 100%;
+  }
+
+  .project-tile .content-container .name {
+    width: 100%;
+  }
+
+  .project-tile .content-container .buttons {
+    display: block;
+  }
+
+  .project-tile .content-container .buttons .btn:nth-child(2) {
+    margin-top: .5rem;
+    margin-left: 0;
+  }
+
+  .project-tile .links-container .links {
+    width: auto;
+  }
+
+  .project-tile .links-container .links,
+  .project-tile .links-container .links a,
+  .project-tile .links-container .links a i {
+    margin: 0;
+    padding: 0;
+  }
+
+  .project-tile .links-container .links a span {
+    display: none;
+  }
 }
