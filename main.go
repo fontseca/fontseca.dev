@@ -377,6 +377,7 @@ func main() {
   }))
 
   engine.Static("/public", "public")
+  engine.StaticFile("/favicon.ico", "public/icons/favicon.ico")
 
   binding.EnableDecoderDisallowUnknownFields = true
   if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
