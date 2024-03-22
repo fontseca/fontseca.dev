@@ -1,5 +1,9 @@
 package ui
 
-templ Button(value string, filled bool, href string, attributes templ.Attributes) {
-  <a href={ templ.URL(href) } class={ "btn", templ.KV("filled", filled) }>{ value }</a>
+templ Button(value string, filled bool, href string, attributes templ.Attributes, selfTarget ...bool) {
+  if 0 != len(selfTarget) && selfTarget[0] {
+    <a href={ templ.URL(href) } target="_self" class={ "btn", templ.KV("filled", filled) }>{ value }</a>
+  } else {
+    <a href={ templ.URL(href) } target="_blank" class={ "btn", templ.KV("filled", filled) }>{ value }</a>
+  }
 }
