@@ -18,6 +18,16 @@ body {
   scroll-behavior: smooth;
 }
 
+a {
+  color: black;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
 /* Logo.  */
 
 .logo {
