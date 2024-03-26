@@ -39,7 +39,7 @@ templ Projects(projects []*model.Project) {
                   }
                 </div>
                 <div class="buttons">
-                  @ui.Button("See more details", false, "", nil)
+                  @ui.Button("See more details", false, "", nil, true)
                   if (project.Playable) {
                     @ui.Button("Try it out in playground", true, "", nil)
                   }
