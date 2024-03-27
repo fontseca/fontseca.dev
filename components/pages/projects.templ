@@ -7,9 +7,9 @@ import (
 )
 
 templ Projects(projects []*model.Project) {
-  @layout.Layout("projects", 2) {
+  @layout.Layout("work", 2) {
     <section class="projects">
-      @ui.TitleHeader("projects", "/me.projects.list")
+      @ui.TitleHeader("work", "/me.projects.list")
       if 0 == len(projects) {
         <p>Oops! Looks like I don't have any project yet. (Well, except this website!)</p>
       } else {

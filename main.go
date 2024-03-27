@@ -465,7 +465,7 @@ func main() {
 
   engine.GET("/", webHandler.RenderMe)
   engine.GET("/experience", webHandler.RenderExperience)
-  engine.GET("/projects", webHandler.RenderProjects)
+  engine.GET("/work", webHandler.RenderProjects)
 
   engine.NoRoute(func(c *gin.Context) {
     var p problem.Problem
