@@ -81,7 +81,8 @@ func TestProjectsService_Add(t *testing.T) {
 
   t.Run("success", func(t *testing.T) {
     var creation = transfer.ProjectCreation{
-      Name:           "Name",
+      Name:           "THIS      Is\n\tThe \t Project    Name",
+      Slug:           "this-is-the-project-name",
       Homepage:       "https://Homepage.com",
       Language:       "Language",
       Summary:        "Summary",

@@ -226,6 +226,7 @@ func main() {
       (
         "id"               VARCHAR(36) NOT NULL PRIMARY KEY DEFAULT (uuid_generate_v4 ()),
         "name"             VARCHAR(64) NOT NULL,
+        "slug"             VARCHAR(2024) NOT NULL,
         "homepage"         VARCHAR(2048) NOT NULL ON CONFLICT REPLACE DEFAULT 'about:blank',
         "language"         VARCHAR(64) NULL,
         "summary"          VARCHAR(1024) NOT NULL ON CONFLICT REPLACE DEFAULT 'No summary.',

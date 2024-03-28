@@ -9,6 +9,7 @@ import (
 type Project struct {
   ID             uuid.UUID `json:"id"`
   Name           string    `json:"name"`
+  Slug           string    `json:"slug"`
   Homepage       string    `json:"homepage"`
   Language       *string   `json:"language"`
   Summary        string    `json:"summary"`

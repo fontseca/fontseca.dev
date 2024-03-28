@@ -9,6 +9,7 @@ import (
   "fontseca/transfer"
   "log/slog"
   "net/http"
+  "regexp"
   "strings"
 )
 
@@ -105,6 +106,12 @@ func (s *projectsService) Add(ctx context.Context, creation *transfer.ProjectCre
   case 0 != len(creation.CollectionURL) && 2048 < len(creation.CollectionURL):
     return "", problem.NewValidation([3]string{"collection_url", "max", "2048"})
   }
+  r, err := regexp.Compile(`\s+`)
+  if nil != err {
+    slog.Error(err.Error())
+    return "", err
+  }
+  creation.Slug = strings.ToLower(r.ReplaceAllString(creation.Name, "-"))
   err = sanitizeURL(
     &creation.Homepage,
     &creation.FirstImageURL,

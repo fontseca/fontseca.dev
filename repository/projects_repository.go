@@ -56,7 +56,25 @@ func NewProjectsRepository(db *sql.DB) ProjectsRepository {
 
 func (r *projectsRepository) Get(ctx context.Context, archived bool) (projects []*model.Project, err error) {
   var query = `
-     SELECT p.*, group_concat (tt."name")
+     SELECT p."id",
+            p."name",
+            p."slug",
+            p."homepage",
+            p."language",
+            p."summary",
+            p."content",
+            p."estimated_time",
+            p."first_image_url",
+            p."second_image_url",
+            p."github_url",
+            p."collection_url",
+            p."playground_url",
+            p."playable",
+            p."archived",
+            p."finished",
+            p."created_at",
+            p."updated_at",
+            group_concat (tt."name")
        FROM "project" p
   LEFT JOIN "project_technology_tag" ptt
          ON ptt."project_id" = p."id"
@@ -82,6 +100,7 @@ func (r *projectsRepository) Get(ctx context.Context, archived bool) (projects [
     err = rows.Scan(
       &project.ID,
       &project.Name,
+      &project.Slug,
       &project.Homepage,
       &project.Language,
       &project.Summary,
@@ -176,6 +195,7 @@ func (r *projectsRepository) Add(ctx context.Context, creation *transfer.Project
   defer tx.Rollback()
   var query = `
   INSERT INTO "project" ("name",
+                         "slug",
                          "homepage",
                          "language",
                          "summary",
@@ -186,6 +206,7 @@ func (r *projectsRepository) Add(ctx context.Context, creation *transfer.Project
                          "github_url",
                          "collection_url")
                  VALUES (@name,
+                         @slug,
                          nullif (@homepage, ''),
                          nullif (@language, ''),
                          nullif (@summary, ''),
@@ -200,6 +221,7 @@ func (r *projectsRepository) Add(ctx context.Context, creation *transfer.Project
   defer cancel()
   var row = tx.QueryRowContext(ctx, query,
     sql.Named("name", creation.Name),
+    sql.Named("slug", creation.Slug),
     sql.Named("homepage", creation.Homepage),
     sql.Named("language", creation.Language),
     sql.Named("summary", creation.Summary),
