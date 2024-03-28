@@ -26,6 +26,17 @@ func NewNotFound(id, recordType string) *Problem {
   return &p
 }
 
+func NewSlugNotFound(slug, recordType string) *Problem {
+  var p Problem
+  p.Type("about:blank")
+  p.Status(http.StatusNotFound)
+  p.Title("Record not found.")
+  p.Detail(fmt.Sprintf("The %s record with the slug '%s' could not be found in the database.", recordType, slug))
+  p.With("slug", slug)
+  p.With("record_type", recordType)
+  return &p
+}
+
 func NewUnparsableValue(targetType, fieldName, fieldValue string) *Problem {
   var p Problem
   p.Type("about:blank")
