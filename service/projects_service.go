@@ -84,7 +84,15 @@ func (s *projectsService) Add(ctx context.Context, creation *transfer.ProjectCre
     slog.Error(err.Error())
     return "", err
   }
+
+  removeSpaceInterceptions, err := regexp.Compile(`\s+`)
+  if nil != err {
+    slog.Error(err.Error())
+    return "", err
+  }
+
   creation.Name = strings.TrimSpace(creation.Name)
+  creation.Name = removeSpaceInterceptions.ReplaceAllString(creation.Name, " ")
   creation.Homepage = strings.TrimSpace(creation.Homepage)
   creation.Language = strings.TrimSpace(creation.Language)
   creation.Summary = strings.TrimSpace(creation.Summary)
@@ -113,12 +121,8 @@ func (s *projectsService) Add(ctx context.Context, creation *transfer.ProjectCre
   case 0 != len(creation.CollectionURL) && 2048 < len(creation.CollectionURL):
     return "", problem.NewValidation([3]string{"collection_url", "max", "2048"})
   }
-  r, err := regexp.Compile(`\s+`)
-  if nil != err {
-    slog.Error(err.Error())
-    return "", err
-  }
-  creation.Slug = strings.ToLower(r.ReplaceAllString(creation.Name, "-"))
+
+  creation.Slug = strings.ToLower(strings.ReplaceAll(creation.Name, " ", "-"))
   err = sanitizeURL(
     &creation.Homepage,
     &creation.FirstImageURL,
@@ -147,7 +151,18 @@ func (s *projectsService) Update(ctx context.Context, id string, update *transfe
   if err = validateUUID(&id); err != nil {
     return false, err
   }
+  removeSpaceInterceptions, err := regexp.Compile(`\s+`)
+  if nil != err {
+    slog.Error(err.Error())
+    return false, err
+  }
+
   update.Name = strings.TrimSpace(update.Name)
+
+  if "" != update.Name {
+    update.Name = removeSpaceInterceptions.ReplaceAllString(update.Name, " ")
+  }
+
   update.Homepage = strings.TrimSpace(update.Homepage)
   update.Language = strings.TrimSpace(update.Language)
   update.Summary = strings.TrimSpace(update.Summary)
@@ -178,6 +193,9 @@ func (s *projectsService) Update(ctx context.Context, id string, update *transfe
     return false, problem.NewValidation([3]string{"collection_url", "max", "2048"})
   case 0 != len(update.PlaygroundURL) && 2048 < len(update.PlaygroundURL):
     return false, problem.NewValidation([3]string{"playground_url", "max", "2048"})
+  }
+  if "" != update.Name {
+    update.Slug = strings.ToLower(removeSpaceInterceptions.ReplaceAllString(update.Name, "-"))
   }
   err = sanitizeURL(
     &update.Homepage,

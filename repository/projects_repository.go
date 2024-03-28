@@ -173,6 +173,7 @@ func (r *projectsRepository) doGetByID(ctx context.Context, id string, ignoreArc
   err = result.Scan(
     &project.ID,
     &project.Name,
+    &project.Slug,
     &project.Homepage,
     &project.Language,
     &project.Summary,
@@ -359,6 +360,7 @@ func (r *projectsRepository) Exists(ctx context.Context, id string) (err error) 
 
 func (r *projectsRepository) nothingToUpdate(current *model.Project, update *transfer.ProjectUpdate) bool {
   return ("" == update.Name || update.Name == current.Name) &&
+    ("" == update.Slug || update.Slug == current.Slug) &&
     ("" == update.Homepage || update.Homepage == current.Homepage) &&
     ("" == update.Language || nil != current.Language && update.Language == *current.Language) &&
     ("" == update.Summary || update.Summary == current.Summary) &&
@@ -390,6 +392,7 @@ func (r *projectsRepository) doUpdate(ctx context.Context, id string, update *tr
   var query = `
   UPDATE "project"
      SET "name" = coalesce (nullif (@name, ''), @current_name),
+         "slug" = coalesce (nullif (@slug, ''), @current_slug),
          "homepage" = coalesce (nullif (@homepage, ''), @current_homepage),
          "language" = coalesce (nullif (@language, ''), @current_language),
          "summary" = coalesce (nullif (@summary, ''), @current_summary),
@@ -419,6 +422,7 @@ func (r *projectsRepository) doUpdate(ctx context.Context, id string, update *tr
   defer cancel()
   result, err := tx.ExecContext(ctx, query, sql.Named("id", id),
     sql.Named("name", update.Name), sql.Named("current_name", current.Name),
+    sql.Named("slug", update.Slug), sql.Named("current_slug", current.Slug),
     sql.Named("homepage", update.Homepage), sql.Named("current_homepage", current.Homepage),
     sql.Named("language", update.Language), sql.Named("current_language", current.Language),
     sql.Named("summary", update.Summary), sql.Named("current_summary", current.Summary),
