@@ -3,7 +3,7 @@ package transfer
 // ProjectCreation represents the data required to create a new project entry.
 type ProjectCreation struct {
   Name           string `json:"name" binding:"required,max=64"`
-  Slug           string `json:"slug"`
+  Slug           string
   Homepage       string `json:"homepage"`
   Language       string `json:"language"`
   Summary        string `json:"summary"`
@@ -18,6 +18,7 @@ type ProjectCreation struct {
 // ProjectUpdate represents the data required to update an existing project entry.
 type ProjectUpdate struct {
   Name           string `json:"name"`
+  Slug           string
   Homepage       string `json:"homepage"`
   Language       string `json:"language"`
   Summary        string `json:"summary"`
