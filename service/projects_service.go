@@ -22,6 +22,9 @@ type ProjectsService interface {
   // GetByID retrieves a single project by its ID.
   GetByID(ctx context.Context, id string) (project *model.Project, err error)
 
+  // GetBySlug retrieves a project type by its slug.
+  GetBySlug(ctx context.Context, slug string) (project *model.Project, err error)
+
   // Add creates a project record with the provided creation data.
   Add(ctx context.Context, creation *transfer.ProjectCreation) (id string, err error)
 
@@ -69,6 +72,10 @@ func (s *projectsService) GetByID(ctx context.Context, id string) (project *mode
     return nil, err
   }
   return s.r.GetByID(ctx, id)
+}
+
+func (s *projectsService) GetBySlug(ctx context.Context, slug string) (project *model.Project, err error) {
+  return s.r.GetBySlug(ctx, slug)
 }
 
 func (s *projectsService) Add(ctx context.Context, creation *transfer.ProjectCreation) (id string, err error) {

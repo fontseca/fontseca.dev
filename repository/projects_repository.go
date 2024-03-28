@@ -20,6 +20,9 @@ type ProjectsRepository interface {
   // GetByID retrieves a project type by its ID.
   GetByID(ctx context.Context, id string) (project *model.Project, err error)
 
+  // GetBySlug retrieves a project type by its slug.
+  GetBySlug(ctx context.Context, slug string) (project *model.Project, err error)
+
   // Add creates a project record with the provided creation data.projectID
   Add(ctx context.Context, creation *transfer.ProjectCreation) (id string, err error)
 
@@ -131,7 +134,25 @@ func (r *projectsRepository) Get(ctx context.Context, archived bool) (projects [
 
 func (r *projectsRepository) doGetByID(ctx context.Context, id string, ignoreArchived bool) (project *model.Project, err error) {
   var query = `
-     SELECT p.*, group_concat (tt."name")
+     SELECT p."id",
+            p."name",
+            p."slug",
+            p."homepage",
+            p."language",
+            p."summary",
+            p."content",
+            p."estimated_time",
+            p."first_image_url",
+            p."second_image_url",
+            p."github_url",
+            p."collection_url",
+            p."playground_url",
+            p."playable",
+            p."archived",
+            p."finished",
+            p."created_at",
+            p."updated_at",
+            group_concat (tt."name")
        FROM "project" p
   LEFT JOIN "project_technology_tag" ptt
          ON ptt."project_id" = p."id"
@@ -184,6 +205,79 @@ func (r *projectsRepository) doGetByID(ctx context.Context, id string, ignoreArc
 
 func (r *projectsRepository) GetByID(ctx context.Context, id string) (project *model.Project, err error) {
   return r.doGetByID(ctx, id, false)
+}
+
+func (r *projectsRepository) GetBySlug(ctx context.Context, slug string) (project *model.Project, err error) {
+  var query = `
+     SELECT p."id",
+            p."name",
+            p."slug",
+            p."homepage",
+            p."language",
+            p."summary",
+            p."content",
+            p."estimated_time",
+            p."first_image_url",
+            p."second_image_url",
+            p."github_url",
+            p."collection_url",
+            p."playground_url",
+            p."playable",
+            p."archived",
+            p."finished",
+            p."created_at",
+            p."updated_at",
+            group_concat (tt."name")
+       FROM "project" p
+  LEFT JOIN "project_technology_tag" ptt
+         ON ptt."project_id" = p."id"
+  LEFT JOIN "technology_tag" tt
+         ON tt."id" = ptt."technology_tag_id"
+      WHERE p."archived" IS FALSE
+        AND p."slug" = @slug
+   GROUP BY p."id"
+      LIMIT 1;`
+  ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+  defer cancel()
+  var result = r.db.QueryRowContext(ctx, query, sql.Named("slug", slug))
+  if nil != err {
+    slog.Error(err.Error())
+    return nil, err
+  }
+  project = new(model.Project)
+  var tags *string
+  err = result.Scan(
+    &project.ID,
+    &project.Name,
+    &project.Slug,
+    &project.Homepage,
+    &project.Language,
+    &project.Summary,
+    &project.Content,
+    &project.EstimatedTime,
+    &project.FirstImageURL,
+    &project.SecondImageURL,
+    &project.GitHubURL,
+    &project.CollectionURL,
+    &project.PlaygroundURL,
+    &project.Playable,
+    &project.Archived,
+    &project.Finished,
+    &project.CreatedAt,
+    &project.UpdatedAt,
+    &tags)
+  if nil != err {
+    if errors.Is(err, sql.ErrNoRows) {
+      err = problem.NewSlugNotFound(slug, "project")
+    } else {
+      slog.Error(err.Error())
+    }
+    return nil, err
+  }
+  if nil != tags && "" != *tags {
+    project.TechnologyTags = strings.Split(*tags, ",")
+  }
+  return project, nil
 }
 
 func (r *projectsRepository) Add(ctx context.Context, creation *transfer.ProjectCreation) (id string, err error) {
