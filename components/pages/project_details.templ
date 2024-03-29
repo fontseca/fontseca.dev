@@ -1,0 +1,93 @@
+package pages
+
+import (
+  "fontseca/model"
+  "fontseca/components/layout"
+  "fontseca/components/ui"
+)
+
+templ ProjectDetails(project *model.Project) {
+  if nil == project {
+    @layout.Layout("unknown project", 2) {
+      <p>Could not find any reference to the requested project. Go back to <a href="/work">work</a> and see other options.</p>
+    }
+  } else {
+    @layout.Layout(project.Name, 2) {
+      <section class="project-detail">
+        <article class="info-article">
+          <div class="info-container">
+            <header>
+              <h1 class="name">{ project.Name }</h1>
+              <p class="year-and-category">
+                <span class="year">Worked on by 2021</span>
+                <span class="category">
+                  <a href="about:blank">Gotlim</a>
+                </span>
+              </p>
+              if nil != project.Language {
+                <p class="language">Built in { *project.Language }</p>
+              }
+              <p class="homepage">
+                if "" != project.Homepage && "about:blank" != project.Homepage {
+                <a href={ templ.URL(project.Homepage) }
+                   target="_blank"
+                   title="Go to project homepage.">{ project.Homepage }</a>
+                } else {
+                <a href="about:blank"
+                   target="_blank"
+                   title="Go to project homepage.">about:blank</a>
+                }
+              </p>
+              <p class="summary">{ project.Summary }</p>
+            </header>
+            <div class="tags-and-playground-container">
+              <div class="tags">
+                for _, tag := range project.TechnologyTags {
+                <span class="tag">{ tag }</span>
+                }
+              </div>
+              if (project.Playable) {
+                <div style="margin-top: 1rem;">
+                  @ui.Button("Try it out in playground", true, "", nil)
+                </div>
+              }
+            </div>
+          </div>
+          <div class="images-and-links-container">
+            <div class="images-container">
+              <div class="first-image">
+                <img src={ project.FirstImageURL } alt="First project image." />
+                <div class="second-image">
+                  <img src={ project.SecondImageURL } alt="Second project image." />
+                </div>
+              </div>
+            </div>
+            <div class="links-container">
+              if (0 != len(project.CollectionURL) && "about:blank" != project.CollectionURL) ||
+              (0 != len(project.GitHubURL) && "about:blank" != project.GitHubURL) {
+              <div class="links">
+                if (0 != len(project.CollectionURL) && "about:blank" != project.CollectionURL) {
+                  <a class="collection-url"
+                     href={ templ.URL(project.CollectionURL) }
+                     target="_blank">
+                    <span>Get collection file</span>
+                    <i class="fa fa-arrow-down" style="margin-left: .7rem"></i>
+                  </a>
+                }
+                if (0 != len(project.GitHubURL) && "about:blank" != project.GitHubURL) {
+                <a class="github-url"
+                   href={ templ.URL(project.GitHubURL) }
+                   target="_blank">
+                  <span>See project in GitHub</span>
+                  <i class="fa-brands fa-github" style="margin-left: .7rem"></i>
+                </a>
+                }
+              </div>
+              }
+            </div>
+          </div>
+        </article>
+      </section>
+    }
+  }
+}

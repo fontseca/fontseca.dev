@@ -814,3 +814,184 @@ a:hover {
     display: none;
   }
 }
+
+/* Project details page. */
+
+.project-detail .info-article {
+  padding-bottom: 1rem;
+  border-bottom: 1px solid black;
+  display: flex;
+}
+
+.project-detail .info-container {
+  width: 65%;
+}
+
+.project-detail .info-container {
+  padding-right: 1rem;
+  display: flex;
+  justify-content: space-between;
+  flex-direction: column;
+}
+
+.project-detail .info-article .info-container .name {
+  font-size: clamp(2.5rem, 2.5vw, 2.5vw);
+  font-weight: 800;
+  margin-bottom: .5rem;
+}
+
+.project-detail .info-article .info-container .year-and-category,
+.project-detail .info-article .info-container .language {
+  margin-bottom: .5rem;
+}
+
+.project-detail .info-article .info-container .homepage {
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+.project-detail .info-article .info-container .category:before {
+  content: "—";
+  position: relative;
+  padding-left: .3rem;
+  padding-right: .3rem;
+}
+
+.project-detail .info-article .info-container .summary {
+  font-family: 'Source Serif 4', sans-serif;
+  padding-top: 1rem;
+}
+
+.project-detail .info-article .info-container .tags-and-playground-container {
+  display: block;
+}
+
+.project-detail .info-article .tags-and-playground-container .tags {
+  padding-top: 1rem;
+  display: flex;
+  column-gap: .7rem;
+  row-gap: .2rem;
+  flex-wrap: wrap;
+}
+
+.project-detail .info-article .tags-and-playground-container .tags .tag {
+  font-weight: 600;
+}
+
+.project-detail .info-article .images-and-links-container {
+  position: relative;
+  width: 35%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.project-detail .info-article .images-container {
+  width: 100%;
+  padding-bottom: 2.5rem;
+}
+
+.project-detail .info-article .images-container img {
+  width: 100%;
+}
+
+.project-detail .info-article .images-container .first-image {
+  width: 100%;
+  border-top-left-radius: 5px;
+  border-top-right-radius: 5px;
+  border-bottom-left-radius: 5px;
+  position: relative;
+}
+
+.project-detail .info-article .images-container .first-image img {
+  height: auto;
+  border-top-left-radius: 5px;
+  border-top-right-radius: 5px;
+  border-bottom-left-radius: 5px;
+}
+
+.project-detail .info-article .images-container .second-image {
+  width: 100%;
+  position: absolute;
+  bottom: -3rem;
+  right: 0;
+  overflow-x: hidden;
+  border-top-left-radius: 5px;
+  border-bottom-right-radius: 5px;
+}
+
+.project-detail .info-article .images-container .second-image img {
+  margin-left: 25%;
+  border-top-left-radius: 5px;
+  border-bottom-left-radius: 5px;
+  border-bottom-right-radius: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+
+.project-detail .images-and-links-container .links-container {
+  padding-top: 1rem;
+  width: 100%;
+  height: auto;
+  display: flex;
+  justify-content: end;
+  align-items: end;
+}
+
+.project-detail .images-and-links-container .links-container .links {
+  width: 220px;
+}
+
+.project-detail .images-and-links-container .links-container .links a {
+  display: block;
+  padding: .5rem .7rem;
+  text-align: right;
+}
+
+.project-detail .images-and-links-container .links-container .links .github-url {
+  background-color: black;
+  color: white;
+}
+
+@media screen and (max-width: 1420px) {
+  .project-detail .info-article .info-container {
+    width: 60%;
+  }
+
+  .project-detail .info-article .images-and-links-container {
+    width: 40%;
+  }
+}
+
+@media screen and (max-width: 1120px) {
+  .project-detail .info-article {
+    flex-wrap: wrap;
+    flex-direction: column;
+  }
+
+  .project-detail .info-article .info-container {
+    width: 100%;
+    padding: 0;
+  }
+
+  .project-detail .info-article .images-and-links-container {
+    width: 100%;
+    padding: 0;
+  }
+
+  .project-detail .info-article .images-and-links-container .images-container {
+    padding-top: 1rem;
+    width: 90%;
+  }
+
+  .project-detail .info-article .images-and-links-container .images-container {
+    align-self: center;
+  }
+}
+
+@media screen and (max-width: 720px) {
+  .project-detail .info-article .images-and-links-container .images-container {
+    width: 100%;
+  }
+}
