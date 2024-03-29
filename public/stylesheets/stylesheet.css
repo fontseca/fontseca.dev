@@ -329,46 +329,46 @@ a:hover {
   display: flex;
 }
 
-.info-article {
+.me .info-article {
   width: 55%;
 }
 
-.info-article .name {
+.me .info-article .name {
   font-size: clamp(2.5rem, 4vw, 4vw);
   font-weight: 200;
 }
 
-.info-article .name span {
+.me .info-article .name span {
   font-weight: 700;
 }
 
-.info-article .job-title {
+.me .info-article .job-title {
   font-size: clamp(1.5rem, 1vw, 1vw);
   font-weight: 600;
   margin-top: 15px;
 }
 
-.info-article .job-title span {
+.me .info-article .job-title span {
   font-weight: 600;
 }
 
-.info-article .summary-container {
+.me .info-article .summary-container {
   padding-top: 33px;
 }
 
-.info-article .summary-container p {
+.me .info-article .summary-container p {
   font-family: 'Source Serif 4', sans-serif;
   font-size: clamp(16px, 1vw, 1vw);
 }
 
-.info-article .contact-icons {
+.me .info-article .contact-icons {
   width: 50%;
   border-bottom: 1px solid black;
   padding-bottom: 1rem;
   padding-top: 30px;
 }
 
-.info-article .contact-icons a {
+.me .info-article .contact-icons a {
   display: inline-block;
   line-height: 50px !important;
   width: 40px;
@@ -378,62 +378,62 @@ a:hover {
   border: 1px solid transparent;
 }
 
-.info-article .contact-icons a i {
+.me .info-article .contact-icons a i {
   font-size: 24px;
 }
 
-.info-article .contact-icons a:hover {
+.me .info-article .contact-icons a:hover {
   border: 1px solid black;
 }
 
-.info-article .email {
+.me .info-article .email {
   font-weight: bold;
   padding-top: 1rem;
   padding-bottom: 1rem;
 }
 
-.info-article .buttons {
+.me .info-article .buttons {
   margin-top: 1rem;
   margin-bottom: 2rem;
 }
 
-.info-article .buttons * {
+.me .info-article .buttons * {
   margin-right: 1rem;
 }
 
 @media screen and (max-width: 510px) {
-  .info-article .contact-icons {
+  .me .info-article .contact-icons {
     width: 100% !important;
   }
 
-  .info-article .buttons {
+  .me .info-article .buttons {
     display: flex;
     flex-wrap: wrap;
   }
 
-  .info-article .buttons * {
+  .me .info-article .buttons * {
     margin-right: 0;
     margin-bottom: 1rem;
     width: 100%;
   }
 }
 
-.info-article .bottom-line {
+.me .info-article .bottom-line {
   font-family: 'Source Serif 4', sans-serif;
 }
 
-.photo-article {
+.me .photo-article {
   position: relative;
   width: 45%;
 }
 
-.photo-article {
+.me .photo-article {
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.photo-article img {
+.me .photo-article img {
   border-radius: 5px;
   width: 85%;
   height: auto;
@@ -441,35 +441,35 @@ a:hover {
 }
 
 @media screen and (max-width: 1300px) {
-  .info-article {
+  .me .info-article {
     padding-right: 2rem;
   }
 
-  .photo-article img {
+  .me .photo-article img {
     width: 100%;
   }
 }
 
 @media screen and (max-width: 1220px) {
-  .info-article .contact-icons {
+  .me .info-article .contact-icons {
     width: 100%;
   }
 }
 
 @media screen and (max-width: 1120px) {
-  .info-article {
+  .me .info-article {
     padding-right: 0;
   }
 
-  .info-article .contact-icons {
+  .me .info-article .contact-icons {
     width: 60%;
   }
 
-  .info-article p.my-name {
+  .me .info-article p.my-name {
     font-size: clamp(3.5rem, 4vw, 4vw);
   }
 
-  .info-article .my-summary-container {
+  .me .info-article .my-summary-container {
     max-width: 38rem;
   }
 
@@ -477,30 +477,30 @@ a:hover {
     flex-wrap: wrap;
   }
 
-  .info-article {
+  .me .info-article {
     width: 100%;
   }
 
-  .photo-article {
+  .me .photo-article {
     margin-top: 2rem;
     margin-bottom: 2rem;
     width: 100%;
   }
 
-  .photo-article img {
+  .me .photo-article img {
     width: 85%;
   }
 }
 
 @media screen and (max-width: 720px) {
-  .photo-article {
+  .me .photo-article {
     margin-bottom: 0;
   }
 
-  .photo-article {
+  .me .photo-article {
   }
 
-  .photo-article img {
+  .me .photo-article img {
     width: 100%;
     margin-bottom: 0;
     box-shadow: 2rem 2rem 0 0 rgba(0, 0, 0, 0.3);
@@ -508,7 +508,7 @@ a:hover {
 }
 
 @media screen and (max-width: 610px) {
-  .photo-article img {
+  .me .photo-article img {
     width: 100%;
     box-shadow: none;
   }
