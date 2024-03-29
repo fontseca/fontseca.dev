@@ -4,6 +4,7 @@ import (
   "fontseca/components/pages"
   "fontseca/service"
   "github.com/gin-gonic/gin"
+  "net/http"
 )
 
 type WebHandler struct {
@@ -46,4 +47,15 @@ func (h *WebHandler) RenderProjects(c *gin.Context) {
     return
   }
   pages.Projects(projects).Render(c, c.Writer)
+}
+
+func (h *WebHandler) RenderProjectDetails(c *gin.Context) {
+  slug := c.Param("project_slug")
+  var project, err = h.projectsService.GetBySlug(c, slug)
+  if nil != err {
+    c.Status(http.StatusNotFound)
+    pages.ProjectDetails(nil).Render(c, c.Writer)
+    return
+  }
+  pages.ProjectDetails(project).Render(c, c.Writer)
 }
