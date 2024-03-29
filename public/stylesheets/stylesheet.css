@@ -995,3 +995,123 @@ a:hover {
     width: 100%;
   }
 }
+
+.project-detail .content-section {
+  width: 100%;
+  padding-top: 2rem;
+  padding-left: 25%;
+  padding-right: 15%;
+  position: relative;
+}
+
+@media screen and (max-width: 1600px) {
+  .project-detail .content-section {
+    padding-right: 0;
+  }
+}
+
+.project-detail .content-section .sharer {
+  position: absolute;
+  left: 0;
+}
+
+.project-detail .content-section .sharer button {
+  border: none;
+  outline: none;
+  cursor: pointer;
+  background-color: transparent;
+  padding-top: .2rem;
+  padding-bottom: .2rem;
+  color: black;
+  font-weight: 700;
+  text-decoration: none;
+  font-size: 16px;
+}
+
+.project-detail .content-section .sharer button i {
+  padding-right: .5rem;
+}
+
+.project-detail .content-section .sharer button:hover {
+  text-decoration: underline;
+}
+
+
+.project-detail .content-section .content * {
+  font-family: 'Source Serif 4', sans-serif;
+}
+
+.project-detail .content-section .content p,
+.project-detail .content-section .content h1,
+.project-detail .content-section .content h2,
+.project-detail .content-section .content h3,
+.project-detail .content-section .content h4,
+.project-detail .content-section .content h5,
+.project-detail .content-section .content h6 {
+  padding-bottom: 1rem;
+}
+
+.project-detail .content-section .content p {
+  font-size: 17px;
+}
+
+.project-detail .content-section .content ul,
+.project-detail .content-section .content ol {
+  padding-left: 3rem;
+}
+
+.project-detail .content-section .content figure {
+  margin-bottom: 1.2rem;
+}
+
+.project-detail .content-section .content figure img {
+  width: 100%;
+  height: auto;
+  border-radius: 5px;
+}
+
+.project-detail .content-section .content figcaption {
+  font: italic smaller sans-serif;
+  text-align: left;
+  padding: 0;
+  position: relative;
+}
+
+.project-detail .content-section .content figcaption .caption {
+  padding-right: 16px;
+  width: 38.6%;
+  position: absolute;
+  left: -38.6%;
+  bottom: 0;
+}
+
+.project-detail .content-section .content figcaption .caption p {
+  font-size: 16px !important;
+}
+
+.project-detail .content-section .content figcaption p {
+  padding: 0 !important;
+}
+
+@media screen and (max-width: 1120px) {
+  .project-detail .content-section .content figure img {
+    width: 100%;
+    margin: auto;
+  }
+
+  .project-detail .content-section .sharer {
+    position: initial;
+    padding-bottom: 1rem;
+  }
+
+  .project-detail .content-section {
+    padding-left: 0;
+  }
+
+  .project-detail .content-section .content figcaption .caption {
+    position: initial;
+    width: 100%;
+    text-align: center;
+    padding: 1rem 0 1rem;
+  }
+}

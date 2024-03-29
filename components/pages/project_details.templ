@@ -87,6 +87,16 @@ templ ProjectDetails(project *model.Project) {
             </div>
           </div>
         </article>
+        <section class="content-section">
+          <div class="sharer">
+            <button type="button" onclick="copyLinkToClipboard()">
+              <i class="fa fa-paperclip"></i>Copy link
+            </button>
+          </div>
+          <article class="content">
+            {! templ.Raw(project.Content) }
+          </article>
+        </section>
       </section>
     }
   }
