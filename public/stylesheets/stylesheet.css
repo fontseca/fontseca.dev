@@ -565,11 +565,25 @@ a:hover {
 .experience-list-tile .content-container .company-and-location {
   font-weight: 500;
   margin-bottom: 1rem;
-  font-style: italic;
 }
 
-.experience-list-tile .content-container .summary {
-  font-family: 'Source Serif 4', sans-serif;
+.experience-list-tile .content-container .summary  p:not(:last-child),
+.experience-list-tile .content-container .summary h1:not(:last-child),
+.experience-list-tile .content-container .summary h2:not(:last-child),
+.experience-list-tile .content-container .summary h3:not(:last-child),
+.experience-list-tile .content-container .summary h4:not(:last-child),
+.experience-list-tile .content-container .summary h5:not(:last-child),
+.experience-list-tile .content-container .summary h6:not(:last-child) {
+  padding-bottom: 1rem;
+}
+
+.experience-list-tile .content-container .summary ul,
+.experience-list-tile .content-container .summary ol {
+  padding-left: 3rem;
+}
+
+.experience-list-tile .content-container .summary * {
+  font-family: 'Source Serif 4', sans-serif !important;
 }
 
 @media screen and (max-width: 1120px) {
