@@ -17,7 +17,22 @@ templ ProjectDetails(project *model.Project) {
         <article class="info-article">
           <div class="info-container">
             <header>
-              <h1 class="name">{ project.Name }</h1>
+              <a href="/work"
+                 hx-get="/work"
+                 hx-push-url="/work"
+                 hx-trigger="click"
+                 hx-target="body">
+                <i class="fa fa-long-arrow-left" style="padding-right: .5rem"></i>Go back to work
+              </a>
+              <h1 class="name">
+                { project.Name }
+                <a class="api-endpoint"
+                   href={ templ.URL("/me.projects.info?id="+project.ID.String()) }
+                   target="_blank"
+                   title="See in JSON format">
+                  <i class="fa fa-external-link"></i>
+                </a>
+              </h1>
               <p class="year-and-category">
                 <span class="year">Worked on by 2021</span>
                 <span class="category">

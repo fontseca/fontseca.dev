@@ -854,6 +854,16 @@ a:hover {
   margin-bottom: .5rem;
 }
 
+.project-detail .info-article .info-container .name .api-endpoint {
+  font-size: clamp(.8rem, 1vw, 1vw);
+  color: rgba(0, 0, 0, 0.5);
+  text-decoration: none;
+}
+
+.project-detail .info-article .info-container .name .api-endpoint:hover {
+  color: black;
+}
+
 .project-detail .info-article .info-container .year-and-category,
 .project-detail .info-article .info-container .language {
   margin-bottom: .5rem;
