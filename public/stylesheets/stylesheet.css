@@ -1022,7 +1022,7 @@ a:hover {
 
 .project-detail .content-section {
   width: 100%;
-  padding-top: 2rem;
+  padding-top: 1.5rem;
   padding-left: 25%;
   padding-right: 15%;
   position: relative;
@@ -1116,8 +1116,73 @@ a:hover {
   padding-left: 3rem;
 }
 
+.project-detail .content-section .content blockquote {
+  padding-left: 3rem;
+  padding-bottom: 1rem;
+  margin: 0;
+}
+
+.project-detail .content-section .content .snippet {
+  width: 100%;
+  margin-bottom: 1rem;
+
+  background-color: #f5f5f5;
+  border-radius: 5px;
+  border: 1px solid rgba(0, 0, 0, 0.3);
+  color: #202224;
+}
+
+.project-detail .content-section .content .snippet .options {
+  width: 100%;
+  display: flex;
+  column-gap: 1rem;
+  justify-content: start;
+
+  border-bottom: 1px solid rgba(0, 0, 0, 0.3);
+  padding: .5rem 1.5rem;
+}
+
+.project-detail .content-section .content .snippet .options div p {
+  padding: 0 !important;
+  font-weight: 600;
+  font-family: monospace !important;
+}
+
+.project-detail .content-section .content .snippet pre {
+  padding: .5rem 1.5rem;
+
+  word-wrap: break-word;
+  page-break-inside: avoid;
+  line-height: 1.6;
+  width: 100%;
+  overflow-x: auto;
+}
+
+.project-detail .content-section .content .snippet pre code {
+  font-family: monospace !important;
+  font-size: 14px !important;
+}
+
+.project-detail .content-section .content blockquote p::before {
+  content: '\201C';
+}
+
+.project-detail .content-section .content blockquote p::after {
+  content: '\201D';
+}
+
 .project-detail .content-section .content figure {
-  margin-bottom: 1.2rem;
+  margin-bottom: 1rem;
+}
+
+.project-detail .content-section .content .video {
+  width: 100%;
+}
+
+.project-detail .content-section .content video {
+  border-radius: 5px;
+  width: 100%;
+  height: auto;
 }
 
 .project-detail .content-section .content figure img {
