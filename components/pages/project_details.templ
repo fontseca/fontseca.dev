@@ -102,13 +102,13 @@ templ ProjectDetails(project *model.Project) {
             </div>
           </div>
         </article>
-        <section class="content-section">
-          <div class="sharer">
+        <section class="content-section content-receiver-container">
+          <header class="post-header">
             <button type="button" onclick="copyLinkToClipboard()">
               <i class="fa fa-paperclip"></i>Copy link
             </button>
             <p><i class="fa-regular fa-clock"></i>10 min</p>
-          </div>
+          </header>
           <article class="content">
             {! templ.Raw(project.Content) }
           </article>
