@@ -106,6 +106,7 @@ func TestProjectsService_Add(t *testing.T) {
       CollectionURL:  " \n\t " + creation.CollectionURL + " \n\t ",
     }
     var r = mocks.NewProjectsRepository()
+    creation.Name = "THIS Is The Project Name"
     r.On(routine, ctx, &creation).Return(id, nil)
     res, err := NewProjectsService(r).Add(ctx, &dirty)
     assert.NoError(t, err)
@@ -332,6 +333,7 @@ func TestProjectsService_Update(t *testing.T) {
   t.Run("success", func(t *testing.T) {
     var update = transfer.ProjectUpdate{
       Name:           "Name",
+      Slug:           "name",
       Homepage:       "https://Homepage.com",
       Language:       "Language",
       Summary:        "Summary",
