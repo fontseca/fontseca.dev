@@ -33,6 +33,15 @@ func (o *ProjectsRepository) GetByID(ctx context.Context, id string) (project *m
   return project, args.Error(1)
 }
 
+func (o *ProjectsRepository) GetBySlug(ctx context.Context, slug string) (project *model.Project, err error) {
+  var args = o.Called(ctx, slug)
+  var arg0 = args.Get(0)
+  if nil != arg0 {
+    project = arg0.(*model.Project)
+  }
+  return project, args.Error(1)
+}
+
 func (o *ProjectsRepository) Add(ctx context.Context, creation *transfer.ProjectCreation) (id string, err error) {
   var args = o.Called(ctx, creation)
   return args.String(0), args.Error(1)
@@ -92,6 +101,15 @@ func (o *ProjectsService) Get(ctx context.Context, archived ...bool) (projects [
 
 func (o *ProjectsService) GetByID(ctx context.Context, id string) (project *model.Project, err error) {
   var args = o.Called(ctx, id)
+  var arg0 = args.Get(0)
+  if nil != arg0 {
+    project = arg0.(*model.Project)
+  }
+  return project, args.Error(1)
+}
+
+func (o *ProjectsService) GetBySlug(ctx context.Context, slug string) (project *model.Project, err error) {
+  var args = o.Called(ctx, slug)
   var arg0 = args.Get(0)
   if nil != arg0 {
     project = arg0.(*model.Project)
