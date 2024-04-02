@@ -74,6 +74,30 @@ func TestProjectService_GetByID(t *testing.T) {
   })
 }
 
+func TestProjectService_GetBySlug(t *testing.T) {
+  const routine = "GetBySlug"
+  var slug = "project-slug-name"
+  var ctx = context.Background()
+
+  t.Run("success", func(t *testing.T) {
+    var project = new(model.Project)
+    var r = mocks.NewProjectsRepository()
+    r.On(routine, ctx, slug).Return(project, nil)
+    res, err := NewProjectsService(r).GetBySlug(ctx, slug)
+    assert.Equal(t, project, res)
+    assert.NoError(t, err)
+  })
+
+  t.Run("error", func(t *testing.T) {
+    var unexpected = errors.New("unexpected error")
+    var r = mocks.NewProjectsRepository()
+    r.On(routine, ctx, slug).Return(nil, unexpected)
+    res, err := NewProjectsService(r).GetBySlug(ctx, slug)
+    assert.Nil(t, res)
+    assert.ErrorIs(t, err, unexpected)
+  })
+}
+
 func TestProjectsService_Add(t *testing.T) {
   const routine = "Add"
   var ctx = context.Background()
