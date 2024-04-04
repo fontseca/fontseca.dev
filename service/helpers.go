@@ -171,3 +171,11 @@ func computePostReadingTime(r io.Reader, wordsPerMinute float64) (readingTime ti
   readingTime = time.Duration(math.Ceil(totalWords/wordsPerSecond)) * time.Second
   return readingTime, nil
 }
+
+func computePostReadingTimeInMinutes(r io.Reader) int {
+  duration, err := computePostReadingTime(r, 183.0)
+  if err != nil {
+    return 0
+  }
+  return int(math.Ceil(duration.Minutes()))
+}
