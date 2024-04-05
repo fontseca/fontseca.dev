@@ -4,6 +4,7 @@ import (
   "fontseca/model"
   "fontseca/components/layout"
   "fontseca/components/ui"
+  "strconv"
 )
 
 templ ProjectDetails(project *model.Project) {
@@ -107,7 +108,7 @@ templ ProjectDetails(project *model.Project) {
             <button type="button" onclick="copyLinkToClipboard()">
               <i class="fa fa-paperclip"></i>Copy link
             </button>
-            <p><i class="fa-regular fa-clock"></i>10 min</p>
+            <p><i class="fa-regular fa-clock"></i>{ strconv.Itoa(project.ReadTime) } min</p>
           </header>
           <article class="content">
             {! templ.Raw(project.Content) }
