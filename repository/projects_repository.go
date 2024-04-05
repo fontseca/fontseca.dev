@@ -140,6 +140,7 @@ func (r *projectsRepository) doGetByID(ctx context.Context, id string, ignoreArc
             p."homepage",
             p."language",
             p."summary",
+            p."read_time",
             p."content",
             p."estimated_time",
             p."first_image_url",
@@ -177,6 +178,7 @@ func (r *projectsRepository) doGetByID(ctx context.Context, id string, ignoreArc
     &project.Homepage,
     &project.Language,
     &project.Summary,
+    &project.ReadTime,
     &project.Content,
     &project.EstimatedTime,
     &project.FirstImageURL,
@@ -216,6 +218,7 @@ func (r *projectsRepository) GetBySlug(ctx context.Context, slug string) (projec
             p."homepage",
             p."language",
             p."summary",
+            p."read_time",
             p."content",
             p."estimated_time",
             p."first_image_url",
@@ -254,6 +257,7 @@ func (r *projectsRepository) GetBySlug(ctx context.Context, slug string) (projec
     &project.Homepage,
     &project.Language,
     &project.Summary,
+    &project.ReadTime,
     &project.Content,
     &project.EstimatedTime,
     &project.FirstImageURL,
@@ -294,6 +298,7 @@ func (r *projectsRepository) Add(ctx context.Context, creation *transfer.Project
                          "homepage",
                          "language",
                          "summary",
+                         "read_time",
                          "content",
                          "estimated_time",
                          "first_image_url",
@@ -305,6 +310,7 @@ func (r *projectsRepository) Add(ctx context.Context, creation *transfer.Project
                          nullif (@homepage, ''),
                          nullif (@language, ''),
                          nullif (@summary, ''),
+                         nullif (@read_time, 0),
                          nullif (@content, ''),
                          nullif (@estimated_time, 0),
                          nullif (@first_image_url, ''),
@@ -321,6 +327,7 @@ func (r *projectsRepository) Add(ctx context.Context, creation *transfer.Project
     sql.Named("language", creation.Language),
     sql.Named("summary", creation.Summary),
     sql.Named("content", creation.Content),
+    sql.Named("read_time", creation.ReadTime),
     sql.Named("estimated_time", creation.EstimatedTime),
     sql.Named("first_image_url", creation.FirstImageURL),
     sql.Named("second_image_url", creation.SecondImageURL),
@@ -364,6 +371,7 @@ func (r *projectsRepository) nothingToUpdate(current *model.Project, update *tra
     ("" == update.Homepage || update.Homepage == current.Homepage) &&
     ("" == update.Language || nil != current.Language && update.Language == *current.Language) &&
     ("" == update.Summary || update.Summary == current.Summary) &&
+    (0 == update.ReadTime || update.ReadTime == current.ReadTime) &&
     ("" == update.Content || update.Content == current.Content) &&
     (0 == update.EstimatedTime || nil != current.EstimatedTime && update.EstimatedTime == *current.EstimatedTime) &&
     ("" == update.FirstImageURL || update.FirstImageURL == current.FirstImageURL) &&
@@ -396,8 +404,17 @@ func (r *projectsRepository) doUpdate(ctx context.Context, id string, update *tr
          "homepage" = coalesce (nullif (@homepage, ''), @current_homepage),
          "language" = coalesce (nullif (@language, ''), @current_language),
          "summary" = coalesce (nullif (@summary, ''), @current_summary),
+         "read_time" = CASE WHEN @read_time = @current_read_time
+                              OR 0 = @read_time
+                            THEN @current_read_time
+                            ELSE @read_time
+                            END,
          "content" = coalesce (nullif (@content, ''), @current_content),
-         "estimated_time" = CASE WHEN @estimated_time = @current_estimated_time OR 0 = @estimated_time THEN @current_estimated_time ELSE @estimated_time END,
+         "estimated_time" = CASE WHEN @estimated_time = @current_estimated_time
+                                   OR 0 = @estimated_time
+                                 THEN @current_estimated_time
+                                 ELSE @estimated_time
+                                  END,
          "first_image_url" = coalesce (nullif (@first_image_url, ''), @current_first_image_url),
          "second_image_url" = coalesce (nullif (@second_image_url, ''), @current_second_image_url),
          "github_url" = coalesce (nullif (@github_url, ''), @current_github_url),
@@ -426,6 +443,7 @@ func (r *projectsRepository) doUpdate(ctx context.Context, id string, update *tr
     sql.Named("homepage", update.Homepage), sql.Named("current_homepage", current.Homepage),
     sql.Named("language", update.Language), sql.Named("current_language", current.Language),
     sql.Named("summary", update.Summary), sql.Named("current_summary", current.Summary),
+    sql.Named("read_time", update.ReadTime), sql.Named("current_read_time", current.ReadTime),
     sql.Named("content", update.Content), sql.Named("current_content", current.Content),
     sql.Named("estimated_time", update.EstimatedTime), sql.Named("current_estimated_time", current.EstimatedTime),
     sql.Named("first_image_url", update.FirstImageURL), sql.Named("current_first_image_url", current.FirstImageURL),
