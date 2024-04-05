@@ -105,12 +105,13 @@ func TestProjectsService_Add(t *testing.T) {
 
   t.Run("success", func(t *testing.T) {
     var creation = transfer.ProjectCreation{
-      Name:           "THIS      Is\n\tThe \t Project    Name",
+      Name:           "THIS Is The Project Name",
       Slug:           "this-is-the-project-name",
       Homepage:       "https://Homepage.com",
       Language:       "Language",
       Summary:        "Summary",
-      Content:        "Content",
+      ReadTime:       2,
+      Content:        strings.TrimRight(strings.Repeat("word ", 200), " "),
       EstimatedTime:  0,
       FirstImageURL:  "https://FirstImageURL.com",
       SecondImageURL: "https://SecondImageURL.com",
@@ -118,7 +119,7 @@ func TestProjectsService_Add(t *testing.T) {
       CollectionURL:  "https://CollectionURL.com",
     }
     var dirty = transfer.ProjectCreation{
-      Name:           " \n\t " + creation.Name + " \n\t ",
+      Name:           " \n\t THIS      Is\n\tThe \t Project    Name \n\t ",
       Homepage:       " \n\t " + creation.Homepage + " \n\t ",
       Language:       " \n\t " + creation.Language + " \n\t ",
       Summary:        " \n\t " + creation.Summary + " \n\t ",
@@ -130,7 +131,21 @@ func TestProjectsService_Add(t *testing.T) {
       CollectionURL:  " \n\t " + creation.CollectionURL + " \n\t ",
     }
     var r = mocks.NewProjectsRepository()
-    creation.Name = "THIS Is The Project Name"
+    r.On(routine, ctx, &creation).Return(id, nil)
+    res, err := NewProjectsService(r).Add(ctx, &dirty)
+    assert.NoError(t, err)
+    assert.Equal(t, id, res)
+  })
+
+  t.Run("success: content does not get created", func(t *testing.T) {
+    var creation = transfer.ProjectCreation{
+      Summary:  "Summary text",
+      ReadTime: 1,
+    }
+    var dirty = transfer.ProjectCreation{
+      Summary: " \n\t " + creation.Summary + " \n\t ",
+    }
+    var r = mocks.NewProjectsRepository()
     r.On(routine, ctx, &creation).Return(id, nil)
     res, err := NewProjectsService(r).Add(ctx, &dirty)
     assert.NoError(t, err)
@@ -356,12 +371,13 @@ func TestProjectsService_Update(t *testing.T) {
 
   t.Run("success", func(t *testing.T) {
     var update = transfer.ProjectUpdate{
-      Name:           "Name",
-      Slug:           "name",
+      Name:           "THIS Is The new Project Name",
+      Slug:           "this-is-the-new-project-name",
       Homepage:       "https://Homepage.com",
       Language:       "Language",
       Summary:        "Summary",
-      Content:        "Content",
+      ReadTime:       2,
+      Content:        strings.TrimRight(strings.Repeat("word ", 300), " "),
       EstimatedTime:  0,
       FirstImageURL:  "https://FirstImageURL.com",
       SecondImageURL: "https://SecondImageURL.com",
@@ -372,7 +388,7 @@ func TestProjectsService_Update(t *testing.T) {
       Finished:       false,
     }
     var dirty = transfer.ProjectUpdate{
-      Name:           " \n\t " + update.Name + " \n\t ",
+      Name:           " \n\t " + "THIS      Is\n\tThe   new \t Project    Name" + " \n\t ",
       Homepage:       " \n\t " + update.Homepage + " \n\t ",
       Language:       " \n\t " + update.Language + " \n\t ",
       Summary:        " \n\t " + update.Summary + " \n\t ",
@@ -385,6 +401,21 @@ func TestProjectsService_Update(t *testing.T) {
       PlaygroundURL:  " \n\t " + update.PlaygroundURL + " \n\t ",
       Archived:       update.Archived,
       Finished:       update.Finished,
+    }
+    var r = mocks.NewProjectsRepository()
+    r.On(routine, ctx, id, &update).Return(true, nil)
+    res, err := NewProjectsService(r).Update(ctx, id, &dirty)
+    assert.NoError(t, err)
+    assert.True(t, res)
+  })
+
+  t.Run("success: content does not get updated", func(t *testing.T) {
+    var update = transfer.ProjectUpdate{
+      Summary:  "Summary text.",
+      ReadTime: 1,
+    }
+    var dirty = transfer.ProjectUpdate{
+      Summary: " \n\t " + update.Summary + " \n\t ",
     }
     var r = mocks.NewProjectsRepository()
     r.On(routine, ctx, id, &update).Return(true, nil)

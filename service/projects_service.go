@@ -101,6 +101,7 @@ func (s *projectsService) Add(ctx context.Context, creation *transfer.ProjectCre
   creation.SecondImageURL = strings.TrimSpace(creation.SecondImageURL)
   creation.GitHubURL = strings.TrimSpace(creation.GitHubURL)
   creation.CollectionURL = strings.TrimSpace(creation.CollectionURL)
+
   switch {
   case 0 != len(creation.Name) && 36 < len(creation.Name):
     return "", problem.NewValidation([3]string{"name", "max", "36"})
@@ -122,6 +123,31 @@ func (s *projectsService) Add(ctx context.Context, creation *transfer.ProjectCre
     return "", problem.NewValidation([3]string{"collection_url", "max", "2048"})
   }
 
+  var projectText strings.Builder
+
+  if "" != creation.Name {
+    projectText.WriteString(creation.Name)
+  }
+
+  if "" != creation.Summary {
+    if 0 < projectText.Len() {
+      projectText.WriteRune('\n')
+    }
+    projectText.WriteString(creation.Summary)
+  }
+
+  if "" != creation.Content {
+    if 0 < projectText.Len() {
+      projectText.WriteRune('\n')
+    }
+    projectText.WriteString(creation.Content)
+  }
+
+  if 0 < projectText.Len() {
+    var r = strings.NewReader(projectText.String())
+    creation.ReadTime = computePostReadingTimeInMinutes(r)
+  }
+
   creation.Slug = strings.ToLower(strings.ReplaceAll(creation.Name, " ", "-"))
   err = sanitizeURL(
     &creation.Homepage,
@@ -132,6 +158,7 @@ func (s *projectsService) Add(ctx context.Context, creation *transfer.ProjectCre
   if nil != err {
     return "", err
   }
+
   return s.r.Add(ctx, creation)
 }
 
@@ -148,9 +175,11 @@ func (s *projectsService) Update(ctx context.Context, id string, update *transfe
     slog.Error(err.Error())
     return false, err
   }
+
   if err = validateUUID(&id); err != nil {
     return false, err
   }
+
   removeSpaceInterceptions, err := regexp.Compile(`\s+`)
   if nil != err {
     slog.Error(err.Error())
@@ -172,6 +201,7 @@ func (s *projectsService) Update(ctx context.Context, id string, update *transfe
   update.GitHubURL = strings.TrimSpace(update.GitHubURL)
   update.CollectionURL = strings.TrimSpace(update.CollectionURL)
   update.PlaygroundURL = strings.TrimSpace(update.PlaygroundURL)
+
   switch {
   case 0 != len(update.Name) && 36 < len(update.Name):
     return false, problem.NewValidation([3]string{"name", "max", "36"})
@@ -194,9 +224,36 @@ func (s *projectsService) Update(ctx context.Context, id string, update *transfe
   case 0 != len(update.PlaygroundURL) && 2048 < len(update.PlaygroundURL):
     return false, problem.NewValidation([3]string{"playground_url", "max", "2048"})
   }
+
+  var projectText strings.Builder
+
+  if "" != update.Name {
+    projectText.WriteString(update.Name)
+  }
+
+  if "" != update.Summary {
+    if 0 < projectText.Len() {
+      projectText.WriteRune('\n')
+    }
+    projectText.WriteString(update.Summary)
+  }
+
+  if "" != update.Content {
+    if 0 < projectText.Len() {
+      projectText.WriteRune('\n')
+    }
+    projectText.WriteString(update.Content)
+  }
+
+  if 0 < projectText.Len() {
+    var r = strings.NewReader(projectText.String())
+    update.ReadTime = computePostReadingTimeInMinutes(r)
+  }
+
   if "" != update.Name {
     update.Slug = strings.ToLower(removeSpaceInterceptions.ReplaceAllString(update.Name, "-"))
   }
+
   err = sanitizeURL(
     &update.Homepage,
     &update.FirstImageURL,
@@ -207,6 +264,7 @@ func (s *projectsService) Update(ctx context.Context, id string, update *transfe
   if nil != err {
     return false, err
   }
+
   return s.r.Update(ctx, id, update)
 }
 
