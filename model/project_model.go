@@ -13,6 +13,7 @@ type Project struct {
   Homepage       string    `json:"homepage"`
   Language       *string   `json:"language"`
   Summary        string    `json:"summary"`
+  ReadTime       int       `json:"read_time"`
   Content        string    `json:"content"`
   EstimatedTime  *int      `json:"estimated_time"`
   FirstImageURL  string    `json:"first_image_url"`
