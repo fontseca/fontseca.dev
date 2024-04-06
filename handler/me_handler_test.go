@@ -2,9 +2,9 @@ package handler
 
 import (
   "bytes"
-  "fontseca/mocks"
-  "fontseca/model"
-  "fontseca/transfer"
+  "fontseca.dev/mocks"
+  "fontseca.dev/model"
+  "fontseca.dev/transfer"
   "github.com/gin-gonic/gin"
   "github.com/stretchr/testify/assert"
   "github.com/stretchr/testify/mock"

@@ -3,9 +3,9 @@ package repository
 import (
   "context"
   "database/sql"
-  "fontseca/model"
-  "fontseca/problem"
-  "fontseca/transfer"
+  "fontseca.dev/model"
+  "fontseca.dev/problem"
+  "fontseca.dev/transfer"
   "log/slog"
   "time"
 )

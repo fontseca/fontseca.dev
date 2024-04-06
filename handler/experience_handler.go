@@ -2,9 +2,9 @@ package handler
 
 import (
   "errors"
-  "fontseca/problem"
-  "fontseca/service"
-  "fontseca/transfer"
+  "fontseca.dev/problem"
+  "fontseca.dev/service"
+  "fontseca.dev/transfer"
   "github.com/gin-gonic/gin"
   "net/http"
   "time"

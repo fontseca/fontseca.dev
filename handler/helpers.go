@@ -4,7 +4,7 @@ import (
   "encoding/json"
   "errors"
   "fmt"
-  "fontseca/problem"
+  "fontseca.dev/problem"
   "github.com/gin-gonic/gin"
   "github.com/gin-gonic/gin/binding"
   "github.com/go-playground/validator/v10"

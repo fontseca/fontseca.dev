@@ -2,10 +2,10 @@ package handler
 
 import (
   "errors"
-  "fontseca/mocks"
-  "fontseca/model"
-  "fontseca/problem"
-  "fontseca/transfer"
+  "fontseca.dev/mocks"
+  "fontseca.dev/model"
+  "fontseca.dev/problem"
+  "fontseca.dev/transfer"
   "github.com/gin-gonic/gin"
   "github.com/google/uuid"
   "github.com/stretchr/testify/assert"

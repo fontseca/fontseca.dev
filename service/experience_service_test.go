@@ -3,9 +3,9 @@ package service
 import (
   "context"
   "errors"
-  "fontseca/mocks"
-  "fontseca/model"
-  "fontseca/transfer"
+  "fontseca.dev/mocks"
+  "fontseca.dev/model"
+  "fontseca.dev/transfer"
   "github.com/google/uuid"
   "github.com/stretchr/testify/assert"
   "github.com/stretchr/testify/mock"

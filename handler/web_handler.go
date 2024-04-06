@@ -1,8 +1,8 @@
 package handler
 
 import (
-  "fontseca/components/pages"
-  "fontseca/service"
+  "fontseca.dev/components/pages"
+  "fontseca.dev/service"
   "github.com/gin-gonic/gin"
   "net/http"
 )

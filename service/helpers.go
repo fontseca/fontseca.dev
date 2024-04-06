@@ -3,7 +3,7 @@ package service
 import (
   "bufio"
   "bytes"
-  "fontseca/problem"
+  "fontseca.dev/problem"
   "github.com/google/uuid"
   "io"
   "log/slog"

@@ -1,4 +1,4 @@
-module fontseca
+module fontseca.dev
 
 go 1.22.2
 

@@ -2,8 +2,8 @@ package mocks
 
 import (
   "context"
-  "fontseca/model"
-  "fontseca/transfer"
+  "fontseca.dev/model"
+  "fontseca.dev/transfer"
   "github.com/stretchr/testify/mock"
 )
 

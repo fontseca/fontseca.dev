@@ -3,9 +3,9 @@ package service
 import (
   "context"
   "errors"
-  "fontseca/model"
-  "fontseca/repository"
-  "fontseca/transfer"
+  "fontseca.dev/model"
+  "fontseca.dev/repository"
+  "fontseca.dev/transfer"
   "log/slog"
   "strings"
 )
