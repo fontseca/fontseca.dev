@@ -233,6 +233,24 @@ func TestProjectsService_Add(t *testing.T) {
       assert.Empty(t, res)
     })
 
+    t.Run("wordsIn(creation.Summary)<=60", func(t *testing.T) {
+      var creation = transfer.ProjectCreation{}
+
+      creation.Summary = strings.Repeat("word ", 60)
+      var r = mocks.NewProjectsRepository()
+      r.On(routine, ctx, &creation).Return(id, nil)
+      res, err := NewProjectsService(r).Add(ctx, &creation)
+      assert.NoError(t, err)
+      assert.Equal(t, id, res)
+
+      creation.Summary = strings.Repeat("word ", 1+60)
+      r = mocks.NewProjectsRepository()
+      r.On(routine, ctx, &creation).Return(id, nil)
+      res, err = NewProjectsService(r).Add(ctx, &creation)
+      assert.Error(t, err)
+      assert.Empty(t, res)
+    })
+
     t.Run("len(creation.Content)<=3MB", func(t *testing.T) {
       var creation = transfer.ProjectCreation{}
 
@@ -498,6 +516,24 @@ func TestProjectsService_Update(t *testing.T) {
       assert.True(t, res)
 
       update.Summary = strings.Repeat("x", 1+1024)
+      r = mocks.NewProjectsRepository()
+      r.On(routine, ctx, id, &update).Return(false, nil)
+      res, err = NewProjectsService(r).Update(ctx, id, &update)
+      assert.Error(t, err)
+      assert.False(t, res)
+    })
+
+    t.Run("wordsIn(creation.Summary)<=60", func(t *testing.T) {
+      var update = transfer.ProjectUpdate{}
+
+      update.Summary = strings.Repeat("word ", 60)
+      var r = mocks.NewProjectsRepository()
+      r.On(routine, ctx, id, &update).Return(true, nil)
+      res, err := NewProjectsService(r).Update(ctx, id, &update)
+      assert.NoError(t, err)
+      assert.True(t, res)
+
+      update.Summary = strings.Repeat("word ", 1+60)
       r = mocks.NewProjectsRepository()
       r.On(routine, ctx, id, &update).Return(false, nil)
       res, err = NewProjectsService(r).Update(ctx, id, &update)

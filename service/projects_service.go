@@ -9,7 +9,6 @@ import (
   "fontseca.dev/transfer"
   "log/slog"
   "net/http"
-  "regexp"
   "strings"
 )
 
@@ -85,14 +84,8 @@ func (s *projectsService) Add(ctx context.Context, creation *transfer.ProjectCre
     return "", err
   }
 
-  removeSpaceInterceptions, err := regexp.Compile(`\s+`)
-  if nil != err {
-    slog.Error(err.Error())
-    return "", err
-  }
-
   creation.Name = strings.TrimSpace(creation.Name)
-  creation.Name = removeSpaceInterceptions.ReplaceAllString(creation.Name, " ")
+  sanitizeTextWordIntersections(&creation.Name)
   creation.Homepage = strings.TrimSpace(creation.Homepage)
   creation.Language = strings.TrimSpace(creation.Language)
   creation.Summary = strings.TrimSpace(creation.Summary)
@@ -130,6 +123,11 @@ func (s *projectsService) Add(ctx context.Context, creation *transfer.ProjectCre
   }
 
   if "" != creation.Summary {
+    sanitizeTextWordIntersections(&creation.Summary)
+    if 60 < wordsIn(creation.Summary) {
+      return "", problem.NewValidation([3]string{"summary", "max", "60"})
+    }
+
     if 0 < projectText.Len() {
       projectText.WriteRune('\n')
     }
@@ -180,16 +178,10 @@ func (s *projectsService) Update(ctx context.Context, id string, update *transfe
     return false, err
   }
 
-  removeSpaceInterceptions, err := regexp.Compile(`\s+`)
-  if nil != err {
-    slog.Error(err.Error())
-    return false, err
-  }
-
   update.Name = strings.TrimSpace(update.Name)
 
   if "" != update.Name {
-    update.Name = removeSpaceInterceptions.ReplaceAllString(update.Name, " ")
+    sanitizeTextWordIntersections(&update.Name)
   }
 
   update.Homepage = strings.TrimSpace(update.Homepage)
@@ -232,6 +224,11 @@ func (s *projectsService) Update(ctx context.Context, id string, update *transfe
   }
 
   if "" != update.Summary {
+    sanitizeTextWordIntersections(&update.Summary)
+    if 60 < wordsIn(update.Summary) {
+      return false, problem.NewValidation([3]string{"summary", "max", "60"})
+    }
+
     if 0 < projectText.Len() {
       projectText.WriteRune('\n')
     }
@@ -251,7 +248,7 @@ func (s *projectsService) Update(ctx context.Context, id string, update *transfe
   }
 
   if "" != update.Name {
-    update.Slug = strings.ToLower(removeSpaceInterceptions.ReplaceAllString(update.Name, "-"))
+    update.Slug = strings.ToLower(contiguousSpacesRegexp.ReplaceAllString(update.Name, "-"))
   }
 
   err = sanitizeURL(

@@ -26,6 +26,11 @@ func sanitizeTextWordIntersections(text *string) {
   *text = contiguousSpacesRegexp.ReplaceAllString(*text, " ")
 }
 
+func wordsIn(text string) int {
+  fields := strings.Fields(text)
+  return len(fields)
+}
+
 func sanitizeURL(urls ...*string) error {
   if 0 == len(urls) {
     return nil
