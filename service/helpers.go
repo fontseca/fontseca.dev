@@ -19,6 +19,13 @@ import (
 
 var contiguousSpacesRegexp = regexp.MustCompile(`\s+`)
 
+func sanitizeTextWordIntersections(text *string) {
+  if nil == text {
+    return
+  }
+  *text = contiguousSpacesRegexp.ReplaceAllString(*text, " ")
+}
+
 func sanitizeURL(urls ...*string) error {
   if 0 == len(urls) {
     return nil
