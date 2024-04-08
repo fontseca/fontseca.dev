@@ -10,11 +10,14 @@ import (
   "math"
   "net/http"
   "net/url"
+  "regexp"
   "strings"
   "time"
   "unicode"
   "unicode/utf8"
 )
+
+var contiguousSpacesRegexp = regexp.MustCompile(`\s+`)
 
 func sanitizeURL(urls ...*string) error {
   if 0 == len(urls) {
