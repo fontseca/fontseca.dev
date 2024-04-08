@@ -1103,11 +1103,13 @@ a:hover {
 .project-detail .content-section .content h3,
 .project-detail .content-section .content h4,
 .project-detail .content-section .content h5,
-.project-detail .content-section .content h6 {
+.project-detail .content-section .content h6,
+.project-detail .content-section .content li {
   padding-bottom: 1rem;
 }
 
-.project-detail .content-section .content p {
+.project-detail .content-section .content p,
+.project-detail .content-section .content li {
   font-size: 17px;
 }
 
