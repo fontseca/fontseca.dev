@@ -111,7 +111,7 @@ templ ProjectDetails(project *model.Project) {
             <p><i class="fa-regular fa-clock"></i>{ strconv.Itoa(project.ReadTime) } min</p>
           </header>
           <article class="content">
-            {! templ.Raw(project.Content) }
+            {! templ.Raw(md2html(project.Content)) }
           </article>
         </section>
       </section>

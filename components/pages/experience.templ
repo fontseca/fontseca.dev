@@ -33,7 +33,7 @@ templ Experience(exp []*model.Experience) {
             <div class="content-container">
               <p class="job-title">{ e.JobTitle }</p>
               <p class="company-and-location">{ e.Company }, { e.Country }</p>
-              <div class="summary">{! templ.Raw(e.Summary) }</div>
+              <div class="summary">{! templ.Raw(md2html(e.Summary)) }</div>
             </div>
           </article>
           }
