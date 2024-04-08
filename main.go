@@ -452,6 +452,7 @@ func main() {
   engine.POST("/me.projects.unarchive", projectsHandler.Unarchive)
   engine.POST("/me.projects.finish", projectsHandler.Finish)
   engine.POST("/me.projects.unfinish", projectsHandler.Unfinish)
+  engine.POST("/me.projects.remove", projectsHandler.Remove)
   engine.POST("/me.projects.setPlaygroundURL", projectsHandler.SetPlaygroundURL)
   engine.POST("/me.projects.setFirstImageURL", projectsHandler.SetFirstImageURL)
   engine.POST("/me.projects.setSecondImageURL", projectsHandler.SetSecondImageURL)
