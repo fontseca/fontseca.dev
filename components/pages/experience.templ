@@ -11,21 +11,24 @@ templ Experience(exp []*model.Experience) {
   @layout.Layout("experience", 1) {
     <section class="experience">
       @ui.TitleHeader("experience", "/me.experience.list")
-      <section class="experience-list">
-        for i, e := range exp {
+      if 0 == len(exp) {
+        <p>Oops! Looks like I don't have any experience yet.</p>
+      } else {
+        <section class="experience-list">
+          for i, e := range exp {
           <article class="experience-list-tile">
             if len(exp) - 1 != i {
-              <p class="line"></p>
+            <p class="line"></p>
             }
             <span class="spot"></span>
             <div class="dates-container">
               <p class="dates-text">{ strconv.Itoa(e.Starts) } —
                 if nil != e.Ends {
-                  { strconv.Itoa(*e.Ends) }
+                { strconv.Itoa(*e.Ends) }
                 } else {
-                 { "Present" }
+                { "Present" }
                 }
-             </p>
+              </p>
             </div>
             <div class="content-container">
               <p class="job-title">{ e.JobTitle }</p>
@@ -33,8 +36,9 @@ templ Experience(exp []*model.Experience) {
               <div class="summary">{! templ.Raw(e.Summary) }</div>
             </div>
           </article>
-        }
-      </section>
+          }
+        </section>
+      }
     </section>
   }
 }
