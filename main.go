@@ -21,6 +21,7 @@ import (
   "os"
   "path/filepath"
   "reflect"
+  "strconv"
   "strings"
   "time"
 )
@@ -114,21 +115,6 @@ func (t *table) create(ctx context.Context, tx *sql.Tx) {
       log.Fatalf("unable to rollback: %v: %v", err, rollbackErr)
     }
     log.Fatal(err)
-  }
-}
-
-func statusCodeColor(code int) string {
-  switch {
-  default:
-    return "\033[1;91m" // red
-  case code >= http.StatusContinue && code < http.StatusOK:
-    return "\033[1;97m" // white
-  case code >= http.StatusOK && code < http.StatusMultipleChoices:
-    return "\033[1;92m" // green
-  case code >= http.StatusMultipleChoices && code < http.StatusBadRequest:
-    return "\033[1;94m" // blue
-  case code >= http.StatusBadRequest && code < http.StatusInternalServerError:
-    return "\033[1;95m" // magenta
   }
 }
 
@@ -362,15 +348,22 @@ func main() {
     if param.Latency > time.Minute {
       param.Latency = param.Latency.Truncate(time.Second)
     }
-    return fmt.Sprintf("%v | %s \033[1m%s%s %#v | %s%d%s | %s | %s |\n%s",
-      param.TimeStamp.Format(time.RFC3339),
-      param.Request.Proto,
-      param.Method, param.ResetColor(),
-      param.Path,
-      statusCodeColor(param.StatusCode), param.StatusCode, param.ResetColor(),
-      param.Latency,
+
+    bodySizeStr := "-"
+    if param.BodySize > 0 {
+      bodySizeStr = strconv.Itoa(param.BodySize)
+    }
+
+    // Logs messages with the Common Log Format.
+    return fmt.Sprintf("%s - - [%s] \"%s %s %s\" %d %s in %s\n",
       param.ClientIP,
-      param.ErrorMessage,
+      param.TimeStamp.Format("02/Jan/2006:15:04:05 -0700"),
+      param.Method,
+      param.Path,
+      param.Request.Proto,
+      param.StatusCode,
+      bodySizeStr,
+      param.Latency,
     )
   }
 
