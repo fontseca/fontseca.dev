@@ -26,19 +26,38 @@ import (
   "time"
 )
 
-// adorn is a decorator that writes line-delimited JSON objects received from calls to
+// indentedWriter is a decorator that writes line-delimited JSON objects received from calls to
 // the methods of the default slog.Logger to an io.Write, typically a *os.File; these
 // writes are indented and the order of the object fields is conveniently rearranged.
-type adorn struct{ w io.Writer }
+type indentedWriter struct {
+  io.Writer
+}
 
-func (a adorn) Write(p []byte) (n int, err error) {
+func withIndentedWrite(w io.Writer) io.Writer {
+  return &indentedWriter{Writer: w}
+}
+
+func (a *indentedWriter) Write(p []byte) (n int, err error) {
+  n = len(p)
+
   if err = a.indent(&p); nil != err {
     return 0, err
   }
-  return a.write(p)
+
+  _, err = a.Writer.Write(p) // discard n to avoid an 'io.ErrShortWrite' error in multiWriter.Write
+  if nil != err {
+    return 0, err
+  }
+
+  _, err = a.Writer.Write([]byte("\n"))
+  if nil != err {
+    return 0, err
+  }
+
+  return n, nil
 }
 
-func (a adorn) indent(p *[]byte) (err error) {
+func (a *indentedWriter) indent(p *[]byte) (err error) {
   var s = struct {
     Level  string `json:"level"`
     Time   string `json:"time"`
@@ -52,19 +71,6 @@ func (a adorn) indent(p *[]byte) (err error) {
     return err
   }
   return nil
-}
-
-func (a adorn) write(p []byte) (n int, err error) {
-  n, err = a.w.Write(p)
-  if nil != err {
-    return 0, err
-  }
-  nn, err := a.w.Write([]byte("\n"))
-  n += nn
-  if n > len(p) {
-    n = len(p) // must be len(p) to avoid an 'io.ErrShortWrite' error
-  }
-  return n, nil
 }
 
 // table contains information about a relation in the database.
@@ -311,13 +317,13 @@ func main() {
     log.Fatal(err)
   }
 
-  logfile, err := os.OpenFile("logfile", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+  failLogFile, err := os.OpenFile("fail.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
   if nil != err {
     log.Fatal(err)
   }
-  defer logfile.Close()
+  defer failLogFile.Close()
 
-  var multiWriter = io.MultiWriter(adorn{os.Stderr}, logfile)
+  var multiWriter = io.MultiWriter(withIndentedWrite(os.Stderr), failLogFile)
   var logger = slog.New(slog.NewJSONHandler(multiWriter,
     &slog.HandlerOptions{
       AddSource: true,
@@ -367,9 +373,15 @@ func main() {
     )
   }
 
+  serverLogFile, err := os.OpenFile("server.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+  if nil != err {
+    log.Fatal(err)
+  }
+  defer serverLogFile.Close()
+
   engine.Use(gin.LoggerWithConfig(gin.LoggerConfig{
     Formatter: formatter,
-    Output:    os.Stdout,
+    Output:    io.MultiWriter(os.Stdout, serverLogFile),
   }))
 
   engine.Static("/public", "public")

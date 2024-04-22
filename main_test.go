@@ -9,7 +9,8 @@ import (
 func TestAdorn_Write(t *testing.T) {
   var (
     buffer   = new(bytes.Buffer)
-    w        = adorn{buffer}
+    w        = indentedWriter{buffer}
+    source   = []byte(`{"time":"2006-01-02T15:04:05Z07:00","level":"ERROR","source":{"function":"Foo","file":"foo.go","line":1},"msg":"error"}`)
     expected = `{
   "level": "ERROR",
   "time": "2006-01-02T15:04:05Z07:00",
@@ -22,8 +23,8 @@ func TestAdorn_Write(t *testing.T) {
 }
 `
   )
-  var n, err = w.Write([]byte(`{"time":"2006-01-02T15:04:05Z07:00","level":"ERROR","source":{"function":"Foo","file":"foo.go","line":1},"msg":"error"}`))
+  var n, err = w.Write(source)
   assert.NoError(t, err)
-  assert.Equal(t, len(expected)-1, n)
+  assert.Equal(t, len(source), n)
   assert.Equal(t, expected, buffer.String())
 }
