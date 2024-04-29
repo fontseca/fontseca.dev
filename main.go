@@ -169,7 +169,7 @@ func main() {
       query: `
       CREATE TABLE "me"
       (
-        "username"      VARCHAR(64) NOT NULL DEFAULT 'fontseca.dev',
+        "username"      VARCHAR(64) UNIQUE NOT NULL DEFAULT 'fontseca.dev',
         "first_name"    VARCHAR(6) NOT NULL DEFAULT 'Jeremy',
         "last_name"     VARCHAR(7) NOT NULL DEFAULT 'Fonseca',
         "summary"       VARCHAR(1024) NOT NULL,
@@ -266,37 +266,34 @@ func main() {
         "title"        VARCHAR(64) NOT NULL,
         "author"       VARCHAR(512) NOT NULL REFERENCES "me" ("username"),
         "slug"         VARCHAR(2024) NOT NULL,
-        "cover_url"    VARCHAR(2048) NOT NULL DEFAULT 'about:blank',
-        "reading_time" INT NOT NULL,
         "description"  VARCHAR(1024) NOT NULL,
         "read_time"    INT NOT NULL ON CONFLICT REPLACE DEFAULT 0,
         "content"      TEXT NOT NULL,
-        "pinned"       BOOLEAN NOT NULL DEFAULT FALSE,
-        "draft"        BOOLEAN NOT NULL DEFAULT TRUE,
-        "archived"     BOOLEAN NOT NULL DEFAULT FALSE,
-        "published_at" TIMESTAMP NOT NULL,
-        "modified_at"  TIMESTAMP NOT NULL,
+        "drafted_at"   TIMESTAMP DEFAULT NULL,
+        "pinned_at"    TIMESTAMP DEFAULT NULL,
+        "archived_at"  TIMESTAMP DEFAULT NULL,
+        "published_at" TIMESTAMP DEFAULT NULL,
+        "modified_at"  TIMESTAMP DEFAULT NULL,
         "created_at"   TIMESTAMP NOT NULL DEFAULT current_timestamp,
         "updated_at"   TIMESTAMP NOT NULL DEFAULT current_timestamp
-        CHECK ("reading_time" > 0)
       );`,
     },
     {
-      name: "tag",
+      name: "topic",
       query: `
-      CREATE TABLE "tag"
+      CREATE TABLE "topic"
       (
         "id"   VARCHAR(36) NOT NULL PRIMARY KEY DEFAULT (uuid_generate_v4 ()),
         "name" VARCHAR(64) NOT NULL
       );`,
     },
     {
-      name: "article_tag",
+      name: "article_topic",
       query: `
-      CREATE TABLE "article_tag"
+      CREATE TABLE "article_topic"
       (
         "article_id" VARCHAR(36) NOT NULL REFERENCES "article" ("id"),
-        "tag_id"     VARCHAR(36) NOT NULL REFERENCES "tag" ("id")
+        "topic_id"   VARCHAR(36) NOT NULL REFERENCES "topic" ("id")
       );`,
     },
   }
