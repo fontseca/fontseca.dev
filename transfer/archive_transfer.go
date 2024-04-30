@@ -30,3 +30,8 @@ type ArticleUpdate struct {
 type TopicCreation struct {
   Name string `json:"name" binding:"required,max=64"`
 }
+
+// TopicUpdate represents the data required to update an existing topic entry.
+type TopicUpdate struct {
+  Name string `json:"name" binding:"required,max=64"`
+}
