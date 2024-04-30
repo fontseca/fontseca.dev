@@ -12,7 +12,6 @@ type Article struct {
   Title       string     `json:"title"`
   Author      string     `json:"author"`
   Slug        string     `json:"slug"`
-  Description string     `json:"description"`
   ReadTime    int        `json:"read_time"`
   Content     string     `json:"content"`
   DraftedAt   time.Time  `json:"drafted_at"`
