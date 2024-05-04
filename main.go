@@ -75,8 +75,8 @@ func (a *indentedWriter) indent(p *[]byte) (err error) {
 
 // table contains information about a relation in the database.
 type table struct {
-  name  string
-  query string
+  name       string
+  definition string
 }
 
 // exists checks if the table t.name is already created in the transaction tx.
@@ -115,7 +115,7 @@ func (t *table) create(ctx context.Context, tx *sql.Tx) {
   }
   ctx, cancel := context.WithTimeout(ctx, time.Second)
   defer cancel()
-  if _, err := tx.ExecContext(ctx, t.query); nil != err {
+  if _, err := tx.ExecContext(ctx, t.definition); nil != err {
     err = fmt.Errorf("creating table %q: %v", t.name, err)
     if rollbackErr := tx.Rollback(); nil != rollbackErr {
       log.Fatalf("unable to rollback: %v: %v", err, rollbackErr)
@@ -166,7 +166,7 @@ func main() {
   var tables = []table{
     {
       name: "me",
-      query: `
+      definition: `
       CREATE TABLE "me"
       (
         "username"      VARCHAR(64) UNIQUE NOT NULL DEFAULT 'fontseca.dev',
@@ -193,7 +193,7 @@ func main() {
     },
     {
       name: "experience",
-      query: `
+      definition: `
       CREATE TABLE "experience"
       (
         "uuid"       VARCHAR(36) NOT NULL PRIMARY KEY DEFAULT (uuid_generate_v4 ()),
@@ -213,7 +213,7 @@ func main() {
     },
     {
       name: "project",
-      query: `
+      definition: `
       CREATE TABLE "project"
       (
         "uuid"             VARCHAR(36) NOT NULL PRIMARY KEY DEFAULT (uuid_generate_v4 ()),
@@ -239,7 +239,7 @@ func main() {
     },
     {
       name: "technology_tag",
-      query: `
+      definition: `
       CREATE TABLE "technology_tag"
       (
         "uuid"        VARCHAR(36) NOT NULL PRIMARY KEY DEFAULT (uuid_generate_v4 ()),
@@ -250,7 +250,7 @@ func main() {
     },
     {
       name: "project_technology_tag",
-      query: `
+      definition: `
       CREATE TABLE "project_technology_tag"
       (
         "project_uuid"        VARCHAR(36) NOT NULL REFERENCES "project" ("uuid"),
@@ -259,7 +259,7 @@ func main() {
     },
     {
       name: "article",
-      query: `
+      definition: `
       CREATE TABLE "article"
       (
         "uuid"         VARCHAR(36) NOT NULL PRIMARY KEY DEFAULT (uuid_generate_v4 ()),
@@ -281,7 +281,7 @@ func main() {
     },
     {
       name: "topic",
-      query: `
+      definition: `
       CREATE TABLE "topic"
       (
         "uuid"       VARCHAR(36) NOT NULL PRIMARY KEY DEFAULT (uuid_generate_v4 ()),
@@ -292,7 +292,7 @@ func main() {
     },
     {
       name: "article_topic",
-      query: `
+      definition: `
       CREATE TABLE "article_topic"
       (
         "article_uuid" VARCHAR(36) NOT NULL REFERENCES "article" ("uuid"),
