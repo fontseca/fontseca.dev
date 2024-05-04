@@ -2,6 +2,7 @@ package repository
 
 import (
   "context"
+  "database/sql"
   "fontseca.dev/model"
   "fontseca.dev/transfer"
 )
@@ -115,4 +116,87 @@ type ArticlesRepository interface {
 
   // GetPatches retrieves all the ongoing patches of every article.
   GetPatches(ctx context.Context) (patches []any, err error)
+}
+
+type articlesRepository struct {
+  db *sql.DB
+}
+
+func NewArticlesRepository(db *sql.DB) ArticlesRepository {
+  return &articlesRepository{db}
+}
+
+func (r *articlesRepository) Draft(ctx context.Context, creation *transfer.ArticleCreation) (id string, err error) {
+  // TODO implement me
+  panic("implement me")
+}
+
+func (r *articlesRepository) Publish(ctx context.Context, id string) error {
+  // TODO implement me
+  panic("implement me")
+}
+
+func (r *articlesRepository) Get(ctx context.Context, needle string, hidden, draftsOnly bool) (articles []*model.Article, err error) {
+  // TODO implement me
+  panic("implement me")
+}
+
+func (r *articlesRepository) GetByID(ctx context.Context, id string, isDraft bool) (article *model.Article, err error) {
+  // TODO implement me
+  panic("implement me")
+}
+
+func (r *articlesRepository) Amend(ctx context.Context, id string) error {
+  // TODO implement me
+  panic("implement me")
+}
+
+func (r *articlesRepository) Remove(ctx context.Context, id string) error {
+  // TODO implement me
+  panic("implement me")
+}
+
+func (r *articlesRepository) AddTopic(ctx context.Context, articleID, topicID string) error {
+  // TODO implement me
+  panic("implement me")
+}
+
+func (r *articlesRepository) RemoveTopic(ctx context.Context, articleID, topicID string) error {
+  // TODO implement me
+  panic("implement me")
+}
+
+func (r *articlesRepository) SetHidden(ctx context.Context, id string, hidden bool) error {
+  // TODO implement me
+  panic("implement me")
+}
+
+func (r *articlesRepository) SetPinned(ctx context.Context, id string, pinned bool) error {
+  // TODO implement me
+  panic("implement me")
+}
+
+func (r *articlesRepository) Share(ctx context.Context, id string) (link string, err error) {
+  // TODO implement me
+  panic("implement me")
+}
+
+func (r *articlesRepository) Discard(ctx context.Context, id string) error {
+  // TODO implement me
+  panic("implement me")
+}
+
+func (r *articlesRepository) Revise(ctx context.Context, id string) error {
+  // TODO implement me
+  panic("implement me")
+}
+
+func (r *articlesRepository) Release(ctx context.Context, id string) error {
+  // TODO implement me
+  panic("implement me")
+}
+
+func (r *articlesRepository) GetPatches(ctx context.Context) (patches []any, err error) {
+  // TODO implement me
+  panic("implement me")
 }
