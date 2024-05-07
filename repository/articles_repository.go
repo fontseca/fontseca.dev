@@ -5,6 +5,8 @@ import (
   "database/sql"
   "fontseca.dev/model"
   "fontseca.dev/transfer"
+  "github.com/google/uuid"
+  "log/slog"
 )
 
 // ArticlesRepository is a common API for articles, article drafts
@@ -127,8 +129,40 @@ func NewArticlesRepository(db *sql.DB) ArticlesRepository {
 }
 
 func (r *articlesRepository) Draft(ctx context.Context, creation *transfer.ArticleCreation) (id string, err error) {
-  // TODO implement me
-  panic("implement me")
+  tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+  if nil != err {
+    slog.Error(err.Error())
+    return uuid.Nil.String(), err
+  }
+
+  defer tx.Rollback()
+
+  draftArticleQuery := `
+  INSERT INTO "article" ("title", "author", "slug", "read_time", "content")
+                 VALUES (@title, 'fontseca.dev', @slug, @read_time, @content)
+              RETURNING "uuid";`
+
+  ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+  defer cancel()
+
+  result := tx.QueryRowContext(ctx, draftArticleQuery,
+    sql.Named("title", creation.Title),
+    sql.Named("slug", creation.Slug),
+    sql.Named("read_time", creation.ReadTime),
+    sql.Named("content", creation.Content),
+  )
+
+  if err = result.Scan(&id); nil != err {
+    slog.Error(err.Error())
+    return uuid.Nil.String(), err
+  }
+
+  if err = tx.Commit(); nil != err {
+    slog.Error(err.Error())
+    return uuid.Nil.String(), err
+  }
+
+  return id, nil
 }
 
 func (r *articlesRepository) Publish(ctx context.Context, id string) error {
