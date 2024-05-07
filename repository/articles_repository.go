@@ -3,10 +3,14 @@ package repository
 import (
   "context"
   "database/sql"
+  "errors"
   "fontseca.dev/model"
+  "fontseca.dev/problem"
   "fontseca.dev/transfer"
   "github.com/google/uuid"
   "log/slog"
+  "net/http"
+  "time"
 )
 
 // ArticlesRepository is a common API for articles, article drafts
@@ -166,8 +170,74 @@ func (r *articlesRepository) Draft(ctx context.Context, creation *transfer.Artic
 }
 
 func (r *articlesRepository) Publish(ctx context.Context, id string) error {
-  // TODO implement me
-  panic("implement me")
+  isArticleDraftQuery := `
+  SELECT "draft" IS TRUE
+     AND "published_at" IS NULL
+    FROM "article"
+   WHERE "uuid" = @uuid;`
+
+  ctx1, cancel := context.WithTimeout(ctx, time.Second)
+  defer cancel()
+
+  row := r.db.QueryRowContext(ctx1, isArticleDraftQuery, sql.Named("uuid", id))
+
+  var isArticleDraft bool
+
+  err := row.Scan(&isArticleDraft)
+  if nil != err {
+    if errors.Is(err, sql.ErrNoRows) {
+      err = problem.NewNotFound(id, "draft")
+    } else {
+      slog.Error(err.Error())
+    }
+
+    return err
+  }
+
+  if !isArticleDraft {
+    p := problem.Problem{}
+    p.Title("Article already published.")
+    p.Status(http.StatusConflict)
+    p.Detail("Cannot publish an article that is already published.")
+    p.With("article_uuid", id)
+
+    return &p
+  }
+
+  tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+  if nil != err {
+    slog.Error(err.Error())
+    return err
+  }
+
+  defer tx.Rollback()
+
+  publishArticleDraftQuery := `
+  UPDATE "article"
+     SET "draft" = FALSE,
+         "published_at" = current_timestamp,
+         "updated_at" = current_timestamp
+   WHERE "uuid" = @uuid;`
+
+  ctx, cancel = context.WithTimeout(ctx, 2*time.Second)
+  defer cancel()
+
+  result, err := tx.ExecContext(ctx, publishArticleDraftQuery, sql.Named("uuid", id))
+  if nil != err {
+    slog.Error(err.Error())
+    return err
+  }
+
+  if affected, _ := result.RowsAffected(); 1 != affected {
+    return problem.NewNotFound(id, "draft")
+  }
+
+  if err = tx.Commit(); nil != err {
+    slog.Error(err.Error())
+    return err
+  }
+
+  return nil
 }
 
 func (r *articlesRepository) Get(ctx context.Context, needle string, hidden, draftsOnly bool) (articles []*model.Article, err error) {
