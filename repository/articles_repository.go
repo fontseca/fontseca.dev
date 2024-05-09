@@ -389,8 +389,39 @@ func (r *articlesRepository) Amend(ctx context.Context, id string) error {
 }
 
 func (r *articlesRepository) Remove(ctx context.Context, id string) error {
-  // TODO implement me
-  panic("implement me")
+  tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelReadCommitted})
+  if nil != err {
+    slog.Error(err.Error())
+    return err
+  }
+
+  defer tx.Rollback()
+
+  removeArticleQuery := `
+  DELETE FROM "article"
+        WHERE "uuid" = @uuid
+          AND "draft" IS FALSE
+          AND "published_at" IS NOT NULL;`
+
+  ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+  defer cancel()
+
+  result, err := tx.ExecContext(ctx, removeArticleQuery, sql.Named("uuid", id))
+  if nil != err {
+    slog.Error(err.Error())
+    return err
+  }
+
+  if affected, _ := result.RowsAffected(); 1 != affected {
+    return problem.NewNotFound(id, "article")
+  }
+
+  if err = tx.Commit(); nil != err {
+    slog.Error(err.Error())
+    return err
+  }
+
+  return nil
 }
 
 func (r *articlesRepository) AddTopic(ctx context.Context, articleID, topicID string) error {
