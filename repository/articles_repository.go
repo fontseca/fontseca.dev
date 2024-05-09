@@ -4,12 +4,14 @@ import (
   "context"
   "database/sql"
   "errors"
+  "fmt"
   "fontseca.dev/model"
   "fontseca.dev/problem"
   "fontseca.dev/transfer"
   "github.com/google/uuid"
   "log/slog"
   "net/http"
+  "strings"
   "time"
 )
 
@@ -59,8 +61,8 @@ type ArticlesRepository interface {
   //
   // If needle is a non-empty string, then Get behaves like a search
   // function over non-hidden articles, so it attempts to find and
-  // amass every article whose title or content contains any of the
-  // keywords (if more than one) in needle.
+  // amass every article whose title contains any of the keywords
+  // (if more than one) in needle.
   Get(ctx context.Context, needle string, hidden, draftsOnly bool) (articles []*model.Article, err error)
 
   // GetByID retrieves one article (or article draft) by its UUID.
@@ -241,8 +243,79 @@ func (r *articlesRepository) Publish(ctx context.Context, id string) error {
 }
 
 func (r *articlesRepository) Get(ctx context.Context, needle string, hidden, draftsOnly bool) (articles []*model.Article, err error) {
-  // TODO implement me
-  panic("implement me")
+  getPublishedArticlesQuery := `
+  SELECT "uuid",
+         "title",
+         "author",
+         "slug",
+         "read_time",
+         "content",
+         "draft",
+         "pinned",
+         "drafted_at",
+         "published_at",
+         "updated_at",
+         "modified_at"
+    FROM "article"
+   WHERE "draft" IS @drafts_only
+     AND CASE
+         WHEN @drafts_only THEN
+              "published_at" IS NULL
+         ELSE
+              "published_at" IS NOT NULL
+              AND "hidden" IS @hidden
+          END`
+
+  if "" != needle {
+    searchAnnex := ""
+
+    for _, chunk := range strings.Fields(needle) {
+      if strings.Contains(chunk, "'") {
+        chunk = strings.ReplaceAll(chunk, "'", "''")
+      }
+
+      searchAnnex += fmt.Sprintf("\nAND \"title\" LIKE '%%%s%%'", chunk)
+    }
+
+    getPublishedArticlesQuery += searchAnnex
+  }
+
+  result, err := r.db.QueryContext(ctx, getPublishedArticlesQuery,
+    sql.Named("needle", needle), sql.Named("drafts_only", draftsOnly), sql.Named("hidden", hidden))
+  if nil != err {
+    slog.Error(err.Error())
+    return nil, err
+  }
+
+  articles = make([]*model.Article, 0)
+
+  for result.Next() {
+    var article model.Article
+
+    err = result.Scan(
+      &article.UUID,
+      &article.Title,
+      &article.Author,
+      &article.Slug,
+      &article.ReadTime,
+      &article.Content,
+      &article.IsDraft,
+      &article.IsPinned,
+      &article.DraftedAt,
+      &article.PublishedAt,
+      &article.UpdatedAt,
+      &article.ModifiedAt,
+    )
+
+    if nil != err {
+      slog.Error(err.Error())
+      return nil, err
+    }
+
+    articles = append(articles, &article)
+  }
+
+  return articles, nil
 }
 
 func (r *articlesRepository) GetByID(ctx context.Context, id string, isDraft bool) (article *model.Article, err error) {
