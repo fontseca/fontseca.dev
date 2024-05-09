@@ -243,7 +243,7 @@ func (r *articlesRepository) Publish(ctx context.Context, id string) error {
 }
 
 func (r *articlesRepository) Get(ctx context.Context, needle string, hidden, draftsOnly bool) (articles []*model.Article, err error) {
-  getPublishedArticlesQuery := `
+  getArticlesQuery := `
   SELECT "uuid",
          "title",
          "author",
@@ -275,13 +275,13 @@ func (r *articlesRepository) Get(ctx context.Context, needle string, hidden, dra
       searchAnnex += fmt.Sprintf("\nAND \"title\" LIKE '%%%s%%'", chunk)
     }
 
-    getPublishedArticlesQuery += searchAnnex
+    getArticlesQuery += searchAnnex
   }
 
   ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
   defer cancel()
 
-  result, err := r.db.QueryContext(ctx, getPublishedArticlesQuery,
+  result, err := r.db.QueryContext(ctx, getArticlesQuery,
     sql.Named("needle", needle), sql.Named("drafts_only", draftsOnly), sql.Named("hidden", hidden))
   if nil != err {
     slog.Error(err.Error())
