@@ -258,13 +258,11 @@ func (r *articlesRepository) Get(ctx context.Context, needle string, hidden, dra
          "modified_at"
     FROM "article"
    WHERE "draft" IS @drafts_only
-     AND CASE
-         WHEN @drafts_only THEN
-              "published_at" IS NULL
-         ELSE
-              "published_at" IS NOT NULL
-              AND "hidden" IS @hidden
-          END`
+     AND CASE WHEN @drafts_only
+              THEN "published_at" IS NULL
+              ELSE "published_at" IS NOT NULL
+               AND "hidden" IS @hidden
+               END`
 
   if "" != needle {
     searchAnnex := ""
