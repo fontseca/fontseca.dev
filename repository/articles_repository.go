@@ -280,6 +280,9 @@ func (r *articlesRepository) Get(ctx context.Context, needle string, hidden, dra
     getPublishedArticlesQuery += searchAnnex
   }
 
+  ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+  defer cancel()
+
   result, err := r.db.QueryContext(ctx, getPublishedArticlesQuery,
     sql.Named("needle", needle), sql.Named("drafts_only", draftsOnly), sql.Named("hidden", hidden))
   if nil != err {
