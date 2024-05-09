@@ -320,8 +320,67 @@ func (r *articlesRepository) Get(ctx context.Context, needle string, hidden, dra
 }
 
 func (r *articlesRepository) GetByID(ctx context.Context, id string, isDraft bool) (article *model.Article, err error) {
-  // TODO implement me
-  panic("implement me")
+  getArticleByUUIDQuery := `
+  SELECT "uuid",
+         "title",
+         "author",
+         "slug",
+         "read_time",
+         "content",
+         "draft",
+         "pinned",
+         "drafted_at",
+         "published_at",
+         "updated_at",
+         "modified_at"
+    FROM "article"
+   WHERE "uuid" = @uuid
+     AND "draft" IS @is_draft
+     AND CASE WHEN @is_draft
+              THEN "published_at" IS NULL
+              ELSE "published_at" IS NOT NULL
+               AND "hidden" IS FALSE
+               END;`
+
+  ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+  defer cancel()
+
+  row := r.db.QueryRowContext(ctx, getArticleByUUIDQuery, sql.Named("uuid", id), sql.Named("is_draft", isDraft))
+
+  article = new(model.Article)
+
+  err = row.Scan(
+    &article.UUID,
+    &article.Title,
+    &article.Author,
+    &article.Slug,
+    &article.ReadTime,
+    &article.Content,
+    &article.IsDraft,
+    &article.IsPinned,
+    &article.DraftedAt,
+    &article.PublishedAt,
+    &article.UpdatedAt,
+    &article.ModifiedAt,
+  )
+
+  if nil != err {
+    if errors.Is(err, sql.ErrNoRows) {
+      recordType := "article"
+
+      if isDraft {
+        recordType = "draft"
+      }
+
+      err = problem.NewNotFound(id, recordType)
+    } else {
+      slog.Error(err.Error())
+    }
+
+    return nil, err
+  }
+
+  return article, nil
 }
 
 func (r *articlesRepository) Amend(ctx context.Context, id string) error {
