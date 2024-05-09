@@ -450,8 +450,41 @@ func (r *articlesRepository) Share(ctx context.Context, id string) (link string,
 }
 
 func (r *articlesRepository) Discard(ctx context.Context, id string) error {
-  // TODO implement me
-  panic("implement me")
+  tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelReadCommitted})
+  if nil != err {
+    slog.Error(err.Error())
+    return err
+  }
+
+  defer tx.Rollback()
+
+  discardDraftQuery := `
+  DELETE
+    FROM "article"
+   WHERE "uuid" = @uuid
+     AND "draft" IS TRUE
+     AND "published_at" IS NULL;`
+
+  ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+  defer cancel()
+
+  result, err := tx.ExecContext(ctx, discardDraftQuery, sql.Named("uuid", id))
+  if nil != err {
+    slog.Error(err.Error())
+    return err
+  }
+
+  affected, _ := result.RowsAffected()
+  if 1 != affected {
+    return problem.NewNotFound(id, "draft")
+  }
+
+  if err = tx.Commit(); nil != err {
+    slog.Error(err.Error())
+    return err
+  }
+
+  return nil
 }
 
 func (r *articlesRepository) Revise(ctx context.Context, id string) error {
