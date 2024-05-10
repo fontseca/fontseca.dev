@@ -2,6 +2,7 @@ package repository
 
 import (
   "context"
+  "crypto/sha1"
   "database/sql"
   "errors"
   "fmt"
@@ -510,8 +511,106 @@ func (r *articlesRepository) SetPinned(ctx context.Context, id string, pinned bo
 }
 
 func (r *articlesRepository) Share(ctx context.Context, id string) (link string, err error) {
-  // TODO implement me
-  panic("implement me")
+  assertIsArticleDraftQuery := `
+  SELECT count (*)
+    FROM "article"
+   WHERE "uuid" = $1
+     AND "draft" IS TRUE
+     AND "published_at" IS NULL;`
+
+  ctx1, cancel := context.WithTimeout(ctx, 2*time.Second)
+  defer cancel()
+
+  var isDraft bool
+
+  err = r.db.QueryRowContext(ctx1, assertIsArticleDraftQuery, id).Scan(&isDraft)
+  if nil != err {
+    slog.Error(err.Error())
+    return "", err
+  }
+
+  if !isDraft {
+    return "", problem.NewNotFound(id, "draft")
+  }
+
+  tryToGetCurrentLinkWithExpirationTimeQuery := `
+  SELECT "sharable_link",
+         "expires_at"
+    FROM "article_link"
+   WHERE "article_uuid" = $1;`
+
+  ctx, cancel = context.WithTimeout(ctx, 2*time.Second)
+  defer cancel()
+
+  var expiresAt time.Time
+
+  err = r.db.QueryRowContext(ctx, tryToGetCurrentLinkWithExpirationTimeQuery, id).Scan(&link, &expiresAt)
+  if nil != err {
+    if !errors.Is(err, sql.ErrNoRows) {
+      slog.Error(err.Error())
+      return "", err
+    }
+  }
+
+  if "" != link {
+    now := time.Now()
+    if -1 == expiresAt.Compare(now) || 0 == expiresAt.Compare(now) {
+      removeObsoleteLinkQuery := `
+      DELETE FROM "article_link"
+            WHERE "article_uuid" = $1;`
+
+      ctx, cancel = context.WithTimeout(ctx, 2*time.Second)
+      defer cancel()
+
+      _, err = r.db.ExecContext(ctx, removeObsoleteLinkQuery, id)
+      if nil != err {
+        slog.Error(err.Error())
+        return "", err
+      }
+
+      p := problem.Problem{}
+      p.Status(http.StatusGone)
+      p.Title("Invalid shareable link.")
+      p.Detail("This shareable link is no longer valid. Try creating a new one.")
+      p.With("shareable_link", link)
+
+      return "", &p
+    }
+
+    return link, nil
+  }
+
+  tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelReadCommitted})
+  if nil != err {
+    slog.Error(err.Error())
+    return "", err
+  }
+
+  defer tx.Rollback()
+
+  makeShareableLinkQuery := `
+  INSERT INTO "article_link" ("article_uuid", "sharable_link")
+                      VALUES (@article_uuid, @sharable_link)
+    RETURNING "sharable_link";`
+
+  data := fmt.Sprintf("%s at %s", id, time.Now().String())
+  hash := sha1.Sum([]byte(data))
+
+  err = tx.QueryRowContext(ctx, makeShareableLinkQuery,
+    sql.Named("article_uuid", id), sql.Named("sharable_link", fmt.Sprintf("/archive/s/%x", hash))).
+    Scan(&link)
+
+  if nil != err {
+    slog.Error(err.Error())
+    return "", nil
+  }
+
+  if err = tx.Commit(); nil != err {
+    slog.Error(err.Error())
+    return "", err
+  }
+
+  return link, nil
 }
 
 func (r *articlesRepository) Discard(ctx context.Context, id string) error {
