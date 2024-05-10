@@ -289,6 +289,16 @@ func main() {
       );`,
     },
     {
+      name: "article_link",
+      definition: `
+      CREATE TABLE "article_link"
+      (
+        "article_uuid"  VARCHAR(36) UNIQUE PRIMARY KEY NOT NULL REFERENCES "article" ("uuid"),
+        "sharable_link" VARCHAR(248),
+        "expires_at"    TIMESTAMP NOT NULL DEFAULT (datetime(current_timestamp, '+7 day'))
+      );`,
+    },
+    {
       name: "topic",
       definition: `
       CREATE TABLE "topic"
