@@ -434,8 +434,41 @@ func (r *articlesRepository) RemoveTopic(ctx context.Context, articleID, topicID
 }
 
 func (r *articlesRepository) SetHidden(ctx context.Context, id string, hidden bool) error {
-  // TODO implement me
-  panic("implement me")
+  tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+  if nil != err {
+    slog.Error(err.Error())
+    return err
+  }
+
+  defer tx.Rollback()
+
+  setHiddenQuery := `
+  UPDATE "article"
+     SET "hidden" = @hidden
+   WHERE "uuid" = @uuid
+     AND "draft" IS FALSE
+     AND "published_at" IS NOT NULL;`
+
+  ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+  defer cancel()
+
+  result, err := tx.ExecContext(ctx, setHiddenQuery, sql.Named("uuid", id), sql.Named("hidden", hidden))
+  if nil != err {
+    slog.Error(err.Error())
+    return err
+  }
+
+  affected, _ := result.RowsAffected()
+  if 1 != affected {
+    return problem.NewNotFound(id, "article")
+  }
+
+  if err = tx.Commit(); nil != err {
+    slog.Error(err.Error())
+    return err
+  }
+
+  return nil
 }
 
 func (r *articlesRepository) SetPinned(ctx context.Context, id string, pinned bool) error {
