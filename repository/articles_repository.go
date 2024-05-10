@@ -472,8 +472,41 @@ func (r *articlesRepository) SetHidden(ctx context.Context, id string, hidden bo
 }
 
 func (r *articlesRepository) SetPinned(ctx context.Context, id string, pinned bool) error {
-  // TODO implement me
-  panic("implement me")
+  tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+  if nil != err {
+    slog.Error(err.Error())
+    return err
+  }
+
+  defer tx.Rollback()
+
+  setPinnedQuery := `
+  UPDATE "article"
+     SET "pinned" = @pinned
+   WHERE "uuid" = @uuid
+     AND "draft" IS FALSE
+     AND "published_at" IS NOT NULL;`
+
+  ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+  defer cancel()
+
+  result, err := tx.ExecContext(ctx, setPinnedQuery, sql.Named("uuid", id), sql.Named("pinned", pinned))
+  if nil != err {
+    slog.Error(err.Error())
+    return err
+  }
+
+  affected, _ := result.RowsAffected()
+  if 1 != affected {
+    return problem.NewNotFound(id, "article")
+  }
+
+  if err = tx.Commit(); nil != err {
+    slog.Error(err.Error())
+    return err
+  }
+
+  return nil
 }
 
 func (r *articlesRepository) Share(ctx context.Context, id string) (link string, err error) {
