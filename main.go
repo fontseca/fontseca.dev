@@ -275,8 +275,17 @@ func main() {
         "published_at" TIMESTAMP DEFAULT NULL,
         "updated_at"   TIMESTAMP NOT NULL DEFAULT current_timestamp
         "modified_at"  TIMESTAMP DEFAULT NULL,
-        "created_at"   TIMESTAMP NOT NULL DEFAULT current_timestamp,
-        "updated_at"   TIMESTAMP NOT NULL DEFAULT current_timestamp
+      );`,
+    },
+    {
+      name: "article_patch",
+      definition: `
+      CREATE TABLE "article_patch"
+      (
+        "article_uuid" VARCHAR(36) UNIQUE PRIMARY KEY NOT NULL REFERENCES "article" ("uuid"),
+        "title"        VARCHAR(256),
+        "slug"         VARCHAR(512),
+        "content"      TEXT
       );`,
     },
     {
