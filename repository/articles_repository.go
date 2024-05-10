@@ -487,9 +487,47 @@ func (r *articlesRepository) Discard(ctx context.Context, id string) error {
   return nil
 }
 
-func (r *articlesRepository) Revise(ctx context.Context, id string) error {
-  // TODO implement me
-  panic("implement me")
+func (r *articlesRepository) Revise(ctx context.Context, id string, revision *transfer.ArticleUpdate) error {
+  tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelReadCommitted})
+  if nil != err {
+    slog.Error(err.Error())
+    return err
+  }
+
+  defer tx.Rollback()
+
+  reviseArticleQuery := `
+  UPDATE "article"
+     SET "title" = coalesce (nullif (@title, ''), "title"),
+         "slug" = coalesce (nullif (@slug, ''), "slug"),
+         "content" = coalesce (nullif (@content, ''), "content")
+   WHERE "uuid" = @uuid
+     AND "draft" IS TRUE
+     AND "published_at" IS NULL;`
+
+  result, err := tx.ExecContext(ctx, reviseArticleQuery,
+    sql.Named("uuid", id),
+    sql.Named("title", revision.Title),
+    sql.Named("slug", revision.Slug),
+    sql.Named("content", revision.Content),
+  )
+
+  if nil != err {
+    slog.Error(err.Error())
+    return err
+  }
+
+  affected, _ := result.RowsAffected()
+  if 1 != affected {
+    return problem.NewNotFound(id, "draft")
+  }
+
+  if err = tx.Commit(); nil != err {
+    slog.Error(err.Error())
+    return err
+  }
+
+  return nil
 }
 
 func (r *articlesRepository) Release(ctx context.Context, id string) error {
