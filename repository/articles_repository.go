@@ -217,8 +217,7 @@ func (r *articlesRepository) Publish(ctx context.Context, id string) error {
   publishArticleDraftQuery := `
   UPDATE "article"
      SET "draft" = FALSE,
-         "published_at" = current_timestamp,
-         "updated_at" = current_timestamp
+         "published_at" = current_timestamp
    WHERE "uuid" = @uuid;`
 
   ctx, cancel = context.WithTimeout(ctx, 2*time.Second)
