@@ -114,7 +114,7 @@ type ArticlesRepository interface {
 
   // Revise adds a correction or inclusion to a draft or patch in order
   // to correct or improve it.
-  Revise(ctx context.Context, id string) error
+  Revise(ctx context.Context, id string, revision *transfer.ArticleUpdate) error
 
   // Release merges patch into the original article and published the
   // update immediately after merging.
