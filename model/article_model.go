@@ -24,3 +24,11 @@ type Article struct {
   CreatedAt   time.Time  `json:"created_at"`
   UpdatedAt   time.Time  `json:"updated_at"`
 }
+
+// ArticlePatch is a patch for a published article.
+type ArticlePatch struct {
+  ArticleUUID uuid.UUID `json:"article_uuid"`
+  Title       string    `json:"title"`
+  Slug        string    `json:"slug"`
+  Content     string    `json:"content"`
+}
