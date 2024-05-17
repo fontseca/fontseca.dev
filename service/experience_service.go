@@ -21,7 +21,7 @@ type ExperienceService interface {
   // hidden experience records.
   Get(ctx context.Context, hidden ...bool) (experience []*model.Experience, err error)
 
-  // GetByID retrieves a single experience record by its ID.
+  // GetByID retrieves a single experience record by its UUID.
   GetByID(ctx context.Context, id string) (experience *model.Experience, err error)
 
   // Save creates a new experience record with the provided creation data.
@@ -34,7 +34,7 @@ type ExperienceService interface {
   // and an error if something went wrong.
   Update(ctx context.Context, id string, update *transfer.ExperienceUpdate) (updated bool, err error)
 
-  // Remove deletes an experience record by its ID.
+  // Remove deletes an experience record by its UUID.
   // It returns an error if the operation fails; for example,
   // if the record does not exist.
   Remove(ctx context.Context, id string) error

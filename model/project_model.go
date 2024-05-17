@@ -7,7 +7,7 @@ import (
 
 // Project represents a project that is being developed by me.
 type Project struct {
-  ID             uuid.UUID `json:"id"`
+  UUID           uuid.UUID `json:"uuid"`
   Name           string    `json:"name"`
   Slug           string    `json:"slug"`
   Homepage       string    `json:"homepage"`

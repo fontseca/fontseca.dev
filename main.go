@@ -196,7 +196,7 @@ func main() {
       query: `
       CREATE TABLE "experience"
       (
-        "id"         VARCHAR(36) NOT NULL PRIMARY KEY DEFAULT (uuid_generate_v4 ()),
+        "uuid"       VARCHAR(36) NOT NULL PRIMARY KEY DEFAULT (uuid_generate_v4 ()),
         "starts"     INT NOT NULL,
         "ends"       INT NULL,
         "job_title"  VARCHAR(64) NOT NULL DEFAULT 'Back-End Software Developer',
@@ -216,7 +216,7 @@ func main() {
       query: `
       CREATE TABLE "project"
       (
-        "id"               VARCHAR(36) NOT NULL PRIMARY KEY DEFAULT (uuid_generate_v4 ()),
+        "uuid"             VARCHAR(36) NOT NULL PRIMARY KEY DEFAULT (uuid_generate_v4 ()),
         "name"             VARCHAR(64) NOT NULL,
         "slug"             VARCHAR(2024) NOT NULL,
         "homepage"         VARCHAR(2048) NOT NULL ON CONFLICT REPLACE DEFAULT 'about:blank',
@@ -242,10 +242,10 @@ func main() {
       query: `
       CREATE TABLE "technology_tag"
       (
-        "id"   VARCHAR(36) NOT NULL PRIMARY KEY DEFAULT (uuid_generate_v4 ()),
-        "name" VARCHAR(64) NOT NULL,
-        "created_at"       TIMESTAMP NOT NULL DEFAULT current_timestamp,
-        "updated_at"       TIMESTAMP NOT NULL DEFAULT current_timestamp
+        "uuid"        VARCHAR(36) NOT NULL PRIMARY KEY DEFAULT (uuid_generate_v4 ()),
+        "name"        VARCHAR(64) NOT NULL,
+        "created_at"  TIMESTAMP NOT NULL DEFAULT current_timestamp,
+        "updated_at"  TIMESTAMP NOT NULL DEFAULT current_timestamp
       );`,
     },
     {
@@ -253,8 +253,8 @@ func main() {
       query: `
       CREATE TABLE "project_technology_tag"
       (
-        "project_id"        VARCHAR(36) NOT NULL REFERENCES "project" ("id"),
-        "technology_tag_id" VARCHAR(36) NOT NULL REFERENCES "technology_tag" ("id")
+        "project_uuid"        VARCHAR(36) NOT NULL REFERENCES "project" ("id"),
+        "technology_tag_uuid" VARCHAR(36) NOT NULL REFERENCES "technology_tag" ("id")
       );`,
     },
     {
@@ -262,17 +262,18 @@ func main() {
       query: `
       CREATE TABLE "article"
       (
-        "id"           VARCHAR(36) NOT NULL PRIMARY KEY DEFAULT (uuid_generate_v4 ()),
-        "title"        VARCHAR(64) NOT NULL,
-        "author"       VARCHAR(512) NOT NULL REFERENCES "me" ("username"),
-        "slug"         VARCHAR(2024) NOT NULL,
-        "description"  VARCHAR(1024) NOT NULL,
+        "uuid"         VARCHAR(36) NOT NULL PRIMARY KEY DEFAULT (uuid_generate_v4 ()),
+        "title"        VARCHAR(256) NOT NULL,
+        "author"       VARCHAR(64) NOT NULL REFERENCES "me" ("username"),
+        "slug"         VARCHAR(512) NOT NULL,
         "read_time"    INT NOT NULL ON CONFLICT REPLACE DEFAULT 0,
-        "content"      TEXT NOT NULL,
-        "drafted_at"   TIMESTAMP DEFAULT NULL,
-        "pinned_at"    TIMESTAMP DEFAULT NULL,
-        "archived_at"  TIMESTAMP DEFAULT NULL,
+        "content"      TEXT NOT NULL ON CONFLICT REPLACE DEFAULT 'No content.',
+        "draft"        BOOLEAN DEFAULT TRUE,
+        "pinned"       BOOLEAN DEFAULT FALSE,
+        "hidden"       BOOLEAN DEFAULT FALSE,
+        "drafted_at"   TIMESTAMP NOT NULL DEFAULT current_timestamp,
         "published_at" TIMESTAMP DEFAULT NULL,
+        "updated_at"   TIMESTAMP NOT NULL DEFAULT current_timestamp
         "modified_at"  TIMESTAMP DEFAULT NULL,
         "created_at"   TIMESTAMP NOT NULL DEFAULT current_timestamp,
         "updated_at"   TIMESTAMP NOT NULL DEFAULT current_timestamp
@@ -283,8 +284,10 @@ func main() {
       query: `
       CREATE TABLE "topic"
       (
-        "id"   VARCHAR(36) NOT NULL PRIMARY KEY DEFAULT (uuid_generate_v4 ()),
-        "name" VARCHAR(64) NOT NULL
+        "uuid"       VARCHAR(36) NOT NULL PRIMARY KEY DEFAULT (uuid_generate_v4 ()),
+        "name"       VARCHAR(64) NOT NULL,
+        "created_at" TIMESTAMP NOT NULL DEFAULT current_timestamp,
+        "updated_at" TIMESTAMP NOT NULL DEFAULT current_timestamp
       );`,
     },
     {
@@ -292,8 +295,8 @@ func main() {
       query: `
       CREATE TABLE "article_topic"
       (
-        "article_id" VARCHAR(36) NOT NULL REFERENCES "article" ("id"),
-        "topic_id"   VARCHAR(36) NOT NULL REFERENCES "topic" ("id")
+        "article_uuid" VARCHAR(36) NOT NULL REFERENCES "article" ("id"),
+        "topic_uuid"   VARCHAR(36) NOT NULL REFERENCES "topic" ("id")
       );`,
     },
   }

@@ -65,7 +65,7 @@ func TestExperienceHandler_GetByID(t *testing.T) {
   t.Run("success", func(t *testing.T) {
     var i = 2023
     var e = &model.Experience{
-      ID:        uuid.New(),
+      UUID:      uuid.New(),
       Starts:    2020,
       Ends:      &i,
       JobTitle:  "JobTitle",
@@ -77,7 +77,7 @@ func TestExperienceHandler_GetByID(t *testing.T) {
       CreatedAt: time.Now(),
       UpdatedAt: time.Now(),
     }
-    var id = e.ID.String()
+    var id = e.UUID.String()
     var s = mocks.NewExperienceService()
     s.On(routine, mock.AnythingOfType("*gin.Context"), id).Return(e, nil)
     gin.SetMode(gin.ReleaseMode)

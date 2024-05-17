@@ -7,7 +7,7 @@ import (
 
 // Experience represents a work experience entry.
 type Experience struct {
-  ID        uuid.UUID `json:"id"`
+  UUID      uuid.UUID `json:"uuid"`
   Starts    int       `json:"starts"`
   Ends      *int      `json:"ends"`
   JobTitle  string    `json:"job_title"`

@@ -622,8 +622,8 @@ a:hover {
 .project-tile .content-container .name {
   width: calc(100% - 170px - .5rem);
   font-size: 25px;
-  font-weight: 700;
-  margin-bottom: 1.5rem;
+  font-weight: 800;
+  /*margin-bottom: 1.5rem;*/
 }
 
 .project-tile .content-container .language,

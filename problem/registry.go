@@ -20,8 +20,8 @@ func NewNotFound(id, recordType string) *Problem {
   p.Type("about:blank")
   p.Status(http.StatusNotFound)
   p.Title("Record not found.")
-  p.Detail(fmt.Sprintf("The %s record with ID '%s' could not be found in the database.", recordType, id))
-  p.With("record_id", id)
+  p.Detail(fmt.Sprintf("The %s record with UUID '%s' could not be found in the database.", recordType, id))
+  p.With("record_uuid", id)
   p.With("record_type", recordType)
   return &p
 }

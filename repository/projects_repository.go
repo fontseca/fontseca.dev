@@ -7,6 +7,7 @@ import (
   "fontseca.dev/model"
   "fontseca.dev/problem"
   "fontseca.dev/transfer"
+  "github.com/google/uuid"
   "log/slog"
   "strings"
   "time"
@@ -17,7 +18,7 @@ type ProjectsRepository interface {
   // Get retrieves a slice of project types.
   Get(ctx context.Context, archived bool) (projects []*model.Project, err error)
 
-  // GetByID retrieves a project type by its ID.
+  // GetByID retrieves a project type by its UUID.
   GetByID(ctx context.Context, id string) (project *model.Project, err error)
 
   // GetBySlug retrieves a project type by its slug.
@@ -59,7 +60,7 @@ func NewProjectsRepository(db *sql.DB) ProjectsRepository {
 
 func (r *projectsRepository) Get(ctx context.Context, archived bool) (projects []*model.Project, err error) {
   var query = `
-     SELECT p."id",
+     SELECT p."uuid",
             p."name",
             p."slug",
             p."homepage",
@@ -81,11 +82,11 @@ func (r *projectsRepository) Get(ctx context.Context, archived bool) (projects [
             group_concat (tt."name")
        FROM "project" p
   LEFT JOIN "project_technology_tag" ptt
-         ON ptt."project_id" = p."id"
+         ON ptt."project_uuid" = p."uuid"
   LEFT JOIN "technology_tag" tt
-         ON tt."id" = ptt."technology_tag_id"
+         ON tt."uuid" = ptt."technology_tag_uuid"
       WHERE p."archived" IS @archived
-   GROUP BY p."id"
+   GROUP BY p."uuid"
    ORDER BY p."created_at" DESC;`
   ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
   defer cancel()
@@ -102,7 +103,7 @@ func (r *projectsRepository) Get(ctx context.Context, archived bool) (projects [
       tags    *string
     )
     err = rows.Scan(
-      &project.ID,
+      &project.UUID,
       &project.Name,
       &project.Slug,
       &project.Homepage,
@@ -136,7 +137,7 @@ func (r *projectsRepository) Get(ctx context.Context, archived bool) (projects [
 
 func (r *projectsRepository) doGetByID(ctx context.Context, id string, ignoreArchived bool) (project *model.Project, err error) {
   var query = `
-     SELECT p."id",
+     SELECT p."uuid",
             p."name",
             p."slug",
             p."homepage",
@@ -158,15 +159,15 @@ func (r *projectsRepository) doGetByID(ctx context.Context, id string, ignoreArc
             group_concat (tt."name")
        FROM "project" p
   LEFT JOIN "project_technology_tag" ptt
-         ON ptt."project_id" = p."id"
+         ON ptt."project_uuid" = p."uuid"
   LEFT JOIN "technology_tag" tt
-         ON tt."id" = ptt."technology_tag_id"
+         ON tt."uuid" = ptt."technology_tag_uuid"
       WHERE p."archived" IS @archived
-        AND p."id" = @project_id
-   GROUP BY p."id";`
+        AND p."uuid" = @project_uuid
+   GROUP BY p."uuid";`
   ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
   defer cancel()
-  var result = r.db.QueryRowContext(ctx, query, sql.Named("project_id", id), sql.Named("archived", ignoreArchived))
+  var result = r.db.QueryRowContext(ctx, query, sql.Named("project_uuid", id), sql.Named("archived", ignoreArchived))
   if nil != err {
     slog.Error(err.Error())
     return nil, err
@@ -174,7 +175,7 @@ func (r *projectsRepository) doGetByID(ctx context.Context, id string, ignoreArc
   project = new(model.Project)
   var tags *string
   err = result.Scan(
-    &project.ID,
+    &project.UUID,
     &project.Name,
     &project.Slug,
     &project.Homepage,
@@ -214,7 +215,7 @@ func (r *projectsRepository) GetByID(ctx context.Context, id string) (project *m
 
 func (r *projectsRepository) GetBySlug(ctx context.Context, slug string) (project *model.Project, err error) {
   var query = `
-     SELECT p."id",
+     SELECT p."uuid",
             p."name",
             p."slug",
             p."homepage",
@@ -236,12 +237,12 @@ func (r *projectsRepository) GetBySlug(ctx context.Context, slug string) (projec
             group_concat (tt."name")
        FROM "project" p
   LEFT JOIN "project_technology_tag" ptt
-         ON ptt."project_id" = p."id"
+         ON ptt."project_uuid" = p."uuid"
   LEFT JOIN "technology_tag" tt
-         ON tt."id" = ptt."technology_tag_id"
+         ON tt."uuid" = ptt."technology_tag_uuid"
       WHERE p."archived" IS FALSE
         AND p."slug" = @slug
-   GROUP BY p."id"
+   GROUP BY p."uuid"
       LIMIT 1;`
   ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
   defer cancel()
@@ -253,7 +254,7 @@ func (r *projectsRepository) GetBySlug(ctx context.Context, slug string) (projec
   project = new(model.Project)
   var tags *string
   err = result.Scan(
-    &project.ID,
+    &project.UUID,
     &project.Name,
     &project.Slug,
     &project.Homepage,
@@ -291,7 +292,7 @@ func (r *projectsRepository) Add(ctx context.Context, creation *transfer.Project
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
   if nil != err {
     slog.Error(err.Error())
-    return "", err
+    return uuid.Nil.String(), err
   }
   defer tx.Rollback()
   var query = `
@@ -319,7 +320,7 @@ func (r *projectsRepository) Add(ctx context.Context, creation *transfer.Project
                          nullif (@second_image_url, ''),
                          nullif (@github_url, ''),
                          nullif (@collection_url, ''))
-              RETURNING "id";`
+              RETURNING "uuid";`
   ctx, cancel := context.WithTimeout(ctx, time.Second)
   defer cancel()
   var row = tx.QueryRowContext(ctx, query,
@@ -338,11 +339,11 @@ func (r *projectsRepository) Add(ctx context.Context, creation *transfer.Project
   err = row.Scan(&id)
   if nil != err {
     slog.Error(err.Error())
-    return "", err
+    return uuid.Nil.String(), err
   }
   if err = tx.Commit(); nil != err {
     slog.Error(err.Error())
-    return "", err
+    return uuid.Nil.String(), err
   }
   return id, nil
 }
@@ -351,10 +352,10 @@ func (r *projectsRepository) Exists(ctx context.Context, id string) (err error) 
   var query = `
   SELECT count (1)
     FROM "project"
-   WHERE "id" = @id;`
+   WHERE "uuid" = @uuid;`
   ctx, cancel := context.WithTimeout(ctx, time.Second)
   defer cancel()
-  var row = r.db.QueryRowContext(ctx, query, sql.Named("id", id))
+  var row = r.db.QueryRowContext(ctx, query, sql.Named("uuid", id))
   var exists bool
   err = row.Scan(&exists)
   if nil != err {
@@ -426,7 +427,7 @@ func (r *projectsRepository) doUpdate(ctx context.Context, id string, update *tr
          "archived" = @archived,
          "finished" = @finished,
          "updated_at" = current_timestamp
-   WHERE "id" = @id;`
+   WHERE "uuid" = @uuid;`
   var playable = current.Playable
   if "" != update.PlaygroundURL {
     var wantsToDefaultPlaygroundURL = "about:blank" == update.PlaygroundURL
@@ -439,7 +440,7 @@ func (r *projectsRepository) doUpdate(ctx context.Context, id string, update *tr
   }
   ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
   defer cancel()
-  result, err := tx.ExecContext(ctx, query, sql.Named("id", id),
+  result, err := tx.ExecContext(ctx, query, sql.Named("uuid", id),
     sql.Named("name", update.Name), sql.Named("current_name", current.Name),
     sql.Named("slug", update.Slug), sql.Named("current_slug", current.Slug),
     sql.Named("homepage", update.Homepage), sql.Named("current_homepage", current.Homepage),
@@ -491,10 +492,10 @@ func (r *projectsRepository) Remove(ctx context.Context, id string) (err error) 
 
   var query = `
   DELETE FROM "project_technology_tag"
-        WHERE "project_id" = @project_id`
+        WHERE "project_uuid" = @project_uuid`
   ctx, cancel := context.WithTimeout(ctx, time.Second)
   defer cancel()
-  _, err = tx.ExecContext(ctx, query, sql.Named("project_id", id))
+  _, err = tx.ExecContext(ctx, query, sql.Named("project_uuid", id))
   if nil != err {
     slog.Error(err.Error())
     return err
@@ -504,11 +505,11 @@ func (r *projectsRepository) Remove(ctx context.Context, id string) (err error) 
 
   query = `
   DELETE FROM "project"
-        WHERE "id" = @id;`
+        WHERE "uuid" = @uuid;`
   ctx, cancel = context.WithTimeout(ctx, time.Second)
   defer cancel()
 
-  result, err := tx.ExecContext(ctx, query, sql.Named("id", id))
+  result, err := tx.ExecContext(ctx, query, sql.Named("uuid", id))
   if nil != err {
     slog.Error(err.Error())
     return err
@@ -531,10 +532,10 @@ func (r *projectsRepository) ContainsTechnologyTag(ctx context.Context, projectI
   var query = `
   SELECT count (1)
     FROM "project_technology_tag" ptt
-   WHERE ptt."project_id" = @project_id
-     AND ptt."technology_tag_id" = @technology_tag_id;`
+   WHERE ptt."project_uuid" = @project_uuid
+     AND ptt."technology_tag_uuid" = @technology_tag_uuid;`
   var result = r.db.QueryRowContext(ctx, query,
-    sql.Named("project_id", projectID), sql.Named("technology_tag_id", technologyTagID))
+    sql.Named("project_uuid", projectID), sql.Named("technology_tag_uuid", technologyTagID))
   err = result.Scan(&success)
   if nil != err {
     slog.Error(err.Error())
@@ -551,15 +552,15 @@ func (r *projectsRepository) AddTechnologyTag(ctx context.Context, projectID, te
   }
   defer tx.Rollback()
   var query = `
-  INSERT INTO "project_technology_tag" ("project_id",
-                                        "technology_tag_id")
-                                VALUES (@project_id,
-                                        @technology_tag_id);`
+  INSERT INTO "project_technology_tag" ("project_uuid",
+                                        "technology_tag_uuid")
+                                VALUES (@project_uuid,
+                                        @technology_tag_uuid);`
   ctx, cancel := context.WithTimeout(ctx, time.Second)
   defer cancel()
   result, err := tx.ExecContext(ctx, query,
-    sql.Named("project_id", projectID),
-    sql.Named("technology_tag_id", technologyTagID))
+    sql.Named("project_uuid", projectID),
+    sql.Named("technology_tag_uuid", technologyTagID))
   if nil != err {
     slog.Error(err.Error())
     return false, err
@@ -583,12 +584,12 @@ func (r *projectsRepository) RemoveTechnologyTag(ctx context.Context, projectID,
   defer tx.Rollback()
   var query = `
   DELETE FROM "project_technology_tag"
-        WHERE "project_id" = @project_id
-          AND "technology_tag_id" = @technology_tag_id;`
+        WHERE "project_uuid" = @project_uuid
+          AND "technology_tag_uuid" = @technology_tag_uuid;`
   ctx, cancel := context.WithTimeout(ctx, time.Second)
   defer cancel()
   result, err := tx.ExecContext(ctx, query,
-    sql.Named("project_id", projectID), sql.Named("technology_tag_id", technologyTagID))
+    sql.Named("project_uuid", projectID), sql.Named("technology_tag_uuid", technologyTagID))
   if nil != err {
     slog.Error(err.Error())
     return false, err

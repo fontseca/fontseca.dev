@@ -17,7 +17,7 @@ type ExperienceRepository interface {
   // the hidden experience records.
   Get(ctx context.Context, hidden bool) (experience []*model.Experience, err error)
 
-  // GetByID retrieves a single experience record by its ID.
+  // GetByID retrieves a single experience record by its UUID.
   GetByID(ctx context.Context, id string) (experience *model.Experience, err error)
 
   // Save creates a new experience record with the provided creation data.
@@ -26,7 +26,7 @@ type ExperienceRepository interface {
   // Update modifies an existing experience record with the provided update data.
   Update(ctx context.Context, id string, update *transfer.ExperienceUpdate) (updated bool, err error)
 
-  // Remove deletes an experience record by its ID.
+  // Remove deletes an experience record by its UUID.
   Remove(ctx context.Context, id string) error
 }
 
@@ -62,7 +62,7 @@ func (r *experienceRepository) Get(ctx context.Context, hidden bool) (experience
   for rows.Next() {
     e := new(model.Experience)
     err = rows.Scan(
-      &e.ID,
+      &e.UUID,
       &e.Starts,
       &e.Ends,
       &e.JobTitle,
@@ -85,13 +85,13 @@ func (r *experienceRepository) Get(ctx context.Context, hidden bool) (experience
 func (r *experienceRepository) GetByID(ctx context.Context, id string) (experience *model.Experience, err error) {
   query := `SELECT *
               FROM "experience"
-             WHERE "id" = @id;`
+             WHERE "uuid" = @uuid;`
   ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
   defer cancel()
-  row := r.db.QueryRowContext(ctx, query, sql.Named("id", id))
+  row := r.db.QueryRowContext(ctx, query, sql.Named("uuid", id))
   experience = new(model.Experience)
   err = row.Scan(
-    &experience.ID,
+    &experience.UUID,
     &experience.Starts,
     &experience.Ends,
     &experience.JobTitle,
@@ -197,11 +197,11 @@ func (r *experienceRepository) Update(ctx context.Context, id string, update *tr
          "active" = @active,
          "hidden" = @hidden,
          "updated_at" = current_timestamp
-   WHERE "id" = @id;`
+   WHERE "uuid" = @uuid;`
   ctx, cancel := context.WithTimeout(ctx, time.Second)
   defer cancel()
   result, err := tx.ExecContext(ctx, query,
-    sql.Named("id", id),
+    sql.Named("uuid", id),
     sql.Named("starts", update.Starts), sql.Named("current_starts", current.Starts),
     sql.Named("ends", update.Ends), sql.Named("current_ends", current.Ends),
     sql.Named("job_title", update.JobTitle), sql.Named("current_job_title", current.JobTitle),
@@ -234,10 +234,10 @@ func (r *experienceRepository) Remove(ctx context.Context, id string) error {
   defer tx.Rollback()
   query := `
   DELETE FROM "experience"
-        WHERE "id" = @id;`
+        WHERE "uuid" = @uuid;`
   ctx, cancel := context.WithTimeout(ctx, time.Second)
   defer cancel()
-  result, err := tx.ExecContext(ctx, query, sql.Named("id", id))
+  result, err := tx.ExecContext(ctx, query, sql.Named("uuid", id))
   if nil != err {
     slog.Error(err.Error())
     return err

@@ -6,6 +6,7 @@ import (
   "fontseca.dev/model"
   "fontseca.dev/problem"
   "fontseca.dev/transfer"
+  "github.com/google/uuid"
   "log/slog"
   "time"
 )
@@ -52,7 +53,7 @@ ORDER BY "technology_tag"."created_at" DESC;`
   technologies = make([]*model.TechnologyTag, 0)
   for rows.Next() {
     var tech = new(model.TechnologyTag)
-    err = rows.Scan(&tech.ID, &tech.Name, &tech.CreatedAt, &tech.UpdatedAt)
+    err = rows.Scan(&tech.UUID, &tech.Name, &tech.CreatedAt, &tech.UpdatedAt)
     if nil != err {
       slog.Error(err.Error())
       return nil, err
@@ -66,24 +67,24 @@ func (r *technologyTagRepository) Add(ctx context.Context, creation *transfer.Te
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
   if nil != err {
     slog.Error(err.Error())
-    return "", err
+    return uuid.Nil.String(), err
   }
   defer tx.Rollback()
   var query = `
   INSERT INTO "technology_tag" ("name")
                         VALUES (@name)
-    RETURNING "id";`
+    RETURNING "uuid";`
   ctx, cancel := context.WithTimeout(ctx, time.Second)
   defer cancel()
   var result = tx.QueryRowContext(ctx, query, sql.Named("name", creation.Name))
   err = result.Scan(&id)
   if nil != err {
     slog.Error(err.Error())
-    return "", err
+    return uuid.Nil.String(), err
   }
   if err = tx.Commit(); nil != err {
     slog.Error(err.Error())
-    return "", err
+    return uuid.Nil.String(), err
   }
   return id, nil
 }
@@ -92,10 +93,10 @@ func (r *technologyTagRepository) Exists(ctx context.Context, id string) (err er
   var query = `
   SELECT count (1)
     FROM "technology_tag"
-   WHERE "id" = @id;`
+   WHERE "uuid" = @uuid;`
   ctx, cancel := context.WithTimeout(ctx, time.Second)
   defer cancel()
-  var row = r.db.QueryRowContext(ctx, query, sql.Named("id", id))
+  var row = r.db.QueryRowContext(ctx, query, sql.Named("uuid", id))
   var count int
   err = row.Scan(&count)
   if nil != err {
@@ -118,10 +119,10 @@ func (r *technologyTagRepository) Update(ctx context.Context, id string, update 
   var query = `
   SELECT "name"
     FROM "technology_tag"
-   WHERE id = @id;`
+   WHERE "uuid" = @uuid;`
   ctx, cancel := context.WithTimeout(ctx, time.Second)
   defer cancel()
-  var row = tx.QueryRowContext(ctx, query, sql.Named("id", id))
+  var row = tx.QueryRowContext(ctx, query, sql.Named("uuid", id))
   var currentName string
   err = row.Scan(&currentName)
   if nil != err {
@@ -135,11 +136,11 @@ func (r *technologyTagRepository) Update(ctx context.Context, id string, update 
   UPDATE "technology_tag"
      SET "name" = @name,
          "updated_at" = current_timestamp
-   WHERE "id" = @id;`
+   WHERE "uuid" = @uuid;`
   ctx, cancel = context.WithTimeout(ctx, time.Second)
   defer cancel()
   result, err := tx.ExecContext(ctx, query,
-    sql.Named("id", id),
+    sql.Named("uuid", id),
     sql.Named("name", update.Name))
   if nil != err {
     slog.Error(err.Error())
@@ -165,10 +166,10 @@ func (r *technologyTagRepository) Remove(ctx context.Context, id string) (err er
   defer tx.Rollback()
   var query = `
   DELETE FROM "technology_tag"
-        WHERE id = @id;`
+        WHERE "uuid" = @uuid;`
   ctx, cancel := context.WithTimeout(ctx, time.Second)
   defer cancel()
-  result, err := tx.ExecContext(ctx, query, sql.Named("id", id))
+  result, err := tx.ExecContext(ctx, query, sql.Named("uuid", id))
   if nil != err {
     slog.Error(err.Error())
     return err

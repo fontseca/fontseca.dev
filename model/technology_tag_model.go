@@ -7,7 +7,7 @@ import (
 
 // TechnologyTag is a tag that helps further describe a project.
 type TechnologyTag struct {
-  ID        uuid.UUID `json:"id"`
+  UUID      uuid.UUID `json:"uuid"`
   Name      string    `json:"name"`
   CreatedAt time.Time `json:"created_at"`
   UpdatedAt time.Time `json:"updated_at"`

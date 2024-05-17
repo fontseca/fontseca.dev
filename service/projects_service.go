@@ -18,7 +18,7 @@ type ProjectsService interface {
   // Get retrieves a slice of projects.
   Get(ctx context.Context, archived ...bool) (projects []*model.Project, err error)
 
-  // GetByID retrieves a single project by its ID.
+  // GetByID retrieves a single project by its UUID.
   GetByID(ctx context.Context, id string) (project *model.Project, err error)
 
   // GetBySlug retrieves a project type by its slug.

@@ -64,7 +64,7 @@ func TestProjectsHandler_GetByID(t *testing.T) {
     var language = "Go"
     var estimatedTime = 1
     var project = &model.Project{
-      ID:             uuid.New(),
+      UUID:           uuid.New(),
       Name:           "Name",
       Homepage:       "https://Homepage.com",
       Language:       &language,
@@ -83,7 +83,7 @@ func TestProjectsHandler_GetByID(t *testing.T) {
       CreatedAt:      time.Now(),
       UpdatedAt:      time.Now(),
     }
-    var id = project.ID.String()
+    var id = project.UUID.String()
     var s = mocks.NewProjectsService()
     s.On(routine, mock.AnythingOfType("*gin.Context"), id).Return(project, nil)
     var engine = gin.Default()
