@@ -384,8 +384,84 @@ func (r *articlesRepository) GetByID(ctx context.Context, id string, isDraft boo
 }
 
 func (r *articlesRepository) Amend(ctx context.Context, id string) error {
-  // TODO implement me
-  panic("implement me")
+  articleExistsQuery := `
+  SELECT "uuid"
+    FROM "article"
+   WHERE "uuid" = @uuid
+     AND "draft" IS FALSE
+     AND "published_at" IS NOT NULL;`
+
+  ctx1, cancel := context.WithTimeout(ctx, 3*time.Second)
+  defer cancel()
+
+  err := r.db.QueryRowContext(ctx1, articleExistsQuery, sql.Named("uuid", id)).Scan(&id)
+  if nil != err {
+    if errors.Is(err, sql.ErrNoRows) {
+      return problem.NewNotFound(id, "article")
+    }
+
+    slog.Error(err.Error())
+    return err
+  }
+
+  isBeenAmendedQuery := `
+    SELECT count (1)
+      FROM "article_patch"
+     WHERE "article_uuid" = @article_uuid;`
+
+  var isBeenAmended bool
+
+  ctx2, cancel := context.WithTimeout(ctx, 2*time.Second)
+  defer cancel()
+
+  err = r.db.QueryRowContext(ctx2, isBeenAmendedQuery, sql.Named("article_uuid", id)).Scan(&isBeenAmended)
+  if nil != err {
+    slog.Error(err.Error())
+  }
+
+  if isBeenAmended {
+    p := problem.Problem{}
+    p.Title("Article is currently been amended.")
+    p.Detail("Could not amend article because there is an ongoing update.")
+    p.Status(http.StatusConflict)
+    p.With("article_uuid", id)
+
+    return &p
+  }
+
+  tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+  if nil != err {
+    slog.Error(err.Error())
+    return err
+  }
+
+  defer tx.Rollback()
+
+  amendArticleQuery := `
+  INSERT INTO "article_patch" ("article_uuid",
+                               "title",
+                               "slug",
+                               "content")
+                       VALUES (@uuid,
+                               NULL,
+                               NULL,
+                               NULL);`
+
+  ctx, cancel = context.WithTimeout(ctx, 4*time.Second)
+  defer cancel()
+
+  _, err = tx.ExecContext(ctx, amendArticleQuery, sql.Named("uuid", id))
+  if nil != err {
+    slog.Error(err.Error())
+    return err
+  }
+
+  if err = tx.Commit(); nil != err {
+    slog.Error(err.Error())
+    return err
+  }
+
+  return nil
 }
 
 func (r *articlesRepository) Remove(ctx context.Context, id string) error {
