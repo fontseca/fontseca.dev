@@ -501,8 +501,127 @@ func (r *articlesRepository) Remove(ctx context.Context, id string) error {
 }
 
 func (r *articlesRepository) AddTopic(ctx context.Context, articleID, topicID string) error {
-  // TODO implement me
-  panic("implement me")
+  articleExistsQuery := `
+  SELECT count (*)
+    FROM "article"
+   WHERE "uuid" = $1
+     AND "draft" IS FALSE
+     AND "published_at" IS NOT NULL;`
+
+  ctx1, cancel := context.WithTimeout(ctx, 3*time.Second)
+  defer cancel()
+
+  var articleExists bool
+
+  err := r.db.QueryRowContext(ctx1, articleExistsQuery, articleID).Scan(&articleExists)
+  if nil != err {
+    if !errors.Is(err, sql.ErrNoRows) {
+      slog.Error(err.Error())
+      return err
+    }
+  }
+
+  if !articleExists {
+    return problem.NewNotFound(articleID, "article")
+  }
+
+  topicExistsQuery := `
+  SELECT count (*)
+    FROM "topic"
+   WHERE "uuid" = $1;`
+
+  ctx1, cancel = context.WithTimeout(ctx, 3*time.Second)
+  defer cancel()
+
+  var topicExists bool
+
+  err = r.db.QueryRowContext(ctx, topicExistsQuery, topicID).Scan(&topicExists)
+  if nil != err {
+    if !errors.Is(err, sql.ErrNoRows) {
+      slog.Error(err.Error())
+      return err
+    }
+  }
+
+  if !topicExists {
+    return problem.NewNotFound(topicID, "topic")
+  }
+
+  topicAlreadyExistsQuery := `
+  SELECT count (*)
+    FROM "article_topic"
+   WHERE "article_uuid" = @article_uuid
+     AND "topic_uuid" = @topic_uuid;`
+
+  ctx, cancel = context.WithTimeout(ctx, 3*time.Second)
+  defer cancel()
+
+  var topicAlreadyExists bool
+
+  err = r.db.QueryRowContext(ctx, topicAlreadyExistsQuery,
+    sql.Named("article_uuid", articleID),
+    sql.Named("topic_uuid", topicID)).
+    Scan(&topicAlreadyExists)
+
+  if nil != err {
+    if !errors.Is(err, sql.ErrNoRows) {
+      slog.Error(err.Error())
+      return err
+    }
+  }
+
+  if topicAlreadyExists {
+    p := problem.Problem{}
+    p.Status(http.StatusConflict)
+    p.Title("Could not add a topic.")
+    p.Detail("This topic is already added to the current article.")
+    p.With("article_uuid", articleID)
+    p.With("topic_uuid", topicID)
+
+    return &p
+  }
+
+  tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+  if nil != err {
+    slog.Error(err.Error())
+    return err
+  }
+
+  defer tx.Rollback()
+
+  addTopicQuery := `
+  INSERT INTO "article_topic" ("article_uuid", "topic_uuid")
+                       VALUES (@article_uuid, @topic_uuid);`
+
+  ctx, cancel = context.WithTimeout(ctx, 2*time.Second)
+  defer cancel()
+
+  result, err := tx.ExecContext(ctx, addTopicQuery,
+    sql.Named("article_uuid", articleID),
+    sql.Named("topic_uuid", topicID))
+
+  if nil != err {
+    slog.Error(err.Error())
+    return err
+  }
+
+  if affected, _ := result.RowsAffected(); 1 != affected {
+    p := problem.Problem{}
+    p.Status(http.StatusAccepted)
+    p.Title("Could not add a topic.")
+    p.Detail("Could not add topic to this article.")
+    p.With("article_uuid", articleID)
+    p.With("topic_uuid", topicID)
+
+    return &p
+  }
+
+  if err = tx.Commit(); nil != err {
+    slog.Error(err.Error())
+    return err
+  }
+
+  return nil
 }
 
 func (r *articlesRepository) RemoveTopic(ctx context.Context, articleID, topicID string) error {
