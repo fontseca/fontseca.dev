@@ -69,8 +69,45 @@ func (r *topicsRepository) Add(ctx context.Context, creation *transfer.TopicCrea
 }
 
 func (r *topicsRepository) Get(ctx context.Context) (topics []*model.Topic, err error) {
-  // TODO implement me
-  panic("implement me")
+  getTopicsQuery := `
+  SELECT "uuid",
+         "name",
+         "created_at",
+         "updated_at"
+    FROM "topic";`
+
+  ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+  defer cancel()
+
+  result, err := r.db.QueryContext(ctx, getTopicsQuery)
+  if nil != err {
+    slog.Error(err.Error())
+    return nil, err
+  }
+
+  defer result.Close()
+
+  topics = make([]*model.Topic, 0)
+
+  for result.Next() {
+    var topic model.Topic
+
+    err = result.Scan(
+      &topic.UUID,
+      &topic.Name,
+      &topic.CreatedAt,
+      &topic.UpdatedAt,
+    )
+
+    if nil != err {
+      slog.Error(err.Error())
+      return nil, err
+    }
+
+    topics = append(topics, &topic)
+  }
+
+  return topics, nil
 }
 
 func (r *topicsRepository) Update(ctx context.Context, id string, update *transfer.TopicUpdate) error {
