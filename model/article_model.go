@@ -8,12 +8,14 @@ import (
 // Article represents a piece of writing about a
 // particular subject in my website's archive.
 type Article struct {
-  ID          uuid.UUID  `json:"id"`
+  UUID        uuid.UUID  `json:"uuid"`
   Title       string     `json:"title"`
   Author      string     `json:"author"`
   Slug        string     `json:"slug"`
   ReadTime    int        `json:"read_time"`
   Content     string     `json:"content"`
+  IsDraft     time.Time  `json:"is_draft"`
+  IsPinned    time.Time  `json:"is_pinned"`
   DraftedAt   time.Time  `json:"drafted_at"`
   PinnedAt    *time.Time `json:"pinned_at"`
   ArchivedAt  *time.Time `json:"archived_at"`
