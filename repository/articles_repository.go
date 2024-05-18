@@ -243,6 +243,49 @@ func (r *articlesRepository) Publish(ctx context.Context, id string) error {
 }
 
 func (r *articlesRepository) Get(ctx context.Context, needle string, hidden, draftsOnly bool) (articles []*model.Article, err error) {
+  getTopicsQuery := `
+     SELECT at."article_uuid", 
+            t."uuid",
+            t."name",
+            t.created_at,
+            t.updated_at
+       FROM "article_topic" at
+  LEFT JOIN "topic" t
+         ON at."topic_uuid" = t."uuid";`
+
+  ctx1, cancel := context.WithTimeout(ctx, 5*time.Second)
+  defer cancel()
+
+  result, err := r.db.QueryContext(ctx1, getTopicsQuery)
+  if err != nil {
+    slog.Error(err.Error())
+    return nil, err
+  }
+
+  defer result.Close()
+
+  articleTopicsDictionary := map[string][]*model.Topic{}
+
+  for result.Next() {
+    var articleID string
+    var topic model.Topic
+
+    err = result.Scan(
+      &articleID,
+      &topic.UUID,
+      &topic.Name,
+      &topic.CreatedAt,
+      &topic.UpdatedAt,
+    )
+
+    if nil != err {
+      slog.Error(err.Error())
+      return nil, err
+    }
+
+    articleTopicsDictionary[articleID] = append(articleTopicsDictionary[articleID], &topic)
+  }
+
   getArticlesQuery := `
   SELECT "uuid",
          "title",
@@ -278,10 +321,10 @@ func (r *articlesRepository) Get(ctx context.Context, needle string, hidden, dra
     getArticlesQuery += searchAnnex
   }
 
-  ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+  ctx, cancel = context.WithTimeout(ctx, 5*time.Second)
   defer cancel()
 
-  result, err := r.db.QueryContext(ctx, getArticlesQuery,
+  result, err = r.db.QueryContext(ctx, getArticlesQuery,
     sql.Named("needle", needle), sql.Named("drafts_only", draftsOnly), sql.Named("hidden", hidden))
   if nil != err {
     slog.Error(err.Error())
@@ -313,6 +356,7 @@ func (r *articlesRepository) Get(ctx context.Context, needle string, hidden, dra
       return nil, err
     }
 
+    article.Topics = articleTopicsDictionary[article.UUID.String()]
     articles = append(articles, &article)
   }
 
