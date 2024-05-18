@@ -124,7 +124,7 @@ type ArticlesRepository interface {
   Release(ctx context.Context, id string) error
 
   // GetPatches retrieves all the ongoing patches of every article.
-  GetPatches(ctx context.Context) (patches []any, err error)
+  GetPatches(ctx context.Context) (patches []*model.ArticlePatch, err error)
 }
 
 type articlesRepository struct {
@@ -775,7 +775,43 @@ func (r *articlesRepository) Release(ctx context.Context, id string) error {
   panic("implement me")
 }
 
-func (r *articlesRepository) GetPatches(ctx context.Context) (patches []any, err error) {
-  // TODO implement me
-  panic("implement me")
+func (r *articlesRepository) GetPatches(ctx context.Context) (patches []*model.ArticlePatch, err error) {
+  getPatchesQuery := `
+  SELECT "article_uuid",
+         "title",
+         "slug",
+         "content"
+    FROM "article_patch";`
+
+  ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+  defer cancel()
+
+  result, err := r.db.QueryContext(ctx, getPatchesQuery)
+  if nil != err {
+    slog.Error(err.Error())
+    return nil, err
+  }
+
+  defer result.Close()
+
+  patches = make([]*model.ArticlePatch, 0)
+
+  for result.Next() {
+    var patch model.ArticlePatch
+
+    err = result.Scan(
+      &patch.ArticleUUID,
+      &patch.Title,
+      &patch.Slug,
+      &patch.Content)
+
+    if nil != err {
+      slog.Error(err.Error())
+      return nil, err
+    }
+
+    patches = append(patches, &patch)
+  }
+
+  return patches, nil
 }
