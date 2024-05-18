@@ -118,7 +118,7 @@ func (r *topicsRepository) Update(ctx context.Context, id string, update *transf
     return err
   }
 
-  tx.Rollback()
+  defer tx.Rollback()
 
   updateTopicQuery := `
   UPDATE "topic"
@@ -152,6 +152,54 @@ func (r *topicsRepository) Update(ctx context.Context, id string, update *transf
 }
 
 func (r *topicsRepository) Remove(ctx context.Context, id string) error {
-  // TODO implement me
-  panic("implement me")
+  tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+  if nil != err {
+    slog.Error(err.Error())
+    return err
+  }
+
+  defer tx.Rollback()
+
+  removeTopicQuery := `
+  DELETE FROM "topic"
+        WHERE "uuid" = $1;`
+
+  ctx1, cancel := context.WithTimeout(ctx, 3*time.Second)
+  defer cancel()
+
+  result, err := tx.ExecContext(ctx1, removeTopicQuery, id)
+
+  if nil != err {
+    slog.Error(err.Error())
+    return err
+  }
+
+  if affected, _ := result.RowsAffected(); 1 != affected {
+    return problem.NewNotFound(id, "topic")
+  }
+
+  removeFromAttachedArticlesQuery := `
+  DELETE FROM "article_topic"
+        WHERE topic_uuid = $1;`
+
+  ctx1, cancel = context.WithTimeout(ctx, 5*time.Second)
+  defer cancel()
+
+  result, err = tx.ExecContext(ctx1, removeFromAttachedArticlesQuery, id)
+
+  if nil != err {
+    slog.Error(err.Error())
+    return err
+  }
+
+  if _, err = result.RowsAffected(); nil != err {
+    slog.Error(err.Error())
+  }
+
+  if err = tx.Commit(); nil != err {
+    slog.Error(err.Error())
+    return err
+  }
+
+  return nil
 }
