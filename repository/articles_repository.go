@@ -625,8 +625,94 @@ func (r *articlesRepository) AddTopic(ctx context.Context, articleID, topicID st
 }
 
 func (r *articlesRepository) RemoveTopic(ctx context.Context, articleID, topicID string) error {
-  // TODO implement me
-  panic("implement me")
+  articleExistsQuery := `
+  SELECT count (*)
+    FROM "article"
+   WHERE "uuid" = $1
+     AND "draft" IS FALSE
+     AND "published_at" IS NOT NULL;`
+
+  ctx1, cancel := context.WithTimeout(ctx, 3*time.Second)
+  defer cancel()
+
+  var articleExists bool
+
+  err := r.db.QueryRowContext(ctx1, articleExistsQuery, articleID).Scan(&articleExists)
+  if nil != err {
+    if !errors.Is(err, sql.ErrNoRows) {
+      slog.Error(err.Error())
+      return err
+    }
+  }
+
+  if !articleExists {
+    return problem.NewNotFound(articleID, "article")
+  }
+
+  topicExistsQuery := `
+  SELECT count (*)
+    FROM "topic"
+   WHERE "uuid" = $1;`
+
+  ctx1, cancel = context.WithTimeout(ctx, 3*time.Second)
+  defer cancel()
+
+  var topicExists bool
+
+  err = r.db.QueryRowContext(ctx, topicExistsQuery, topicID).Scan(&topicExists)
+  if nil != err {
+    if !errors.Is(err, sql.ErrNoRows) {
+      slog.Error(err.Error())
+      return err
+    }
+  }
+
+  if !topicExists {
+    return problem.NewNotFound(topicID, "topic")
+  }
+
+  tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+  if nil != err {
+    slog.Error(err.Error())
+    return err
+  }
+
+  defer tx.Rollback()
+
+  removeTopicQuery := `
+  DELETE FROM "article_topic"
+         WHERE "article_uuid" = @article_uuid
+           AND "topic_uuid" = @topic_uuid;`
+
+  ctx, cancel = context.WithTimeout(ctx, 3*time.Second)
+  defer cancel()
+
+  result, err := tx.ExecContext(ctx, removeTopicQuery,
+    sql.Named("article_uuid", articleID),
+    sql.Named("topic_uuid", topicID))
+
+  if nil != err {
+    slog.Error(err.Error())
+    return err
+  }
+
+  if affected, _ := result.RowsAffected(); 1 != affected {
+    p := problem.Problem{}
+    p.Status(http.StatusAccepted)
+    p.Title("Could not remove a topic.")
+    p.Detail("This article is no longer attached to this topic.")
+    p.With("article_uuid", articleID)
+    p.With("topic_uuid", topicID)
+
+    return &p
+  }
+
+  if err = tx.Commit(); nil != err {
+    slog.Error(err.Error())
+    return err
+  }
+
+  return nil
 }
 
 func (r *articlesRepository) SetHidden(ctx context.Context, id string, hidden bool) error {
