@@ -28,7 +28,7 @@ type Article struct {
 // ArticlePatch is a patch for a published article.
 type ArticlePatch struct {
   ArticleUUID uuid.UUID `json:"article_uuid"`
-  Title       string    `json:"title"`
-  Slug        string    `json:"slug"`
-  Content     string    `json:"content"`
+  Title       *string   `json:"title"`
+  Slug        *string   `json:"slug"`
+  Content     *string   `json:"content"`
 }
