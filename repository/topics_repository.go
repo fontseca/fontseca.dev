@@ -2,6 +2,7 @@ package repository
 
 import (
   "context"
+  "database/sql"
   "fontseca.dev/model"
   "fontseca.dev/transfer"
 )
@@ -20,4 +21,32 @@ type TopicsRepository interface {
 
   // Remove removes a topic and detaches it from any article that uses it.
   Remove(ctx context.Context, id string) error
+}
+
+type topicsRepository struct {
+  db *sql.DB
+}
+
+func NewTopicsRepository(db *sql.DB) TopicsRepository {
+  return &topicsRepository{db}
+}
+
+func (r *topicsRepository) Add(ctx context.Context, creation *transfer.TopicCreation) (insertedUUID string, err error) {
+  // TODO implement me
+  panic("implement me")
+}
+
+func (r *topicsRepository) Get(ctx context.Context) (topics []*model.Topic, err error) {
+  // TODO implement me
+  panic("implement me")
+}
+
+func (r *topicsRepository) Update(ctx context.Context, id string, update *transfer.TopicUpdate) error {
+  // TODO implement me
+  panic("implement me")
+}
+
+func (r *topicsRepository) Remove(ctx context.Context, id string) error {
+  // TODO implement me
+  panic("implement me")
 }
