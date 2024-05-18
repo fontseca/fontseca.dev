@@ -75,7 +75,8 @@ func (r *topicsRepository) Get(ctx context.Context) (topics []*model.Topic, err 
          "name",
          "created_at",
          "updated_at"
-    FROM "topic";`
+    FROM "topic"
+ORDER BY lower("name");`
 
   ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
   defer cancel()
