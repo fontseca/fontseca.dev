@@ -14,6 +14,7 @@ type Article struct {
   Slug        string     `json:"slug"`
   ReadTime    int        `json:"read_time"`
   Content     string     `json:"content"`
+  Topics      []*Topic   `json:"topics"`
   IsDraft     bool       `json:"is_draft"`
   IsPinned    bool       `json:"is_pinned"`
   PublishedAt *time.Time `json:"published_at"`
