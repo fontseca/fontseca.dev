@@ -14,8 +14,8 @@ type Article struct {
   Slug        string     `json:"slug"`
   ReadTime    int        `json:"read_time"`
   Content     string     `json:"content"`
-  IsDraft     time.Time  `json:"is_draft"`
-  IsPinned    time.Time  `json:"is_pinned"`
+  IsDraft     bool       `json:"is_draft"`
+  IsPinned    bool       `json:"is_pinned"`
   DraftedAt   time.Time  `json:"drafted_at"`
   PinnedAt    *time.Time `json:"pinned_at"`
   ArchivedAt  *time.Time `json:"archived_at"`
