@@ -253,8 +253,8 @@ func main() {
       query: `
       CREATE TABLE "project_technology_tag"
       (
-        "project_uuid"        VARCHAR(36) NOT NULL REFERENCES "project" ("id"),
-        "technology_tag_uuid" VARCHAR(36) NOT NULL REFERENCES "technology_tag" ("id")
+        "project_uuid"        VARCHAR(36) NOT NULL REFERENCES "project" ("uuid"),
+        "technology_tag_uuid" VARCHAR(36) NOT NULL REFERENCES "technology_tag" ("uuid")
       );`,
     },
     {
@@ -295,8 +295,8 @@ func main() {
       query: `
       CREATE TABLE "article_topic"
       (
-        "article_uuid" VARCHAR(36) NOT NULL REFERENCES "article" ("id"),
-        "topic_uuid"   VARCHAR(36) NOT NULL REFERENCES "topic" ("id")
+        "article_uuid" VARCHAR(36) NOT NULL REFERENCES "article" ("uuid"),
+        "topic_uuid"   VARCHAR(36) NOT NULL REFERENCES "topic" ("uuid")
       );`,
     },
   }
