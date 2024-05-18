@@ -7,7 +7,7 @@ import (
 
 // Topic represents a subject that I write about.
 type Topic struct {
-  ID        uuid.UUID `json:"id"`
+  UUID      uuid.UUID `json:"uuid"`
   Name      string    `json:"name"`
   CreatedAt time.Time `json:"created_at"`
   UpdatedAt time.Time `json:"updated_at"`
