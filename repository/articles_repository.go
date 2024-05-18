@@ -504,9 +504,7 @@ func (r *articlesRepository) AddTopic(ctx context.Context, articleID, topicID st
   articleExistsQuery := `
   SELECT count (*)
     FROM "article"
-   WHERE "uuid" = $1
-     AND "draft" IS FALSE
-     AND "published_at" IS NOT NULL;`
+   WHERE "uuid" = $1;`
 
   ctx1, cancel := context.WithTimeout(ctx, 3*time.Second)
   defer cancel()
