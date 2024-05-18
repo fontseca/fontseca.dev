@@ -4,6 +4,7 @@ import (
   "context"
   "database/sql"
   "fontseca.dev/model"
+  "fontseca.dev/problem"
   "fontseca.dev/transfer"
   "github.com/google/uuid"
   "log/slog"
@@ -111,8 +112,43 @@ func (r *topicsRepository) Get(ctx context.Context) (topics []*model.Topic, err 
 }
 
 func (r *topicsRepository) Update(ctx context.Context, id string, update *transfer.TopicUpdate) error {
-  // TODO implement me
-  panic("implement me")
+  tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+  if nil != err {
+    slog.Error(err.Error())
+    return err
+  }
+
+  tx.Rollback()
+
+  updateTopicQuery := `
+  UPDATE "topic"
+     SET "name" = coalesce(nullif(@name, ''), "name"),
+         "updated_at" = current_timestamp
+   WHERE "uuid" = @uuid;`
+
+  ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+  defer cancel()
+
+  result, err := tx.ExecContext(ctx, updateTopicQuery,
+    sql.Named("uuid", id),
+    sql.Named("name", update.Name),
+  )
+
+  if nil != err {
+    slog.Error(err.Error())
+    return err
+  }
+
+  if affected, _ := result.RowsAffected(); 1 != affected {
+    return problem.NewNotFound(id, "topic")
+  }
+
+  if err = tx.Commit(); nil != err {
+    slog.Error(err.Error())
+    return err
+  }
+
+  return nil
 }
 
 func (r *topicsRepository) Remove(ctx context.Context, id string) error {
