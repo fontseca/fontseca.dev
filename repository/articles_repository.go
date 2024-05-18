@@ -771,8 +771,100 @@ func (r *articlesRepository) Revise(ctx context.Context, id string, revision *tr
 }
 
 func (r *articlesRepository) Release(ctx context.Context, id string) error {
-  // TODO implement me
-  panic("implement me")
+  getPatchQuery := `
+  SELECT "article_uuid",
+         "title",
+         "slug",
+         "read_time",
+         "content"
+    FROM "article_patch"
+   WHERE "article_uuid" = $1;`
+
+  ctx1, cancel := context.WithTimeout(ctx, 3*time.Second)
+  defer cancel()
+
+  var patch model.ArticlePatch
+
+  err := r.db.QueryRowContext(ctx1, getPatchQuery, id).
+    Scan(&patch.ArticleUUID,
+      &patch.Title,
+      &patch.Slug,
+      &patch.ReadTime,
+      &patch.Content,
+    )
+
+  if nil != err {
+    if errors.Is(err, sql.ErrNoRows) {
+      return problem.NewNotFound(id, "article patch")
+    }
+
+    slog.Error(err.Error())
+    return err
+  }
+
+  tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+  if nil != err {
+    slog.Error(err.Error())
+    return err
+  }
+
+  releasePatchQuery := `
+  UPDATE "article"
+     SET "title" = coalesce(nullif(@title, ''), "title"),
+         "slug" = coalesce(nullif(@slug, ''), "slug"),
+         "read_time" = CASE WHEN @read_time = "read_time"
+                              OR @read_time IS NULL
+                              OR @read_time = 0
+                            THEN "read_time"
+                            ELSE @read_time
+                             END,
+         "content" = coalesce(nullif(@content, ''), "content"),
+         "modified_at" = current_timestamp,
+         "updated_at" = current_timestamp
+   WHERE "uuid" = @uuid
+     AND "draft" IS FALSE
+     AND "published_at" IS NOT NULL;`
+
+  ctx1, cancel = context.WithTimeout(ctx, 3*time.Second)
+  defer cancel()
+
+  result, err := tx.ExecContext(ctx1, releasePatchQuery,
+    sql.Named("uuid", id),
+    sql.Named("title", patch.Title),
+    sql.Named("slug", patch.Slug),
+    sql.Named("read_time", patch.ReadTime),
+    sql.Named("content", patch.Content))
+
+  if nil != err {
+    slog.Error(err.Error())
+    return nil
+  }
+
+  if affected, _ := result.RowsAffected(); 1 != affected {
+    return problem.NewNotFound(id, "article")
+  }
+
+  removePatchQuery := `
+  DELETE FROM "article_patch"
+        WHERE "article_uuid" = $1;`
+
+  ctx1, cancel = context.WithTimeout(ctx, 3*time.Second)
+  defer cancel()
+
+  _, err = tx.ExecContext(ctx1, removePatchQuery, id)
+  if nil != err {
+    slog.Error(err.Error())
+    return nil
+  }
+
+  defer tx.Rollback()
+
+  if err = tx.Commit(); nil != err {
+    slog.Error(err.Error())
+    return err
+  }
+
+  return nil
 }
 
 func (r *articlesRepository) GetPatches(ctx context.Context) (patches []*model.ArticlePatch, err error) {
