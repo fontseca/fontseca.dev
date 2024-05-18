@@ -16,12 +16,9 @@ type Article struct {
   Content     string     `json:"content"`
   IsDraft     bool       `json:"is_draft"`
   IsPinned    bool       `json:"is_pinned"`
-  DraftedAt   time.Time  `json:"drafted_at"`
-  PinnedAt    *time.Time `json:"pinned_at"`
-  ArchivedAt  *time.Time `json:"archived_at"`
   PublishedAt *time.Time `json:"published_at"`
   ModifiedAt  *time.Time `json:"modified_at"`
-  CreatedAt   time.Time  `json:"created_at"`
+  DraftedAt   time.Time  `json:"drafted_at"`
   UpdatedAt   time.Time  `json:"updated_at"`
 }
 
