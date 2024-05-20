@@ -975,6 +975,22 @@ func (r *articlesRepository) Discard(ctx context.Context, id string) error {
 }
 
 func (r *articlesRepository) Revise(ctx context.Context, id string, revision *transfer.ArticleUpdate) error {
+  isArticlePatchQuery := `
+  SELECT count(*)
+    FROM "article_patch"
+   WHERE "article_uuid" = @article_uuid;`
+
+  var isArticlePatch bool
+
+  ctx1, cancel := context.WithTimeout(ctx, 2*time.Second)
+  defer cancel()
+
+  err := r.db.QueryRowContext(ctx1, isArticlePatchQuery, sql.Named("article_uuid", id)).Scan(&isArticlePatch)
+  if nil != err {
+    slog.Error(err.Error())
+    return err
+  }
+
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelReadCommitted})
   if nil != err {
     slog.Error(err.Error())
@@ -992,6 +1008,15 @@ func (r *articlesRepository) Revise(ctx context.Context, id string, revision *tr
      AND "draft" IS TRUE
      AND "published_at" IS NULL;`
 
+  if isArticlePatch {
+    reviseArticleQuery = `
+    UPDATE "article_patch"
+       SET "title" = coalesce (nullif (@title, ''), "title"),
+           "slug" = coalesce (nullif (@slug, ''), "slug"),
+           "content" = coalesce (nullif (@content, ''), "content")
+     WHERE "article_uuid" = @uuid;`
+  }
+
   result, err := tx.ExecContext(ctx, reviseArticleQuery,
     sql.Named("uuid", id),
     sql.Named("title", revision.Title),
@@ -1006,6 +1031,10 @@ func (r *articlesRepository) Revise(ctx context.Context, id string, revision *tr
 
   affected, _ := result.RowsAffected()
   if 1 != affected {
+    if isArticlePatch {
+      return problem.NewNotFound(id, "article patch")
+    }
+
     return problem.NewNotFound(id, "draft")
   }
 
