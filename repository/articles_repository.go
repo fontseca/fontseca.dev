@@ -955,6 +955,22 @@ func (r *articlesRepository) Share(ctx context.Context, id string) (link string,
 }
 
 func (r *articlesRepository) Discard(ctx context.Context, id string) error {
+  isArticlePatchQuery := `
+  SELECT count(*)
+    FROM "article_patch"
+   WHERE "article_uuid" = @article_uuid;`
+
+  var isArticlePatch bool
+
+  ctx1, cancel := context.WithTimeout(ctx, 2*time.Second)
+  defer cancel()
+
+  err := r.db.QueryRowContext(ctx1, isArticlePatchQuery, sql.Named("article_uuid", id)).Scan(&isArticlePatch)
+  if nil != err {
+    slog.Error(err.Error())
+    return err
+  }
+
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelReadCommitted})
   if nil != err {
     slog.Error(err.Error())
@@ -963,17 +979,24 @@ func (r *articlesRepository) Discard(ctx context.Context, id string) error {
 
   defer tx.Rollback()
 
-  discardDraftQuery := `
+  discardPatchOrDraftQuery := `
   DELETE
     FROM "article"
    WHERE "uuid" = @uuid
      AND "draft" IS TRUE
      AND "published_at" IS NULL;`
 
-  ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+  if isArticlePatch {
+    discardPatchOrDraftQuery = `
+    DELETE
+      FROM "article_patch"
+     WHERE "article_uuid" = @uuid;`
+  }
+
+  ctx, cancel = context.WithTimeout(ctx, 2*time.Second)
   defer cancel()
 
-  result, err := tx.ExecContext(ctx, discardDraftQuery, sql.Named("uuid", id))
+  result, err := tx.ExecContext(ctx, discardPatchOrDraftQuery, sql.Named("uuid", id))
   if nil != err {
     slog.Error(err.Error())
     return err
@@ -981,6 +1004,10 @@ func (r *articlesRepository) Discard(ctx context.Context, id string) error {
 
   affected, _ := result.RowsAffected()
   if 1 != affected {
+    if isArticlePatch {
+      return problem.NewNotFound(id, "article patch")
+    }
+
     return problem.NewNotFound(id, "draft")
   }
 
