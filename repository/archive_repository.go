@@ -16,7 +16,7 @@ import (
   "time"
 )
 
-// ArticlesRepository is a common API for articles, article drafts
+// ArchiveRepository is a common API for articles, article drafts
 // and article patches.
 //
 // An article is a piece of writing about a particular subject in my
@@ -43,7 +43,7 @@ import (
 // patch is a completely different object that points to an article.
 // Since an article can only have one patch at a time, by using the
 // article's UUID, you can access any patch it currently has.
-type ArticlesRepository interface {
+type ArchiveRepository interface {
   // Draft starts the creation process of an article. It returns the
   // UUID of the draft that was created.
   //
@@ -127,15 +127,15 @@ type ArticlesRepository interface {
   GetPatches(ctx context.Context) (patches []*model.ArticlePatch, err error)
 }
 
-type articlesRepository struct {
+type archiveRepository struct {
   db *sql.DB
 }
 
-func NewArticlesRepository(db *sql.DB) ArticlesRepository {
-  return &articlesRepository{db}
+func NewArchiveRepository(db *sql.DB) ArchiveRepository {
+  return &archiveRepository{db}
 }
 
-func (r *articlesRepository) Draft(ctx context.Context, creation *transfer.ArticleCreation) (id string, err error) {
+func (r *archiveRepository) Draft(ctx context.Context, creation *transfer.ArticleCreation) (id string, err error) {
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
   if nil != err {
     slog.Error(err.Error())
@@ -172,7 +172,7 @@ func (r *articlesRepository) Draft(ctx context.Context, creation *transfer.Artic
   return id, nil
 }
 
-func (r *articlesRepository) Publish(ctx context.Context, id string) error {
+func (r *archiveRepository) Publish(ctx context.Context, id string) error {
   isArticleDraftQuery := `
   SELECT "draft" IS TRUE
      AND "published_at" IS NULL
@@ -242,7 +242,7 @@ func (r *articlesRepository) Publish(ctx context.Context, id string) error {
   return nil
 }
 
-func (r *articlesRepository) Get(ctx context.Context, needle string, hidden, draftsOnly bool) (articles []*model.Article, err error) {
+func (r *archiveRepository) Get(ctx context.Context, needle string, hidden, draftsOnly bool) (articles []*model.Article, err error) {
   getTopicsQuery := `
      SELECT at."article_uuid", 
             t."uuid",
@@ -363,7 +363,7 @@ func (r *articlesRepository) Get(ctx context.Context, needle string, hidden, dra
   return articles, nil
 }
 
-func (r *articlesRepository) GetByID(ctx context.Context, id string, isDraft bool) (article *model.Article, err error) {
+func (r *archiveRepository) GetByID(ctx context.Context, id string, isDraft bool) (article *model.Article, err error) {
   getArticleByUUIDQuery := `
   SELECT "uuid",
          "title",
@@ -427,7 +427,7 @@ func (r *articlesRepository) GetByID(ctx context.Context, id string, isDraft boo
   return article, nil
 }
 
-func (r *articlesRepository) Amend(ctx context.Context, id string) error {
+func (r *archiveRepository) Amend(ctx context.Context, id string) error {
   articleExistsQuery := `
   SELECT "uuid"
     FROM "article"
@@ -508,7 +508,7 @@ func (r *articlesRepository) Amend(ctx context.Context, id string) error {
   return nil
 }
 
-func (r *articlesRepository) Remove(ctx context.Context, id string) error {
+func (r *archiveRepository) Remove(ctx context.Context, id string) error {
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelReadCommitted})
   if nil != err {
     slog.Error(err.Error())
@@ -544,7 +544,7 @@ func (r *articlesRepository) Remove(ctx context.Context, id string) error {
   return nil
 }
 
-func (r *articlesRepository) AddTopic(ctx context.Context, articleID, topicID string) error {
+func (r *archiveRepository) AddTopic(ctx context.Context, articleID, topicID string) error {
   articleExistsQuery := `
   SELECT count (*)
     FROM "article"
@@ -666,7 +666,7 @@ func (r *articlesRepository) AddTopic(ctx context.Context, articleID, topicID st
   return nil
 }
 
-func (r *articlesRepository) RemoveTopic(ctx context.Context, articleID, topicID string) error {
+func (r *archiveRepository) RemoveTopic(ctx context.Context, articleID, topicID string) error {
   articleExistsQuery := `
   SELECT count (*)
     FROM "article"
@@ -757,7 +757,7 @@ func (r *articlesRepository) RemoveTopic(ctx context.Context, articleID, topicID
   return nil
 }
 
-func (r *articlesRepository) SetHidden(ctx context.Context, id string, hidden bool) error {
+func (r *archiveRepository) SetHidden(ctx context.Context, id string, hidden bool) error {
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
   if nil != err {
     slog.Error(err.Error())
@@ -795,7 +795,7 @@ func (r *articlesRepository) SetHidden(ctx context.Context, id string, hidden bo
   return nil
 }
 
-func (r *articlesRepository) SetPinned(ctx context.Context, id string, pinned bool) error {
+func (r *archiveRepository) SetPinned(ctx context.Context, id string, pinned bool) error {
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
   if nil != err {
     slog.Error(err.Error())
@@ -833,7 +833,7 @@ func (r *articlesRepository) SetPinned(ctx context.Context, id string, pinned bo
   return nil
 }
 
-func (r *articlesRepository) Share(ctx context.Context, id string) (link string, err error) {
+func (r *archiveRepository) Share(ctx context.Context, id string) (link string, err error) {
   assertIsArticlePatchQuery := `
   SELECT count(*)
     FROM "article_patch"
@@ -954,7 +954,7 @@ func (r *articlesRepository) Share(ctx context.Context, id string) (link string,
   return link, nil
 }
 
-func (r *articlesRepository) Discard(ctx context.Context, id string) error {
+func (r *archiveRepository) Discard(ctx context.Context, id string) error {
   isArticlePatchQuery := `
   SELECT count(*)
     FROM "article_patch"
@@ -1019,7 +1019,7 @@ func (r *articlesRepository) Discard(ctx context.Context, id string) error {
   return nil
 }
 
-func (r *articlesRepository) Revise(ctx context.Context, id string, revision *transfer.ArticleUpdate) error {
+func (r *archiveRepository) Revise(ctx context.Context, id string, revision *transfer.ArticleUpdate) error {
   isArticlePatchQuery := `
   SELECT count(*)
     FROM "article_patch"
@@ -1091,7 +1091,7 @@ func (r *articlesRepository) Revise(ctx context.Context, id string, revision *tr
   return nil
 }
 
-func (r *articlesRepository) Release(ctx context.Context, id string) error {
+func (r *archiveRepository) Release(ctx context.Context, id string) error {
   getPatchQuery := `
   SELECT "article_uuid",
          "title",
@@ -1188,7 +1188,7 @@ func (r *articlesRepository) Release(ctx context.Context, id string) error {
   return nil
 }
 
-func (r *articlesRepository) GetPatches(ctx context.Context) (patches []*model.ArticlePatch, err error) {
+func (r *archiveRepository) GetPatches(ctx context.Context) (patches []*model.ArticlePatch, err error) {
   getPatchesQuery := `
   SELECT "article_uuid",
          "title",
