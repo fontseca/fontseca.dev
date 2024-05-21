@@ -193,12 +193,23 @@ func TestDraftsService_AddTopic(t *testing.T) {
 
   t.Run("wrong draft uuid", func(t *testing.T) {
     draftUUID = topicUUID
-    draftUUID = "e4d06ba7-f086-47dc-9f5e"
+    topicUUID = "e4d06ba7-f086-47dc-9f5e"
 
     r := mocks.NewArchiveRepository()
     r.AssertNotCalled(t, routine)
 
     assert.Error(t, NewDraftsService(r).AddTopic(ctx, draftUUID, topicUUID))
+  })
+
+  t.Run("gets a repository failure", func(t *testing.T) {
+    unexpected := errors.New("unexpected error")
+
+    r := mocks.NewArchiveRepository()
+    r.On(routine, mock.Anything, mock.Anything, mock.Anything).Return(unexpected)
+
+    err := NewDraftsService(r).AddTopic(ctx, draftUUID, uuid.NewString())
+
+    assert.ErrorIs(t, err, unexpected)
   })
 }
 
@@ -225,14 +236,68 @@ func TestDraftsService_RemoveTopic(t *testing.T) {
     assert.Error(t, NewDraftsService(r).RemoveTopic(ctx, draftUUID, topicUUID))
   })
 
-  t.Run("wrong draft uuid", func(t *testing.T) {
+  t.Run("wrong topic uuid", func(t *testing.T) {
     draftUUID = topicUUID
-    draftUUID = "e4d06ba7-f086-47dc-9f5e"
+    topicUUID = "e4d06ba7-f086-47dc-9f5e"
 
     r := mocks.NewArchiveRepository()
     r.AssertNotCalled(t, routine)
 
     assert.Error(t, NewDraftsService(r).RemoveTopic(ctx, draftUUID, topicUUID))
+  })
+
+  t.Run("gets a repository failure", func(t *testing.T) {
+    unexpected := errors.New("unexpected error")
+
+    r := mocks.NewArchiveRepository()
+    r.On(routine, mock.Anything, mock.Anything, mock.Anything).Return(unexpected)
+
+    err := NewDraftsService(r).RemoveTopic(ctx, draftUUID, uuid.NewString())
+
+    assert.ErrorIs(t, err, unexpected)
+  })
+}
+
+func TestDraftsService_Share(t *testing.T) {
+  const routine = "Share"
+
+  ctx := context.TODO()
+  draftUUID := uuid.NewString()
+
+  t.Run("success", func(t *testing.T) {
+    expectedLink := "link-to-resource"
+
+    r := mocks.NewArchiveRepository()
+    r.On(routine, ctx, draftUUID).Return(expectedLink, nil)
+
+    link, err := NewDraftsService(r).Share(ctx, draftUUID)
+
+    assert.Equal(t, expectedLink, link)
+    assert.NoError(t, err)
+  })
+
+  t.Run("wrong draft uuid", func(t *testing.T) {
+    draftUUID = "e4d06ba7-f086-47dc-9f5e"
+
+    r := mocks.NewArchiveRepository()
+    r.AssertNotCalled(t, routine)
+
+    link, err := NewDraftsService(r).Share(ctx, draftUUID)
+
+    assert.Error(t, err)
+    assert.Equal(t, "about:blank", link)
+  })
+
+  t.Run("gets a repository failure", func(t *testing.T) {
+    unexpected := errors.New("unexpected error")
+
+    r := mocks.NewArchiveRepository()
+    r.On(routine, mock.Anything, mock.Anything, mock.Anything).Return("", unexpected)
+
+    link, err := NewDraftsService(r).Share(ctx, uuid.NewString())
+
+    assert.Equal(t, "about:blank", link)
+    assert.ErrorIs(t, err, unexpected)
   })
 }
 
@@ -240,7 +305,7 @@ func TestDraftsService_Discard(t *testing.T) {
   const routine = "Discard"
 
   ctx := context.TODO()
-  id := uuid.New().String()
+  id := uuid.NewString()
 
   t.Run("success", func(t *testing.T) {
     r := mocks.NewArchiveRepository()

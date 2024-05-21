@@ -162,8 +162,17 @@ func (s *draftsService) RemoveTopic(ctx context.Context, draftUUID, topicUUID st
 }
 
 func (s *draftsService) Share(ctx context.Context, draftUUID string) (link string, err error) {
-  // TODO implement me
-  panic("implement me")
+  if err = validateUUID(&draftUUID); nil != err {
+    return "about:blank", err
+  }
+
+  link, err = s.r.Share(ctx, draftUUID)
+
+  if nil != err {
+    return "about:blank", err
+  }
+
+  return link, nil
 }
 
 func (s *draftsService) Discard(ctx context.Context, draftUUID string) error {
