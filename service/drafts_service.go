@@ -80,8 +80,11 @@ func (s *draftsService) Draft(ctx context.Context, creation *transfer.ArticleCre
 
   sanitizeTextWordIntersections(&creation.Title)
 
-  if 256 < len(creation.Title) {
+  switch {
+  case 256 < len(creation.Title):
     return uuid.Nil, problem.NewValidation([3]string{"title", "max", "256"})
+  case 0 != len(creation.Content) && 3145728 < len(creation.Content):
+    return uuid.Nil, problem.NewValidation([3]string{"content", "max", "3145728"})
   }
 
   creation.Slug = generateSlug(creation.Title)
