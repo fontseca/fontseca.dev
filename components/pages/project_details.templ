@@ -28,7 +28,7 @@ templ ProjectDetails(project *model.Project) {
               <h1 class="name">
                 { project.Name }
                 <a class="api-endpoint"
-                   href={ templ.URL("/me.projects.info?id="+project.ID.String()) }
+                   href={ templ.URL("/me.projects.info?id="+project.UUID.String()) }
                    target="_blank"
                    title="See in JSON format">
                   <i class="fa fa-external-link"></i>
