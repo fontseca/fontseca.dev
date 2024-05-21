@@ -168,6 +168,40 @@ func TestDraftsService_GetByID(t *testing.T) {
   })
 }
 
+func TestDraftsService_AddTopic(t *testing.T) {
+  const routine = "AddTopic"
+
+  ctx := context.TODO()
+  draftUUID := uuid.New().String()
+  topicUUID := uuid.New().String()
+
+  t.Run("success", func(t *testing.T) {
+    r := mocks.NewArchiveRepository()
+    r.On(routine, ctx, draftUUID, topicUUID).Return(nil)
+
+    assert.NoError(t, NewDraftsService(r).AddTopic(ctx, draftUUID, topicUUID))
+  })
+
+  t.Run("wrong draft uuid", func(t *testing.T) {
+    draftUUID = "e4d06ba7-f086-47dc-9f5e"
+
+    r := mocks.NewArchiveRepository()
+    r.AssertNotCalled(t, routine)
+
+    assert.Error(t, NewDraftsService(r).AddTopic(ctx, draftUUID, topicUUID))
+  })
+
+  t.Run("wrong draft uuid", func(t *testing.T) {
+    draftUUID = topicUUID
+    draftUUID = "e4d06ba7-f086-47dc-9f5e"
+
+    r := mocks.NewArchiveRepository()
+    r.AssertNotCalled(t, routine)
+
+    assert.Error(t, NewDraftsService(r).AddTopic(ctx, draftUUID, topicUUID))
+  })
+}
+
 func TestDraftsService_Discard(t *testing.T) {
   const routine = "Discard"
 

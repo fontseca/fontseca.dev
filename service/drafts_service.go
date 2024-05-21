@@ -138,8 +138,15 @@ func (s *draftsService) GetByID(ctx context.Context, draftUUID string) (draft *m
 }
 
 func (s *draftsService) AddTopic(ctx context.Context, draftUUID, topicUUID string) error {
-  // TODO implement me
-  panic("implement me")
+  if err := validateUUID(&draftUUID); nil != err {
+    return err
+  }
+
+  if err := validateUUID(&topicUUID); nil != err {
+    return err
+  }
+
+  return s.r.AddTopic(ctx, draftUUID, topicUUID)
 }
 
 func (s *draftsService) RemoveTopic(ctx context.Context, draftUUID, topicUUID string) error {
