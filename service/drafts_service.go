@@ -2,10 +2,14 @@ package service
 
 import (
   "context"
+  "errors"
   "fontseca.dev/model"
+  "fontseca.dev/problem"
   "fontseca.dev/repository"
   "fontseca.dev/transfer"
   "github.com/google/uuid"
+  "log/slog"
+  "strings"
 )
 
 // DraftsService is a high level provider for article drafts.
@@ -66,8 +70,40 @@ func NewDraftsService(r repository.ArchiveRepository) DraftsService {
 }
 
 func (s *draftsService) Draft(ctx context.Context, creation *transfer.ArticleCreation) (insertedUUID uuid.UUID, err error) {
-  // TODO implement me
-  panic("implement me")
+  if nil == creation {
+    err = errors.New("nil value for parameter: creation")
+    slog.Error(err.Error())
+    return uuid.Nil, err
+  }
+
+  creation.Title = strings.TrimSpace(creation.Title)
+
+  sanitizeTextWordIntersections(&creation.Title)
+
+  if 256 < len(creation.Title) {
+    return uuid.Nil, problem.NewValidation([3]string{"title", "max", "256"})
+  }
+
+  creation.Slug = generateSlug(creation.Title)
+
+  builder := strings.Builder{}
+
+  builder.WriteString(creation.Title)
+
+  if "" != creation.Content {
+    builder.WriteRune('\n')
+    builder.WriteString(creation.Content)
+  }
+
+  reader := strings.NewReader(builder.String())
+  creation.ReadTime = computePostReadingTimeInMinutes(reader)
+
+  id, err := s.r.Draft(ctx, creation)
+  if err != nil {
+    return uuid.Nil, err
+  }
+
+  return uuid.Parse(id)
 }
 
 func (s *draftsService) Publish(ctx context.Context, draftUUID string) error {
