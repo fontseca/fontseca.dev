@@ -28,6 +28,6 @@ type ArticlePatch struct {
   ArticleUUID uuid.UUID `json:"article_uuid"`
   Title       *string   `json:"title"`
   Slug        *string   `json:"slug"`
-  ReadTime    *int
-  Content     *string `json:"content"`
+  ReadTime    *int      `json:"-"`
+  Content     *string   `json:"content"`
 }
