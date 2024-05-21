@@ -140,8 +140,11 @@ func (s *draftsService) Share(ctx context.Context, draftUUID string) (link strin
 }
 
 func (s *draftsService) Discard(ctx context.Context, draftUUID string) error {
-  // TODO implement me
-  panic("implement me")
+  if err := validateUUID(&draftUUID); nil != err {
+    return err
+  }
+
+  return s.r.Discard(ctx, draftUUID)
 }
 
 func (s *draftsService) Revise(ctx context.Context, draftUUID string, revision *transfer.ArticleUpdate) error {
