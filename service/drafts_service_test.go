@@ -126,6 +126,48 @@ func TestDraftsService_Get(t *testing.T) {
   })
 }
 
+func TestDraftsService_GetByID(t *testing.T) {
+  const routine = "GetByID"
+
+  ctx := context.TODO()
+  id := uuid.New().String()
+
+  t.Run("success", func(t *testing.T) {
+    expectedDraft := &model.Article{}
+
+    r := mocks.NewArchiveRepository()
+    r.On(routine, ctx, id, true).Return(expectedDraft, nil)
+
+    draft, err := NewDraftsService(r).GetByID(ctx, id)
+
+    assert.Equal(t, expectedDraft, draft)
+    assert.NoError(t, err)
+  })
+
+  t.Run("gets a repository failure", func(t *testing.T) {
+    unexpected := errors.New("unexpected error")
+
+    r := mocks.NewArchiveRepository()
+    r.On(routine, mock.Anything, mock.Anything, mock.Anything).Return(nil, unexpected)
+
+    draft, err := NewDraftsService(r).GetByID(ctx, id)
+
+    assert.Nil(t, draft)
+    assert.ErrorIs(t, err, unexpected)
+  })
+
+  t.Run("wrong uuid", func(t *testing.T) {
+    id = "e4d06ba7-f086-47dc-9f5e"
+
+    r := mocks.NewArchiveRepository()
+    r.AssertNotCalled(t, routine)
+
+    _, err := NewDraftsService(r).GetByID(ctx, id)
+
+    assert.Error(t, err)
+  })
+}
+
 func TestDraftsService_Discard(t *testing.T) {
   const routine = "Discard"
 

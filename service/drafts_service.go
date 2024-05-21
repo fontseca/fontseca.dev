@@ -35,7 +35,7 @@ type DraftsService interface {
   Get(ctx context.Context, needle string) (drafts []*model.Article, err error)
 
   // GetByID retrieves one article draft by its UUID.
-  GetByID(ctx context.Context, draftUUID string) (article *model.Article, err error)
+  GetByID(ctx context.Context, draftUUID string) (draft *model.Article, err error)
 
   // AddTopic adds a topic to the article draft. If the topic already
   // exists, it returns an error informing about a conflicting state.
@@ -129,9 +129,12 @@ func (s *draftsService) Get(ctx context.Context, needle string) (drafts []*model
   return s.r.Get(ctx, needle, false, true)
 }
 
-func (s *draftsService) GetByID(ctx context.Context, draftUUID string) (article *model.Article, err error) {
-  // TODO implement me
-  panic("implement me")
+func (s *draftsService) GetByID(ctx context.Context, draftUUID string) (draft *model.Article, err error) {
+  if err = validateUUID(&draftUUID); nil != err {
+    return nil, err
+  }
+
+  return s.r.GetByID(ctx, draftUUID, true)
 }
 
 func (s *draftsService) AddTopic(ctx context.Context, draftUUID, topicUUID string) error {
