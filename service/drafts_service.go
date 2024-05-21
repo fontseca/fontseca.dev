@@ -56,6 +56,55 @@ type DraftsService interface {
   Revise(ctx context.Context, id string, revision *transfer.ArticleUpdate) error
 }
 
-func NewDraftsService(repository repository.ArchiveRepository) DraftsService {
-  return nil
+type draftsService struct {
+  r repository.ArchiveRepository
+}
+
+func NewDraftsService(r repository.ArchiveRepository) DraftsService {
+  return &draftsService{r}
+}
+
+func (s *draftsService) Draft(ctx context.Context, creation *transfer.ArticleCreation) (id string, err error) {
+  // TODO implement me
+  panic("implement me")
+}
+
+func (s *draftsService) Publish(ctx context.Context, id string) error {
+  // TODO implement me
+  panic("implement me")
+}
+
+func (s *draftsService) Get(ctx context.Context, needle string) (articles []*model.Article, err error) {
+  // TODO implement me
+  panic("implement me")
+}
+
+func (s *draftsService) GetByID(ctx context.Context, id string) (article *model.Article, err error) {
+  // TODO implement me
+  panic("implement me")
+}
+
+func (s *draftsService) AddTopic(ctx context.Context, articleID, topicID string) error {
+  // TODO implement me
+  panic("implement me")
+}
+
+func (s *draftsService) RemoveTopic(ctx context.Context, articleID, topicID string) error {
+  // TODO implement me
+  panic("implement me")
+}
+
+func (s *draftsService) Share(ctx context.Context, id string) (link string, err error) {
+  // TODO implement me
+  panic("implement me")
+}
+
+func (s *draftsService) Discard(ctx context.Context, id string) error {
+  // TODO implement me
+  panic("implement me")
+}
+
+func (s *draftsService) Revise(ctx context.Context, id string, revision *transfer.ArticleUpdate) error {
+  // TODO implement me
+  panic("implement me")
 }
