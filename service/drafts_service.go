@@ -184,6 +184,49 @@ func (s *draftsService) Discard(ctx context.Context, draftUUID string) error {
 }
 
 func (s *draftsService) Revise(ctx context.Context, draftUUID string, revision *transfer.ArticleUpdate) error {
-  // TODO implement me
-  panic("implement me")
+  if nil == revision {
+    err := errors.New("nil value for parameter: revision")
+    slog.Error(err.Error())
+    return err
+  }
+
+  if err := validateUUID(&draftUUID); nil != err {
+    return err
+  }
+
+  revision.Title = strings.TrimSpace(revision.Title)
+  revision.Content = strings.TrimSpace(revision.Content)
+
+  if "" != revision.Title {
+    sanitizeTextWordIntersections(&revision.Title)
+  }
+
+  switch {
+  case 0 != len(revision.Title) && 256 < len(revision.Title):
+    return problem.NewValidation([3]string{"title", "max", "256"})
+  case 0 != len(revision.Content) && 3145728 < len(revision.Content):
+    return problem.NewValidation([3]string{"content", "max", "3145728"})
+  }
+
+  if "" != revision.Title || "" != revision.Content {
+    builder := strings.Builder{}
+
+    if "" != revision.Title {
+      builder.WriteString(revision.Title)
+      revision.Slug = generateSlug(revision.Title)
+    }
+
+    if "" != revision.Content {
+      if 0 < builder.Len() {
+        builder.WriteRune('\n')
+      }
+
+      builder.WriteString(revision.Content)
+    }
+
+    r := strings.NewReader(builder.String())
+    revision.ReadTime = computePostReadingTimeInMinutes(r)
+  }
+
+  return s.r.Revise(ctx, draftUUID, revision)
 }
