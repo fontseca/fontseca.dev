@@ -4,6 +4,7 @@ import (
   "context"
   "errors"
   "fontseca.dev/mocks"
+  "fontseca.dev/model"
   "fontseca.dev/transfer"
   "github.com/google/uuid"
   "github.com/stretchr/testify/assert"
@@ -79,6 +80,49 @@ func TestDraftsService_Publish(t *testing.T) {
     r.AssertNotCalled(t, routine)
 
     assert.Error(t, NewDraftsService(r).Publish(ctx, id))
+  })
+}
+
+func TestDraftsService_Get(t *testing.T) {
+  const routine = "Get"
+
+  ctx := context.TODO()
+
+  t.Run("success", func(t *testing.T) {
+    expectedDrafts := make([]*model.Article, 3)
+
+    r := mocks.NewArchiveRepository()
+    r.On(routine, ctx, "", false, true).Return(expectedDrafts, nil)
+
+    drafts, err := NewDraftsService(r).Get(ctx, "\n \t \n")
+
+    assert.Equal(t, expectedDrafts, drafts)
+    assert.NoError(t, err)
+  })
+
+  t.Run("success with search", func(t *testing.T) {
+    expectedDrafts := make([]*model.Article, 3)
+    expectedNeedle := "20 www xxx yyy zzz zzz"
+
+    needle := ">> = 20 www? xxx! yyy... zzz_zzz \" ' ° <<"
+
+    r := mocks.NewArchiveRepository()
+    r.On(routine, ctx, expectedNeedle, false, true).Return(expectedDrafts, nil)
+
+    drafts, err := NewDraftsService(r).Get(ctx, needle)
+
+    assert.Equal(t, expectedDrafts, drafts)
+    assert.NoError(t, err)
+  })
+
+  t.Run("gets a repository failure", func(t *testing.T) {
+    unexpected := errors.New("unexpected error")
+
+    r := mocks.NewArchiveRepository()
+    r.On(routine, ctx, mock.Anything, mock.Anything, mock.Anything).Return(nil, unexpected)
+
+    _, err := NewDraftsService(r).Get(ctx, "")
+    assert.ErrorIs(t, err, unexpected)
   })
 }
 

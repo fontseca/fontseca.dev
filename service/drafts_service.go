@@ -32,7 +32,7 @@ type DraftsService interface {
   // function over draft articles, so it attempts to find and
   // amass every article whose title contains any of the keywords
   // (if more than one) in needle.
-  Get(ctx context.Context, needle string) (articles []*model.Article, err error)
+  Get(ctx context.Context, needle string) (drafts []*model.Article, err error)
 
   // GetByID retrieves one article draft by its UUID.
   GetByID(ctx context.Context, draftUUID string) (article *model.Article, err error)
@@ -114,9 +114,19 @@ func (s *draftsService) Publish(ctx context.Context, draftUUID string) error {
   return s.r.Publish(ctx, draftUUID)
 }
 
-func (s *draftsService) Get(ctx context.Context, needle string) (articles []*model.Article, err error) {
-  // TODO implement me
-  panic("implement me")
+func (s *draftsService) Get(ctx context.Context, needle string) (drafts []*model.Article, err error) {
+  needle = strings.TrimSpace(needle)
+
+  if "" != needle {
+    if strings.Contains(needle, "_") {
+      needle = strings.ReplaceAll(needle, "_", " ")
+    }
+
+    words := wordsOnly.FindAllString(needle, -1)
+    needle = strings.Join(words, " ")
+  }
+
+  return s.r.Get(ctx, needle, false, true)
 }
 
 func (s *draftsService) GetByID(ctx context.Context, draftUUID string) (article *model.Article, err error) {
