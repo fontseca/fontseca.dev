@@ -146,7 +146,7 @@ func (s *projectsService) Add(ctx context.Context, creation *transfer.ProjectCre
     creation.ReadTime = computePostReadingTimeInMinutes(r)
   }
 
-  creation.Slug = strings.ToLower(strings.ReplaceAll(creation.Name, " ", "-"))
+  creation.Slug = generateSlug(creation.Name)
   err = sanitizeURL(
     &creation.Homepage,
     &creation.FirstImageURL,
@@ -248,7 +248,7 @@ func (s *projectsService) Update(ctx context.Context, id string, update *transfe
   }
 
   if "" != update.Name {
-    update.Slug = strings.ToLower(contiguousSpacesRegexp.ReplaceAllString(update.Name, "-"))
+    update.Slug = generateSlug(update.Name)
   }
 
   err = sanitizeURL(
