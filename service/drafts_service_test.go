@@ -49,3 +49,35 @@ func TestDraftsService_Draft(t *testing.T) {
     assert.Equal(t, uuid.Nil, insertedID)
   })
 }
+
+func TestDraftsService_Publish(t *testing.T) {
+  const routine = "Publish"
+
+  ctx := context.TODO()
+  id := uuid.New().String()
+
+  t.Run("success", func(t *testing.T) {
+    r := mocks.NewArchiveRepository()
+    r.On(routine, ctx, id).Return(nil)
+
+    assert.NoError(t, NewDraftsService(r).Publish(ctx, id))
+  })
+
+  t.Run("gets a repository failure", func(t *testing.T) {
+    unexpected := errors.New("unexpected error")
+
+    r := mocks.NewArchiveRepository()
+    r.On(routine, mock.Anything, mock.Anything).Return(unexpected)
+
+    assert.ErrorIs(t, NewDraftsService(r).Publish(ctx, id), unexpected)
+  })
+
+  t.Run("wrong uuid", func(t *testing.T) {
+    id = "e4d06ba7-f086-47dc-9f5e"
+
+    r := mocks.NewArchiveRepository()
+    r.AssertNotCalled(t, routine)
+
+    assert.Error(t, NewDraftsService(r).Publish(ctx, id))
+  })
+}

@@ -107,8 +107,11 @@ func (s *draftsService) Draft(ctx context.Context, creation *transfer.ArticleCre
 }
 
 func (s *draftsService) Publish(ctx context.Context, draftUUID string) error {
-  // TODO implement me
-  panic("implement me")
+  if err := validateUUID(&draftUUID); nil != err {
+    return err
+  }
+
+  return s.r.Publish(ctx, draftUUID)
 }
 
 func (s *draftsService) Get(ctx context.Context, needle string) (articles []*model.Article, err error) {
