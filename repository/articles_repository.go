@@ -834,26 +834,44 @@ func (r *articlesRepository) SetPinned(ctx context.Context, id string, pinned bo
 }
 
 func (r *articlesRepository) Share(ctx context.Context, id string) (link string, err error) {
-  assertIsArticleDraftQuery := `
-  SELECT count (*)
-    FROM "article"
-   WHERE "uuid" = $1
-     AND "draft" IS TRUE
-     AND "published_at" IS NULL;`
+  assertIsArticlePatchQuery := `
+  SELECT count(*)
+    FROM "article_patch"
+   WHERE "article_uuid" = @article_uuid;`
+
+  var isArticlePatch bool
 
   ctx1, cancel := context.WithTimeout(ctx, 2*time.Second)
   defer cancel()
 
-  var isDraft bool
-
-  err = r.db.QueryRowContext(ctx1, assertIsArticleDraftQuery, id).Scan(&isDraft)
+  err = r.db.QueryRowContext(ctx1, assertIsArticlePatchQuery, sql.Named("article_uuid", id)).Scan(&isArticlePatch)
   if nil != err {
     slog.Error(err.Error())
     return "", err
   }
 
-  if !isDraft {
-    return "", problem.NewNotFound(id, "draft")
+  if !isArticlePatch {
+    assertIsArticleDraftQuery := `
+    SELECT count (*)
+      FROM "article"
+     WHERE "uuid" = $1
+       AND "draft" IS TRUE
+       AND "published_at" IS NULL;`
+
+    ctx1, cancel = context.WithTimeout(ctx, 2*time.Second)
+    defer cancel()
+
+    var isDraft bool
+
+    err = r.db.QueryRowContext(ctx1, assertIsArticleDraftQuery, id).Scan(&isDraft)
+    if nil != err {
+      slog.Error(err.Error())
+      return "", err
+    }
+
+    if !isDraft {
+      return "", problem.NewNotFound(id, "draft")
+    }
   }
 
   tryToGetCurrentLinkWithExpirationTimeQuery := `
