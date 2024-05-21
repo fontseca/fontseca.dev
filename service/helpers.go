@@ -17,13 +17,32 @@ import (
   "unicode/utf8"
 )
 
-var contiguousSpacesRegexp = regexp.MustCompile(`\s+`)
+var (
+  contiguousSpacesRegexp = regexp.MustCompile(`\s+`)
+  wordsOnly              = regexp.MustCompile(`\w+`)
+)
 
 func sanitizeTextWordIntersections(text *string) {
   if nil == text {
     return
   }
   *text = contiguousSpacesRegexp.ReplaceAllString(*text, " ")
+}
+
+func generateSlug(source string) string {
+  if "" == source {
+    return ""
+  }
+
+  source = strings.ToLower(source)
+
+  if strings.Contains(source, "_") {
+    source = strings.ReplaceAll(source, "_", "-")
+  }
+
+  words := wordsOnly.FindAllString(source, -1)
+
+  return strings.Join(words, "-")
 }
 
 func wordsIn(text string) int {

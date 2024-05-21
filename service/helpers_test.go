@@ -10,6 +10,20 @@ import (
   "time"
 )
 
+func Test_generateSlug(t *testing.T) {
+  sources := [][2]string{
+    {"Quisque egestas cursus.", "quisque-egestas-cursus"},
+    {"Nisi est sit_amet facilisis!", "nisi-est-sit-amet-facilisis"},
+    {"Dolor magna eget?", "dolor-magna-eget"},
+    {"20 VIVERRA adipiscing 60 at", "20-viverra-adipiscing-60-at"},
+  }
+
+  for _, source := range sources {
+    out := generateSlug(source[0])
+    assert.Equal(t, source[1], out)
+  }
+}
+
 func Test_sanitizeURL(t *testing.T) {
   t.Run("errors on wrong urls", func(t *testing.T) {
     var urls = []string{
