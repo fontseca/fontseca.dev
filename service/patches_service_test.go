@@ -121,3 +121,46 @@ func TestPatchesService_Revise(t *testing.T) {
     assert.ErrorIs(t, NewPatchesService(r).Revise(ctx, id, &transfer.ArticleUpdate{}), unexpected)
   })
 }
+
+func TestPatchesService_Share(t *testing.T) {
+  const routine = "Share"
+
+  ctx := context.TODO()
+  id := uuid.NewString()
+
+  t.Run("success", func(t *testing.T) {
+    expectedLink := "link-to-resource"
+
+    r := mocks.NewArchiveRepository()
+    r.On(routine, ctx, id).Return(expectedLink, nil)
+
+    link, err := NewPatchesService(r).Share(ctx, id)
+
+    assert.Equal(t, expectedLink, link)
+    assert.NoError(t, err)
+  })
+
+  t.Run("wrong patch uuid", func(t *testing.T) {
+    id = "e4d06ba7-f086-47dc-9f5e"
+
+    r := mocks.NewArchiveRepository()
+    r.AssertNotCalled(t, routine)
+
+    link, err := NewPatchesService(r).Share(ctx, id)
+
+    assert.Error(t, err)
+    assert.Equal(t, "about:blank", link)
+  })
+
+  t.Run("gets a repository failure", func(t *testing.T) {
+    unexpected := errors.New("unexpected error")
+
+    r := mocks.NewArchiveRepository()
+    r.On(routine, mock.Anything, mock.Anything, mock.Anything).Return("", unexpected)
+
+    link, err := NewPatchesService(r).Share(ctx, uuid.NewString())
+
+    assert.Equal(t, "about:blank", link)
+    assert.ErrorIs(t, err, unexpected)
+  })
+}

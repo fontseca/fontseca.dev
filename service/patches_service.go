@@ -97,8 +97,17 @@ func (s *patchesService) Revise(ctx context.Context, id string, revision *transf
 }
 
 func (s *patchesService) Share(ctx context.Context, id string) (link string, err error) {
-  // TODO implement me
-  panic("implement me")
+  if err = validateUUID(&id); nil != err {
+    return "about:blank", err
+  }
+
+  link, err = s.r.Share(ctx, id)
+
+  if nil != err {
+    return "about:blank", err
+  }
+
+  return link, nil
 }
 
 func (s *patchesService) Discard(ctx context.Context, id string) error {
