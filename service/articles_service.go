@@ -145,8 +145,11 @@ func (s *articlesService) Pin(ctx context.Context, id string) error {
 }
 
 func (s *articlesService) Unpin(ctx context.Context, id string) error {
-  // TODO implement me
-  panic("implement me")
+  if err := validateUUID(&id); nil != err {
+    return err
+  }
+
+  return s.r.SetPinned(ctx, id, false)
 }
 
 func (s *articlesService) AddTopic(ctx context.Context, articleUUID, topicUUID string) error {

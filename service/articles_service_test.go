@@ -298,3 +298,35 @@ func TestArticlesService_Pin(t *testing.T) {
     assert.Error(t, NewArticlesService(r).Pin(ctx, id))
   })
 }
+
+func TestArticlesService_Unpin(t *testing.T) {
+  const routine = "SetPinned"
+
+  ctx := context.TODO()
+  id := uuid.NewString()
+
+  t.Run("success", func(t *testing.T) {
+    r := mocks.NewArchiveRepository()
+    r.On(routine, ctx, id, false).Return(nil)
+
+    assert.NoError(t, NewArticlesService(r).Unpin(ctx, id))
+  })
+
+  t.Run("gets a repository failure", func(t *testing.T) {
+    unexpected := errors.New("unexpected error")
+
+    r := mocks.NewArchiveRepository()
+    r.On(routine, mock.Anything, mock.Anything, mock.Anything).Return(unexpected)
+
+    assert.ErrorIs(t, NewArticlesService(r).Unpin(ctx, id), unexpected)
+  })
+
+  t.Run("wrong uuid", func(t *testing.T) {
+    id = "e4d06ba7-f086-47dc-9f5e"
+
+    r := mocks.NewArchiveRepository()
+    r.AssertNotCalled(t, routine)
+
+    assert.Error(t, NewArticlesService(r).Unpin(ctx, id))
+  })
+}
