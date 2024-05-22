@@ -111,8 +111,11 @@ func (s *patchesService) Share(ctx context.Context, id string) (link string, err
 }
 
 func (s *patchesService) Discard(ctx context.Context, id string) error {
-  // TODO implement me
-  panic("implement me")
+  if err := validateUUID(&id); nil != err {
+    return err
+  }
+
+  return s.r.Discard(ctx, id)
 }
 
 func (s *patchesService) Release(ctx context.Context, id string) error {
