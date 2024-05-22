@@ -41,8 +41,7 @@ func NewPatchesService(r repository.ArchiveRepository) PatchesService {
 }
 
 func (s *patchesService) Get(ctx context.Context) (patches []*model.ArticlePatch, err error) {
-  // TODO implement me
-  panic("implement me")
+  return s.r.GetPatches(ctx)
 }
 
 func (s *patchesService) Revise(ctx context.Context, id string, revision *transfer.ArticleUpdate) error {
