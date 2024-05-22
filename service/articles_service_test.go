@@ -202,3 +202,35 @@ func TestArticlesService_Show(t *testing.T) {
     assert.Error(t, NewArticlesService(r).Show(ctx, id))
   })
 }
+
+func TestArticlesService_Amend(t *testing.T) {
+  const routine = "Amend"
+
+  ctx := context.TODO()
+  id := uuid.NewString()
+
+  t.Run("success", func(t *testing.T) {
+    r := mocks.NewArchiveRepository()
+    r.On(routine, ctx, id).Return(nil)
+
+    assert.NoError(t, NewArticlesService(r).Amend(ctx, id))
+  })
+
+  t.Run("gets a repository failure", func(t *testing.T) {
+    unexpected := errors.New("unexpected error")
+
+    r := mocks.NewArchiveRepository()
+    r.On(routine, mock.Anything, mock.Anything).Return(unexpected)
+
+    assert.ErrorIs(t, NewArticlesService(r).Amend(ctx, id), unexpected)
+  })
+
+  t.Run("wrong uuid", func(t *testing.T) {
+    id = "e4d06ba7-f086-47dc-9f5e"
+
+    r := mocks.NewArchiveRepository()
+    r.AssertNotCalled(t, routine)
+
+    assert.Error(t, NewArticlesService(r).Amend(ctx, id))
+  })
+}
