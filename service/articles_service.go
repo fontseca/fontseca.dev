@@ -129,8 +129,11 @@ func (s *articlesService) Amend(ctx context.Context, id string) error {
 }
 
 func (s *articlesService) Remove(ctx context.Context, id string) error {
-  // TODO implement me
-  panic("implement me")
+  if err := validateUUID(&id); nil != err {
+    return err
+  }
+
+  return s.r.Remove(ctx, id)
 }
 
 func (s *articlesService) Pin(ctx context.Context, id string) error {
