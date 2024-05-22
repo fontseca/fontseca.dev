@@ -364,6 +364,47 @@ func (r *archiveRepository) Get(ctx context.Context, needle string, hidden, draf
 }
 
 func (r *archiveRepository) GetByID(ctx context.Context, id string, isDraft bool) (article *model.Article, err error) {
+  getTopicsQuery := `
+     SELECT t."uuid",
+            t."name",
+            t.created_at,
+            t.updated_at
+       FROM "article_topic" at
+  LEFT JOIN "topic" t
+         ON at."topic_uuid" = t."uuid"
+      WHERE "article_uuid" = @article_uuid;`
+
+  ctx1, cancel := context.WithTimeout(ctx, 3*time.Second)
+  defer cancel()
+
+  result, err := r.db.QueryContext(ctx1, getTopicsQuery, sql.Named("article_uuid", id))
+  if err != nil {
+    slog.Error(err.Error())
+    return nil, err
+  }
+
+  defer result.Close()
+
+  topics := make([]*model.Topic, 0)
+
+  for result.Next() {
+    var topic model.Topic
+
+    err = result.Scan(
+      &topic.UUID,
+      &topic.Name,
+      &topic.CreatedAt,
+      &topic.UpdatedAt,
+    )
+
+    if nil != err {
+      slog.Error(err.Error())
+      return nil, err
+    }
+
+    topics = append(topics, &topic)
+  }
+
   getArticleByUUIDQuery := `
   SELECT "uuid",
          "title",
@@ -386,12 +427,16 @@ func (r *archiveRepository) GetByID(ctx context.Context, id string, isDraft bool
                AND "hidden" IS FALSE
                END;`
 
-  ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+  ctx, cancel = context.WithTimeout(ctx, 3*time.Second)
   defer cancel()
 
   row := r.db.QueryRowContext(ctx, getArticleByUUIDQuery, sql.Named("uuid", id), sql.Named("is_draft", isDraft))
 
   article = new(model.Article)
+
+  if 0 < len(topics) {
+    article.Topics = topics
+  }
 
   err = row.Scan(
     &article.UUID,
