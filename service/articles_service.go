@@ -113,8 +113,11 @@ func (s *articlesService) Hide(ctx context.Context, id string) error {
 }
 
 func (s *articlesService) Show(ctx context.Context, id string) error {
-  // TODO implement me
-  panic("implement me")
+  if err := validateUUID(&id); nil != err {
+    return err
+  }
+
+  return s.r.SetHidden(ctx, id, false)
 }
 
 func (s *articlesService) Amend(ctx context.Context, id string) error {
