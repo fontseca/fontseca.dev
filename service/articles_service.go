@@ -101,7 +101,7 @@ func (s *articlesService) GetByID(ctx context.Context, articleUUID string) (arti
     return nil, err
   }
 
-  return s.r.GetByID(ctx, articleUUID, true)
+  return s.r.GetByID(ctx, articleUUID, false)
 }
 
 func (s *articlesService) Hide(ctx context.Context, id string) error {

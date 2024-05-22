@@ -107,7 +107,7 @@ func TestArticlesService_GetByID(t *testing.T) {
     expectedArticle := &model.Article{}
 
     r := mocks.NewArchiveRepository()
-    r.On(routine, ctx, id, true).Return(expectedArticle, nil)
+    r.On(routine, ctx, id, false).Return(expectedArticle, nil)
 
     article, err := NewArticlesService(r).GetByID(ctx, id)
 
