@@ -5,6 +5,7 @@ import (
   "errors"
   "fontseca.dev/mocks"
   "fontseca.dev/model"
+  "github.com/google/uuid"
   "github.com/stretchr/testify/assert"
   "github.com/stretchr/testify/mock"
   "testing"
@@ -93,5 +94,47 @@ func TestArticlesService_GetHidden(t *testing.T) {
 
     _, err := NewArticlesService(r).GetHidden(ctx, "")
     assert.ErrorIs(t, err, unexpected)
+  })
+}
+
+func TestArticlesService_GetByID(t *testing.T) {
+  const routine = "GetByID"
+
+  ctx := context.TODO()
+  id := uuid.New().String()
+
+  t.Run("success", func(t *testing.T) {
+    expectedArticle := &model.Article{}
+
+    r := mocks.NewArchiveRepository()
+    r.On(routine, ctx, id, true).Return(expectedArticle, nil)
+
+    article, err := NewArticlesService(r).GetByID(ctx, id)
+
+    assert.Equal(t, expectedArticle, article)
+    assert.NoError(t, err)
+  })
+
+  t.Run("gets a repository failure", func(t *testing.T) {
+    unexpected := errors.New("unexpected error")
+
+    r := mocks.NewArchiveRepository()
+    r.On(routine, mock.Anything, mock.Anything, mock.Anything).Return(nil, unexpected)
+
+    article, err := NewArticlesService(r).GetByID(ctx, id)
+
+    assert.Nil(t, article)
+    assert.ErrorIs(t, err, unexpected)
+  })
+
+  t.Run("wrong uuid", func(t *testing.T) {
+    id = "e4d06ba7-f086-47dc-9f5e"
+
+    r := mocks.NewArchiveRepository()
+    r.AssertNotCalled(t, routine)
+
+    _, err := NewArticlesService(r).GetByID(ctx, id)
+
+    assert.Error(t, err)
   })
 }

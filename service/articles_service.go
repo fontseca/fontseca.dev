@@ -97,8 +97,11 @@ func (s *articlesService) GetHidden(ctx context.Context, needle string) (article
 }
 
 func (s *articlesService) GetByID(ctx context.Context, articleUUID string) (article *model.Article, err error) {
-  // TODO implement me
-  panic("implement me")
+  if err = validateUUID(&articleUUID); nil != err {
+    return nil, err
+  }
+
+  return s.r.GetByID(ctx, articleUUID, true)
 }
 
 func (s *articlesService) Hide(ctx context.Context, id string) error {
