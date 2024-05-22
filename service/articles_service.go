@@ -4,6 +4,7 @@ import (
   "context"
   "fontseca.dev/model"
   "fontseca.dev/repository"
+  "strings"
 )
 
 // ArticlesService is a high level provider for articles.
@@ -61,8 +62,18 @@ func NewArticlesService(r repository.ArchiveRepository) ArticlesService {
 }
 
 func (s *articlesService) Get(ctx context.Context, needle string) (articles []*model.Article, err error) {
-  // TODO implement me
-  panic("implement me")
+  needle = strings.TrimSpace(needle)
+
+  if "" != needle {
+    if strings.Contains(needle, "_") {
+      needle = strings.ReplaceAll(needle, "_", " ")
+    }
+
+    words := wordsOnly.FindAllString(needle, -1)
+    needle = strings.Join(words, " ")
+  }
+
+  return s.r.Get(ctx, needle, false, false)
 }
 
 func (s *articlesService) GetByID(ctx context.Context, articleUUID string) (article *model.Article, err error) {
