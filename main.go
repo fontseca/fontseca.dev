@@ -422,69 +422,69 @@ func main() {
   var (
     meRepository = repository.NewMeRepository(db)
     meService    = service.NewMeService(meRepository)
-    meHandler    = handler.NewMeHandler(meService)
+    me           = handler.NewMeHandler(meService)
   )
 
   meRepository.Register(context.Background())
 
-  engine.GET("/me.info", meHandler.Get)
-  engine.POST("/me.setPhoto", meHandler.SetPhoto)
-  engine.POST("/me.setResume", meHandler.SetResume)
-  engine.POST("/me.setHireable", meHandler.SetHireable)
-  engine.POST("/me.set", meHandler.Update)
-  engine.POST("/me.authenticate", meHandler.Authenticate)
-  engine.POST("/me.deauthenticate", meHandler.Deauthenticate)
+  engine.GET("/me.info", me.Get)
+  engine.POST("/me.setPhoto", me.SetPhoto)
+  engine.POST("/me.setResume", me.SetResume)
+  engine.POST("/me.setHireable", me.SetHireable)
+  engine.POST("/me.set", me.Update)
+  engine.POST("/me.authenticate", me.Authenticate)
+  engine.POST("/me.deauthenticate", me.Deauthenticate)
 
   var (
     experienceRepository = repository.NewExperienceRepository(db)
     experienceService    = service.NewExperienceService(experienceRepository)
-    experienceHandler    = handler.NewExperienceHandler(experienceService)
+    experience           = handler.NewExperienceHandler(experienceService)
   )
 
-  engine.GET("/me.experience.list", experienceHandler.Get)
-  engine.GET("/me.experience.hidden.list", experienceHandler.GetHidden)
-  engine.GET("/me.experience.info", experienceHandler.GetByID)
-  engine.POST("/me.experience.add", experienceHandler.Add)
-  engine.POST("/me.experience.set", experienceHandler.Set)
-  engine.POST("/me.experience.hide", experienceHandler.Hide)
-  engine.POST("/me.experience.show", experienceHandler.Show)
-  engine.POST("/me.experience.quit", experienceHandler.Quit)
-  engine.POST("/me.experience.remove", experienceHandler.Remove)
+  engine.GET("/me.experience.list", experience.Get)
+  engine.GET("/me.experience.hidden.list", experience.GetHidden)
+  engine.GET("/me.experience.info", experience.GetByID)
+  engine.POST("/me.experience.add", experience.Add)
+  engine.POST("/me.experience.set", experience.Set)
+  engine.POST("/me.experience.hide", experience.Hide)
+  engine.POST("/me.experience.show", experience.Show)
+  engine.POST("/me.experience.quit", experience.Quit)
+  engine.POST("/me.experience.remove", experience.Remove)
 
   var (
     technologyTagRepository = repository.NewTechnologyTagRepository(db)
     technologyTagService    = service.NewTechnologyTagService(technologyTagRepository)
-    technologyTagHandler    = handler.NewTechnologyTagHandler(technologyTagService)
+    technologies            = handler.NewTechnologyTagHandler(technologyTagService)
   )
 
-  engine.GET("/technologies.list", technologyTagHandler.Get)
-  engine.POST("/technologies.add", technologyTagHandler.Add)
-  engine.POST("/technologies.set", technologyTagHandler.Set)
-  engine.POST("/technologies.remove", technologyTagHandler.Remove)
+  engine.GET("/technologies.list", technologies.Get)
+  engine.POST("/technologies.add", technologies.Add)
+  engine.POST("/technologies.set", technologies.Set)
+  engine.POST("/technologies.remove", technologies.Remove)
 
   var (
     projectsRepository = repository.NewProjectsRepository(db)
     projectsService    = service.NewProjectsService(projectsRepository)
-    projectsHandler    = handler.NewProjectsHandler(projectsService)
+    projects           = handler.NewProjectsHandler(projectsService)
   )
 
-  engine.GET("/me.projects.list", projectsHandler.Get)
-  engine.GET("/me.projects.info", projectsHandler.GetByID)
-  engine.GET("/me.projects.archived.list", projectsHandler.GetArchived)
-  engine.POST("/me.projects.add", projectsHandler.Add)
-  engine.POST("/me.projects.set", projectsHandler.Set)
-  engine.POST("/me.projects.archive", projectsHandler.Archive)
-  engine.POST("/me.projects.unarchive", projectsHandler.Unarchive)
-  engine.POST("/me.projects.finish", projectsHandler.Finish)
-  engine.POST("/me.projects.unfinish", projectsHandler.Unfinish)
-  engine.POST("/me.projects.remove", projectsHandler.Remove)
-  engine.POST("/me.projects.setPlaygroundURL", projectsHandler.SetPlaygroundURL)
-  engine.POST("/me.projects.setFirstImageURL", projectsHandler.SetFirstImageURL)
-  engine.POST("/me.projects.setSecondImageURL", projectsHandler.SetSecondImageURL)
-  engine.POST("/me.projects.setGitHubURL", projectsHandler.SetGitHubURL)
-  engine.POST("/me.projects.setCollectionURL", projectsHandler.SetCollectionURL)
-  engine.POST("/me.projects.technologies.add", projectsHandler.AddTechnologyTag)
-  engine.POST("/me.projects.technologies.remove", projectsHandler.RemoveTechnologyTag)
+  engine.GET("/me.projects.list", projects.Get)
+  engine.GET("/me.projects.info", projects.GetByID)
+  engine.GET("/me.projects.archived.list", projects.GetArchived)
+  engine.POST("/me.projects.add", projects.Add)
+  engine.POST("/me.projects.set", projects.Set)
+  engine.POST("/me.projects.archive", projects.Archive)
+  engine.POST("/me.projects.unarchive", projects.Unarchive)
+  engine.POST("/me.projects.finish", projects.Finish)
+  engine.POST("/me.projects.unfinish", projects.Unfinish)
+  engine.POST("/me.projects.remove", projects.Remove)
+  engine.POST("/me.projects.setPlaygroundURL", projects.SetPlaygroundURL)
+  engine.POST("/me.projects.setFirstImageURL", projects.SetFirstImageURL)
+  engine.POST("/me.projects.setSecondImageURL", projects.SetSecondImageURL)
+  engine.POST("/me.projects.setGitHubURL", projects.SetGitHubURL)
+  engine.POST("/me.projects.setCollectionURL", projects.SetCollectionURL)
+  engine.POST("/me.projects.technologies.add", projects.AddTechnologyTag)
+  engine.POST("/me.projects.technologies.remove", projects.RemoveTechnologyTag)
 
   var archive = repository.NewArchiveRepository(db)
 
@@ -503,16 +503,16 @@ func main() {
   engine.POST("/archive.drafts.topics.add", drafts.AddTopic)
   engine.POST("/archive.drafts.topics.remove", drafts.RemoveTopic)
 
-  var webHandler = handler.NewWebHandler(
+  var web = handler.NewWebHandler(
     meService,
     experienceService,
     projectsService,
   )
 
-  engine.GET("/", webHandler.RenderMe)
-  engine.GET("/experience", webHandler.RenderExperience)
-  engine.GET("/work", webHandler.RenderProjects)
-  engine.GET("/work/:project_slug", webHandler.RenderProjectDetails)
+  engine.GET("/", web.RenderMe)
+  engine.GET("/experience", web.RenderExperience)
+  engine.GET("/work", web.RenderProjects)
+  engine.GET("/work/:project_slug", web.RenderProjectDetails)
 
   engine.NoRoute(func(c *gin.Context) {
     var p problem.Problem
