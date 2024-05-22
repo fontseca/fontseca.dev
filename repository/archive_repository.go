@@ -87,12 +87,12 @@ type ArchiveRepository interface {
   // AddTopic adds a topic to the article. If the topic already
   // exists, it returns an error informing about a conflicting
   // state.
-  AddTopic(ctx context.Context, articleID, topicID string) error
+  AddTopic(ctx context.Context, articleID, topicID string, isDraft ...bool) error
 
   // RemoveTopic removes a topic from the article. If the article has
   // no topic identified by its UUID, it returns an error indication
   // a not found state.
-  RemoveTopic(ctx context.Context, articleID, topicID string) error
+  RemoveTopic(ctx context.Context, articleID, topicID string, isDraft ...bool) error
 
   // SetHidden hides or shows an article depending on the value of hidden.
   SetHidden(ctx context.Context, id string, hidden bool) error
@@ -544,18 +544,33 @@ func (r *archiveRepository) Remove(ctx context.Context, id string) error {
   return nil
 }
 
-func (r *archiveRepository) AddTopic(ctx context.Context, articleID, topicID string) error {
+func (r *archiveRepository) AddTopic(ctx context.Context, articleID, topicID string, isDraft ...bool) error {
+  var isArticleDraft bool
+
+  if 0 < len(isDraft) {
+    isArticleDraft = isDraft[0]
+  }
+
   articleExistsQuery := `
   SELECT count (*)
     FROM "article"
-   WHERE "uuid" = $1;`
+   WHERE "uuid" = @uuid
+     AND "draft" IS @is_draft
+     AND CASE WHEN @is_draft
+           THEN "published_at" IS NULL
+           ELSE "published_at" IS NOT NULL
+            END;`
 
   ctx1, cancel := context.WithTimeout(ctx, 3*time.Second)
   defer cancel()
 
   var articleExists bool
 
-  err := r.db.QueryRowContext(ctx1, articleExistsQuery, articleID).Scan(&articleExists)
+  err := r.db.QueryRowContext(ctx1, articleExistsQuery,
+    sql.Named("uuid", articleID),
+    sql.Named("is_draft", isArticleDraft)).
+    Scan(&articleExists)
+
   if nil != err {
     if !errors.Is(err, sql.ErrNoRows) {
       slog.Error(err.Error())
@@ -564,6 +579,10 @@ func (r *archiveRepository) AddTopic(ctx context.Context, articleID, topicID str
   }
 
   if !articleExists {
+    if isArticleDraft {
+      return problem.NewNotFound(articleID, "draft")
+    }
+
     return problem.NewNotFound(articleID, "article")
   }
 
@@ -616,7 +635,14 @@ func (r *archiveRepository) AddTopic(ctx context.Context, articleID, topicID str
     p := problem.Problem{}
     p.Status(http.StatusConflict)
     p.Title("Could not add a topic.")
-    p.Detail("This topic is already added to the current article.")
+
+    detail := "This topic is already added to the current article."
+
+    if isArticleDraft {
+      detail = "This topic is already added to the current article draft."
+    }
+
+    p.Detail(detail)
     p.With("article_uuid", articleID)
     p.With("topic_uuid", topicID)
 
@@ -651,7 +677,14 @@ func (r *archiveRepository) AddTopic(ctx context.Context, articleID, topicID str
     p := problem.Problem{}
     p.Status(http.StatusAccepted)
     p.Title("Could not add a topic.")
-    p.Detail("Could not add topic to this article.")
+
+    detail := "Could not add topic to this article."
+
+    if isArticleDraft {
+      detail = "Could not add topic to this article draft."
+    }
+
+    p.Detail(detail)
     p.With("article_uuid", articleID)
     p.With("topic_uuid", topicID)
 
@@ -666,20 +699,33 @@ func (r *archiveRepository) AddTopic(ctx context.Context, articleID, topicID str
   return nil
 }
 
-func (r *archiveRepository) RemoveTopic(ctx context.Context, articleID, topicID string) error {
+func (r *archiveRepository) RemoveTopic(ctx context.Context, articleID, topicID string, isDraft ...bool) error {
+  var isArticleDraft bool
+
+  if 0 < len(isDraft) {
+    isArticleDraft = isDraft[0]
+  }
+
   articleExistsQuery := `
   SELECT count (*)
     FROM "article"
-   WHERE "uuid" = $1
-     AND "draft" IS FALSE
-     AND "published_at" IS NOT NULL;`
+   WHERE "uuid" = @uuid
+     AND "draft" IS @is_draft
+     AND CASE WHEN @is_draft
+           THEN "published_at" IS NULL
+           ELSE "published_at" IS NOT NULL
+            END;`
 
   ctx1, cancel := context.WithTimeout(ctx, 3*time.Second)
   defer cancel()
 
   var articleExists bool
 
-  err := r.db.QueryRowContext(ctx1, articleExistsQuery, articleID).Scan(&articleExists)
+  err := r.db.QueryRowContext(ctx1, articleExistsQuery,
+    sql.Named("uuid", articleID),
+    sql.Named("is_draft", isArticleDraft)).
+    Scan(&articleExists)
+
   if nil != err {
     if !errors.Is(err, sql.ErrNoRows) {
       slog.Error(err.Error())
@@ -688,6 +734,10 @@ func (r *archiveRepository) RemoveTopic(ctx context.Context, articleID, topicID 
   }
 
   if !articleExists {
+    if isArticleDraft {
+      return problem.NewNotFound(articleID, "draft")
+    }
+
     return problem.NewNotFound(articleID, "article")
   }
 

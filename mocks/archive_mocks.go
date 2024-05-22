@@ -54,12 +54,12 @@ func (o *ArchiveRepository) Remove(ctx context.Context, id string) error {
   return o.Called(ctx, id).Error(0)
 }
 
-func (o *ArchiveRepository) AddTopic(ctx context.Context, articleID, topicID string) error {
-  return o.Called(ctx, articleID, topicID).Error(0)
+func (o *ArchiveRepository) AddTopic(ctx context.Context, articleID, topicID string, isDraft ...bool) error {
+  return o.Called(ctx, articleID, topicID, isDraft).Error(0)
 }
 
-func (o *ArchiveRepository) RemoveTopic(ctx context.Context, articleID, topicID string) error {
-  return o.Called(ctx, articleID, topicID).Error(0)
+func (o *ArchiveRepository) RemoveTopic(ctx context.Context, articleID, topicID string, isDraft ...bool) error {
+  return o.Called(ctx, articleID, topicID, isDraft).Error(0)
 }
 
 func (o *ArchiveRepository) SetHidden(ctx context.Context, id string, hidden bool) error {

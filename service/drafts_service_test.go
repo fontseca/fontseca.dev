@@ -178,7 +178,7 @@ func TestDraftsService_AddTopic(t *testing.T) {
 
   t.Run("success", func(t *testing.T) {
     r := mocks.NewArchiveRepository()
-    r.On(routine, ctx, draftUUID, topicUUID).Return(nil)
+    r.On(routine, ctx, draftUUID, topicUUID, []bool{true}).Return(nil)
 
     assert.NoError(t, NewDraftsService(r).AddTopic(ctx, draftUUID, topicUUID))
   })
@@ -206,7 +206,7 @@ func TestDraftsService_AddTopic(t *testing.T) {
     unexpected := errors.New("unexpected error")
 
     r := mocks.NewArchiveRepository()
-    r.On(routine, mock.Anything, mock.Anything, mock.Anything).Return(unexpected)
+    r.On(routine, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(unexpected)
 
     err := NewDraftsService(r).AddTopic(ctx, draftUUID, uuid.NewString())
 
@@ -223,7 +223,7 @@ func TestDraftsService_RemoveTopic(t *testing.T) {
 
   t.Run("success", func(t *testing.T) {
     r := mocks.NewArchiveRepository()
-    r.On(routine, ctx, draftUUID, topicUUID).Return(nil)
+    r.On(routine, ctx, draftUUID, topicUUID, []bool{true}).Return(nil)
 
     assert.NoError(t, NewDraftsService(r).RemoveTopic(ctx, draftUUID, topicUUID))
   })
@@ -251,7 +251,7 @@ func TestDraftsService_RemoveTopic(t *testing.T) {
     unexpected := errors.New("unexpected error")
 
     r := mocks.NewArchiveRepository()
-    r.On(routine, mock.Anything, mock.Anything, mock.Anything).Return(unexpected)
+    r.On(routine, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(unexpected)
 
     err := NewDraftsService(r).RemoveTopic(ctx, draftUUID, uuid.NewString())
 

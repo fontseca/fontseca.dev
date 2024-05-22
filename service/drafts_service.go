@@ -149,7 +149,7 @@ func (s *draftsService) AddTopic(ctx context.Context, draftUUID, topicUUID strin
     return err
   }
 
-  return s.r.AddTopic(ctx, draftUUID, topicUUID)
+  return s.r.AddTopic(ctx, draftUUID, topicUUID, true)
 }
 
 func (s *draftsService) RemoveTopic(ctx context.Context, draftUUID, topicUUID string) error {
@@ -161,7 +161,7 @@ func (s *draftsService) RemoveTopic(ctx context.Context, draftUUID, topicUUID st
     return err
   }
 
-  return s.r.RemoveTopic(ctx, draftUUID, topicUUID)
+  return s.r.RemoveTopic(ctx, draftUUID, topicUUID, true)
 }
 
 func (s *draftsService) Share(ctx context.Context, draftUUID string) (link string, err error) {
