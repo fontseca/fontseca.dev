@@ -486,6 +486,23 @@ func main() {
   engine.POST("/me.projects.technologies.add", projectsHandler.AddTechnologyTag)
   engine.POST("/me.projects.technologies.remove", projectsHandler.RemoveTechnologyTag)
 
+  var archive = repository.NewArchiveRepository(db)
+
+  var (
+    draftsService = service.NewDraftsService(archive)
+    drafts        = handler.NewDraftsHandler(draftsService)
+  )
+
+  engine.POST("/archive.drafts.start", drafts.Start)
+  engine.POST("/archive.drafts.publish", drafts.Publish)
+  engine.GET("/archive.drafts.list", drafts.Get)
+  engine.GET("/archive.drafts.info", drafts.GetByID)
+  engine.POST("/archive.drafts.share", drafts.Share)
+  engine.POST("/archive.drafts.revise", drafts.Revise)
+  engine.POST("/archive.drafts.discard", drafts.Discard)
+  engine.POST("/archive.drafts.topics.add", drafts.AddTopic)
+  engine.POST("/archive.drafts.topics.remove", drafts.RemoveTopic)
+
   var webHandler = handler.NewWebHandler(
     meService,
     experienceService,
