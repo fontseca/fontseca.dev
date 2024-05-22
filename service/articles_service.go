@@ -17,6 +17,14 @@ type ArticlesService interface {
   // in needle.
   Get(ctx context.Context, needle string) (articles []*model.Article, err error)
 
+  // GetHidden retrieves all the published articles thar are hidden.
+  //
+  // If needle is a non-empty string, then Get behaves like a search
+  // function over articles, so it attempts to find and amass every
+  // article whose title contains any of the keywords (if more than one)
+  // in needle.
+  GetHidden(ctx context.Context, needle string) (articles []*model.Article, err error)
+
   // GetByID retrieves one article by its UUID.
   GetByID(ctx context.Context, articleUUID string) (article *model.Article, err error)
 
@@ -61,7 +69,7 @@ func NewArticlesService(r repository.ArchiveRepository) ArticlesService {
   return &articlesService{r}
 }
 
-func (s *articlesService) Get(ctx context.Context, needle string) (articles []*model.Article, err error) {
+func (s *articlesService) doGet(ctx context.Context, needle string, hidden ...bool) (articles []*model.Article, err error) {
   needle = strings.TrimSpace(needle)
 
   if "" != needle {
@@ -73,7 +81,19 @@ func (s *articlesService) Get(ctx context.Context, needle string) (articles []*m
     needle = strings.Join(words, " ")
   }
 
+  if 0 < len(hidden) {
+    return s.r.Get(ctx, needle, hidden[0], false)
+  }
+
   return s.r.Get(ctx, needle, false, false)
+}
+
+func (s *articlesService) Get(ctx context.Context, needle string) (articles []*model.Article, err error) {
+  return s.doGet(ctx, needle)
+}
+
+func (s *articlesService) GetHidden(ctx context.Context, needle string) (articles []*model.Article, err error) {
+  return s.doGet(ctx, needle, true)
 }
 
 func (s *articlesService) GetByID(ctx context.Context, articleUUID string) (article *model.Article, err error) {
