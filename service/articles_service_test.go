@@ -330,3 +330,48 @@ func TestArticlesService_Unpin(t *testing.T) {
     assert.Error(t, NewArticlesService(r).Unpin(ctx, id))
   })
 }
+
+func TestArticlesService_AddTopic(t *testing.T) {
+  const routine = "AddTopic"
+
+  ctx := context.TODO()
+  articleUUID := uuid.New().String()
+  topicUUID := uuid.New().String()
+
+  t.Run("success", func(t *testing.T) {
+    r := mocks.NewArchiveRepository()
+    r.On(routine, ctx, articleUUID, topicUUID).Return(nil)
+
+    assert.NoError(t, NewArticlesService(r).AddTopic(ctx, articleUUID, topicUUID))
+  })
+
+  t.Run("wrong draft uuid", func(t *testing.T) {
+    articleUUID = "e4d06ba7-f086-47dc-9f5e"
+
+    r := mocks.NewArchiveRepository()
+    r.AssertNotCalled(t, routine)
+
+    assert.Error(t, NewArticlesService(r).AddTopic(ctx, articleUUID, topicUUID))
+  })
+
+  t.Run("wrong draft uuid", func(t *testing.T) {
+    articleUUID = topicUUID
+    topicUUID = "e4d06ba7-f086-47dc-9f5e"
+
+    r := mocks.NewArchiveRepository()
+    r.AssertNotCalled(t, routine)
+
+    assert.Error(t, NewArticlesService(r).AddTopic(ctx, articleUUID, topicUUID))
+  })
+
+  t.Run("gets a repository failure", func(t *testing.T) {
+    unexpected := errors.New("unexpected error")
+
+    r := mocks.NewArchiveRepository()
+    r.On(routine, mock.Anything, mock.Anything, mock.Anything).Return(unexpected)
+
+    err := NewArticlesService(r).AddTopic(ctx, articleUUID, uuid.NewString())
+
+    assert.ErrorIs(t, err, unexpected)
+  })
+}
