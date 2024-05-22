@@ -3,6 +3,7 @@ package service
 import (
   "context"
   "fontseca.dev/model"
+  "fontseca.dev/repository"
   "fontseca.dev/transfer"
 )
 
@@ -29,4 +30,37 @@ type PatchesService interface {
   // Release merges a patch into the original article and published the
   // update immediately after merging.
   Release(ctx context.Context, id string) error
+}
+
+type patchesService struct {
+  r repository.ArchiveRepository
+}
+
+func NewPatchesService(r repository.ArchiveRepository) PatchesService {
+  return &patchesService{r}
+}
+
+func (s *patchesService) Get(ctx context.Context) (patches []*model.ArticlePatch, err error) {
+  // TODO implement me
+  panic("implement me")
+}
+
+func (s *patchesService) Revise(ctx context.Context, id string, revision *transfer.ArticleUpdate) error {
+  // TODO implement me
+  panic("implement me")
+}
+
+func (s *patchesService) Share(ctx context.Context, id string) (link string, err error) {
+  // TODO implement me
+  panic("implement me")
+}
+
+func (s *patchesService) Discard(ctx context.Context, id string) error {
+  // TODO implement me
+  panic("implement me")
+}
+
+func (s *patchesService) Release(ctx context.Context, id string) error {
+  // TODO implement me
+  panic("implement me")
 }
