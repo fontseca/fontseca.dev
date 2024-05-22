@@ -165,6 +165,13 @@ func (s *articlesService) AddTopic(ctx context.Context, articleUUID, topicUUID s
 }
 
 func (s *articlesService) RemoveTopic(ctx context.Context, articleUUID, topicUUID string) error {
-  // TODO implement me
-  panic("implement me")
+  if err := validateUUID(&articleUUID); nil != err {
+    return err
+  }
+
+  if err := validateUUID(&topicUUID); nil != err {
+    return err
+  }
+
+  return s.r.RemoveTopic(ctx, articleUUID, topicUUID)
 }
