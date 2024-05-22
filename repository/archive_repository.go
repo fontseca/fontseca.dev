@@ -1048,6 +1048,12 @@ func (r *archiveRepository) Revise(ctx context.Context, id string, revision *tra
   UPDATE "article"
      SET "title" = coalesce (nullif (@title, ''), "title"),
          "slug" = coalesce (nullif (@slug, ''), "slug"),
+         "read_time" = CASE WHEN @read_time = "read_time"
+                              OR @read_time IS NULL
+                              OR @read_time = 0
+                            THEN "read_time"
+                            ELSE @read_time
+                             END,
          "content" = coalesce (nullif (@content, ''), "content")
    WHERE "uuid" = @uuid
      AND "draft" IS TRUE
@@ -1058,14 +1064,24 @@ func (r *archiveRepository) Revise(ctx context.Context, id string, revision *tra
     UPDATE "article_patch"
        SET "title" = coalesce (nullif (@title, ''), "title"),
            "slug" = coalesce (nullif (@slug, ''), "slug"),
+           "read_time" = CASE WHEN @read_time = "read_time"
+                                OR @read_time IS NULL
+                                OR @read_time = 0
+                              THEN "read_time"
+                              ELSE @read_time
+                               END,
            "content" = coalesce (nullif (@content, ''), "content")
      WHERE "article_uuid" = @uuid;`
   }
+
+  ctx, cancel = context.WithTimeout(ctx, 3*time.Second)
+  defer cancel()
 
   result, err := tx.ExecContext(ctx, reviseArticleQuery,
     sql.Named("uuid", id),
     sql.Named("title", revision.Title),
     sql.Named("slug", revision.Slug),
+    sql.Named("read_time", revision.ReadTime),
     sql.Named("content", revision.Content),
   )
 
