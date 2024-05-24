@@ -4,6 +4,7 @@ import (
   "context"
   "fontseca.dev/model"
   "fontseca.dev/transfer"
+  "github.com/google/uuid"
   "github.com/stretchr/testify/mock"
 )
 
@@ -96,4 +97,64 @@ func (o *ArchiveRepository) GetPatches(ctx context.Context) (patches []*model.Ar
   }
 
   return patches, args.Error(1)
+}
+
+type DraftsService struct {
+  mock.Mock
+}
+
+func NewDraftsService() *DraftsService {
+  return &DraftsService{}
+}
+
+func (o *DraftsService) Draft(ctx context.Context, creation *transfer.ArticleCreation) (insertedUUID uuid.UUID, err error) {
+  args := o.Called(ctx, creation)
+  return args.Get(0).(uuid.UUID), args.Error(1)
+}
+
+func (o *DraftsService) Publish(ctx context.Context, draftUUID string) error {
+  return o.Called(ctx, draftUUID).Error(0)
+}
+
+func (o *DraftsService) Get(ctx context.Context, needle string) (drafts []*model.Article, err error) {
+  args := o.Called(ctx, needle)
+  arg0 := args.Get(0)
+
+  if nil != arg0 {
+    drafts = arg0.([]*model.Article)
+  }
+
+  return drafts, args.Error(1)
+}
+
+func (o *DraftsService) GetByID(ctx context.Context, draftUUID string) (draft *model.Article, err error) {
+  args := o.Called(ctx, draftUUID)
+  arg0 := args.Get(0)
+
+  if nil != arg0 {
+    draft = arg0.(*model.Article)
+  }
+
+  return draft, args.Error(1)
+}
+
+func (o *DraftsService) AddTopic(ctx context.Context, draftUUID, topicUUID string) error {
+  return o.Called(ctx, draftUUID, topicUUID).Error(0)
+}
+
+func (o *DraftsService) RemoveTopic(ctx context.Context, draftUUID, topicUUID string) error {
+  return o.Called(ctx, draftUUID, topicUUID).Error(0)
+}
+
+func (o *DraftsService) Share(ctx context.Context, draftUUID string) (link string, err error) {
+  args := o.Called(ctx, draftUUID)
+  return args.String(0), args.Error(1)
+}
+
+func (o *DraftsService) Discard(ctx context.Context, draftUUID string) error {
+  return o.Called(ctx, draftUUID).Error(0)
+}
+
+func (o *DraftsService) Revise(ctx context.Context, draftUUID string, revision *transfer.ArticleUpdate) error {
+  return o.Called(ctx, draftUUID, revision).Error(0)
 }
