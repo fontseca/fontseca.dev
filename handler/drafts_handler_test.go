@@ -671,3 +671,87 @@ func TestDraftsHandler_Discard(t *testing.T) {
     assert.Contains(t, recorder.Result().Header.Get("Content-Type"), "application/problem+json")
   })
 }
+func TestDraftsHandler_Revise(t *testing.T) {
+  const (
+    routine = "Revise"
+    method  = http.MethodPost
+    target  = "/archive.drafts.revise"
+  )
+
+  revision := &transfer.ArticleUpdate{
+    Title:   "Title",
+    Content: "Content",
+  }
+
+  id := uuid.NewString()
+
+  request := httptest.NewRequest(method, target, nil)
+  _ = request.ParseForm()
+
+  request.PostForm.Add("draft_uuid", id)
+  request.PostForm.Add("title", revision.Title)
+  request.PostForm.Add("content", revision.Content)
+
+  t.Run("success", func(t *testing.T) {
+    expectedStatusCode := http.StatusNoContent
+
+    s := mocks.NewDraftsService()
+    s.On(routine, mock.AnythingOfType("*gin.Context"), id, revision).Return(nil)
+
+    engine := gin.Default()
+    engine.POST(target, NewDraftsHandler(s).Revise)
+
+    recorder := httptest.NewRecorder()
+
+    engine.ServeHTTP(recorder, request)
+
+    assert.Equal(t, expectedStatusCode, recorder.Code)
+    assert.Empty(t, recorder.Body)
+    assert.Empty(t, recorder.Result().Cookies())
+  })
+
+  t.Run("expected problem detail", func(t *testing.T) {
+    expectedStatusCode := http.StatusBadRequest
+    expectBodyContains := "Expected problem detail."
+
+    expected := &problem.Problem{}
+    expected.Status(expectedStatusCode)
+    expected.Detail(expectBodyContains)
+
+    s := mocks.NewDraftsService()
+    s.On(routine, mock.AnythingOfType("*gin.Context"), id, revision).Return(expected)
+
+    engine := gin.Default()
+    engine.POST(target, NewDraftsHandler(s).Revise)
+
+    recorder := httptest.NewRecorder()
+
+    engine.ServeHTTP(recorder, request)
+
+    assert.Equal(t, expectedStatusCode, recorder.Code)
+    assert.Contains(t, recorder.Body.String(), expectBodyContains)
+    assert.Empty(t, recorder.Result().Cookies())
+    assert.Contains(t, recorder.Result().Header.Get("Content-Type"), "application/problem+json")
+  })
+
+  t.Run("unexpected error", func(t *testing.T) {
+    unexpected := errors.New("unexpected error")
+    expectedStatusCode := http.StatusInternalServerError
+    expectBodyContains := "An unexpected error occurred while processing your request"
+
+    s := mocks.NewDraftsService()
+    s.On(routine, mock.AnythingOfType("*gin.Context"), id, revision).Return(unexpected)
+
+    engine := gin.Default()
+    engine.POST(target, NewDraftsHandler(s).Revise)
+
+    recorder := httptest.NewRecorder()
+
+    engine.ServeHTTP(recorder, request)
+
+    assert.Equal(t, expectedStatusCode, recorder.Code)
+    assert.Contains(t, recorder.Body.String(), expectBodyContains)
+    assert.Empty(t, recorder.Result().Cookies())
+    assert.Contains(t, recorder.Result().Header.Get("Content-Type"), "application/problem+json")
+  })
+}
