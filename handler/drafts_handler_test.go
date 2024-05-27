@@ -671,6 +671,7 @@ func TestDraftsHandler_Discard(t *testing.T) {
     assert.Contains(t, recorder.Result().Header.Get("Content-Type"), "application/problem+json")
   })
 }
+
 func TestDraftsHandler_Revise(t *testing.T) {
   const (
     routine = "Revise"
