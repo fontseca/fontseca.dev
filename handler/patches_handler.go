@@ -46,3 +46,20 @@ func (h *PatchesHandler) Revise(c *gin.Context) {
 
   c.Status(http.StatusNoContent)
 }
+
+func (h *PatchesHandler) Share(c *gin.Context) {
+  draft, ok := c.GetPostForm("patch_uuid")
+
+  if !ok {
+    problem.NewMissingParameter("patch_uuid").Emit(c.Writer)
+    return
+  }
+
+  link, err := h.patches.Share(c, draft)
+
+  if check(err, c.Writer) {
+    return
+  }
+
+  c.JSON(http.StatusOK, gin.H{"shareable_link": link})
+}
