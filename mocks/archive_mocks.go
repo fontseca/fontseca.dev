@@ -231,3 +231,39 @@ func (o *ArticlesService) AddTopic(ctx context.Context, articleUUID, topicUUID s
 func (o *ArticlesService) RemoveTopic(ctx context.Context, articleUUID, topicUUID string) error {
   return o.Called(ctx, articleUUID, topicUUID).Error(0)
 }
+
+type PatchesService struct {
+  mock.Mock
+}
+
+func NewPatchesService() *PatchesService {
+  return new(PatchesService)
+}
+
+func (o *PatchesService) Get(ctx context.Context) (patches []*model.ArticlePatch, err error) {
+  args := o.Called(ctx)
+  arg0 := args.Get(0)
+
+  if nil != arg0 {
+    patches = arg0.([]*model.ArticlePatch)
+  }
+
+  return patches, args.Error(1)
+}
+
+func (o *PatchesService) Revise(ctx context.Context, id string, revision *transfer.ArticleUpdate) error {
+  return o.Called(ctx, id).Error(0)
+}
+
+func (o *PatchesService) Share(ctx context.Context, id string) (link string, err error) {
+  args := o.Called(ctx, id)
+  return args.String(0), args.Error(1)
+}
+
+func (o *PatchesService) Discard(ctx context.Context, id string) error {
+  return o.Called(ctx, id).Error(0)
+}
+
+func (o *PatchesService) Release(ctx context.Context, id string) error {
+  return o.Called(ctx, id).Error(0)
+}
