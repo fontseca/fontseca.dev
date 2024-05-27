@@ -252,7 +252,7 @@ func (o *PatchesService) Get(ctx context.Context) (patches []*model.ArticlePatch
 }
 
 func (o *PatchesService) Revise(ctx context.Context, id string, revision *transfer.ArticleUpdate) error {
-  return o.Called(ctx, id).Error(0)
+  return o.Called(ctx, id, revision).Error(0)
 }
 
 func (o *PatchesService) Share(ctx context.Context, id string) (link string, err error) {
