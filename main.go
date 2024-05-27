@@ -520,6 +520,17 @@ func main() {
   engine.POST("/archive.articles.topics.add", articles.AddTopic)
   engine.POST("/archive.articles.topics.remove", articles.RemoveTopic)
 
+  var (
+    patchesServices = service.NewPatchesService(archive)
+    patches         = handler.NewPatchesHandler(patchesServices)
+  )
+
+  engine.GET("/archive.articles.patches.list", patches.Get)
+  engine.POST("/archive.articles.patches.revise", patches.Revise)
+  engine.POST("/archive.articles.patches.share", patches.Share)
+  engine.POST("/archive.articles.patches.discard", patches.Discard)
+  engine.POST("/archive.articles.patches.release", patches.Release)
+
   var web = handler.NewWebHandler(
     meService,
     experienceService,
