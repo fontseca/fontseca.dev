@@ -508,17 +508,17 @@ func main() {
     articles        = handler.NewArticlesHandler(articlesService)
   )
 
-  engine.GET("archive.articles.list", articles.Get)
-  engine.GET("archive.articles.hidden.list", articles.GetHidden)
-  engine.GET("archive.articles.info", articles.GetByID)
-  engine.POST("archive.articles.amend", articles.Amend)
-  engine.POST("archive.articles.hide", articles.Hide)
-  engine.POST("archive.articles.show", articles.Show)
-  engine.POST("archive.articles.remove", articles.Remove)
-  engine.POST("archive.articles.pin", articles.Pin)
-  engine.POST("archive.articles.unpin", articles.Unpin)
-  engine.POST("archive.articles.topics.add", articles.AddTopic)
-  engine.POST("archive.articles.topics.remove", articles.RemoveTopic)
+  engine.GET("/archive.articles.list", articles.Get)
+  engine.GET("/archive.articles.hidden.list", articles.GetHidden)
+  engine.GET("/archive.articles.info", articles.GetByID)
+  engine.POST("/archive.articles.amend", articles.Amend)
+  engine.POST("/archive.articles.hide", articles.Hide)
+  engine.POST("/archive.articles.show", articles.Show)
+  engine.POST("/archive.articles.remove", articles.Remove)
+  engine.POST("/archive.articles.pin", articles.Pin)
+  engine.POST("/archive.articles.unpin", articles.Unpin)
+  engine.POST("/archive.articles.topics.add", articles.AddTopic)
+  engine.POST("/archive.articles.topics.remove", articles.RemoveTopic)
 
   var web = handler.NewWebHandler(
     meService,
