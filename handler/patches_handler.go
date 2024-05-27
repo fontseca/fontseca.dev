@@ -1,7 +1,9 @@
 package handler
 
 import (
+  "fontseca.dev/problem"
   "fontseca.dev/service"
+  "fontseca.dev/transfer"
   "github.com/gin-gonic/gin"
   "net/http"
 )
@@ -22,4 +24,25 @@ func (h *PatchesHandler) Get(c *gin.Context) {
   }
 
   c.JSON(http.StatusOK, patches)
+}
+
+func (h *PatchesHandler) Revise(c *gin.Context) {
+  patch, ok := c.GetPostForm("patch_uuid")
+
+  if !ok {
+    problem.NewMissingParameter("patch_uuid").Emit(c.Writer)
+    return
+  }
+
+  var revision transfer.ArticleUpdate
+
+  if err := bindPostForm(c, &revision); check(err, c.Writer) {
+    return
+  }
+
+  if err := h.patches.Revise(c, patch, &revision); check(err, c.Writer) {
+    return
+  }
+
+  c.Status(http.StatusNoContent)
 }
