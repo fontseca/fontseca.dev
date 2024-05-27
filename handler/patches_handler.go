@@ -78,3 +78,18 @@ func (h *PatchesHandler) Discard(c *gin.Context) {
 
   c.Status(http.StatusNoContent)
 }
+
+func (h *PatchesHandler) Release(c *gin.Context) {
+  draft, ok := c.GetPostForm("patch_uuid")
+
+  if !ok {
+    problem.NewMissingParameter("patch_uuid").Emit(c.Writer)
+    return
+  }
+
+  if err := h.patches.Release(c, draft); check(err, c.Writer) {
+    return
+  }
+
+  c.Status(http.StatusNoContent)
+}
