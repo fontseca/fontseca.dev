@@ -332,3 +332,81 @@ func TestPatchesHandler_Discard(t *testing.T) {
     assert.Contains(t, recorder.Result().Header.Get("Content-Type"), "application/problem+json")
   })
 }
+
+func TestPatchesHandler_Release(t *testing.T) {
+  const (
+    routine = "Release"
+    method  = http.MethodPost
+    target  = "/archive.articles.patches.release"
+  )
+
+  request := httptest.NewRequest(method, target, nil)
+  id := uuid.NewString()
+
+  _ = request.ParseForm()
+
+  request.PostForm.Add("patch_uuid", id)
+
+  t.Run("success", func(t *testing.T) {
+    expectedStatusCode := http.StatusNoContent
+
+    s := mocks.NewPatchesService()
+    s.On(routine, mock.AnythingOfType("*gin.Context"), id).Return(nil)
+
+    engine := gin.Default()
+    engine.POST(target, NewPatchesHandler(s).Release)
+
+    recorder := httptest.NewRecorder()
+
+    engine.ServeHTTP(recorder, request)
+
+    assert.Equal(t, expectedStatusCode, recorder.Code)
+    assert.Empty(t, recorder.Body)
+    assert.Empty(t, recorder.Result().Cookies())
+  })
+
+  t.Run("expected problem detail", func(t *testing.T) {
+    expectedStatusCode := http.StatusBadRequest
+    expectBodyContains := "Expected problem detail."
+
+    expected := &problem.Problem{}
+    expected.Status(expectedStatusCode)
+    expected.Detail(expectBodyContains)
+
+    s := mocks.NewPatchesService()
+    s.On(routine, mock.AnythingOfType("*gin.Context"), id).Return(expected)
+
+    engine := gin.Default()
+    engine.POST(target, NewPatchesHandler(s).Release)
+
+    recorder := httptest.NewRecorder()
+
+    engine.ServeHTTP(recorder, request)
+
+    assert.Equal(t, expectedStatusCode, recorder.Code)
+    assert.Contains(t, recorder.Body.String(), expectBodyContains)
+    assert.Empty(t, recorder.Result().Cookies())
+    assert.Contains(t, recorder.Result().Header.Get("Content-Type"), "application/problem+json")
+  })
+
+  t.Run("unexpected error", func(t *testing.T) {
+    unexpected := errors.New("unexpected error")
+    expectedStatusCode := http.StatusInternalServerError
+    expectBodyContains := "An unexpected error occurred while processing your request"
+
+    s := mocks.NewPatchesService()
+    s.On(routine, mock.AnythingOfType("*gin.Context"), id).Return(unexpected)
+
+    engine := gin.Default()
+    engine.POST(target, NewPatchesHandler(s).Release)
+
+    recorder := httptest.NewRecorder()
+
+    engine.ServeHTTP(recorder, request)
+
+    assert.Equal(t, expectedStatusCode, recorder.Code)
+    assert.Contains(t, recorder.Body.String(), expectBodyContains)
+    assert.Empty(t, recorder.Result().Cookies())
+    assert.Contains(t, recorder.Result().Header.Get("Content-Type"), "application/problem+json")
+  })
+}
