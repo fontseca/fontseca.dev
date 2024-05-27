@@ -158,3 +158,76 @@ func (o *DraftsService) Discard(ctx context.Context, draftUUID string) error {
 func (o *DraftsService) Revise(ctx context.Context, draftUUID string, revision *transfer.ArticleUpdate) error {
   return o.Called(ctx, draftUUID, revision).Error(0)
 }
+
+type ArticlesService struct {
+  mock.Mock
+}
+
+func NewArticlesService() *ArticlesService {
+  return new(ArticlesService)
+}
+
+func (o *ArticlesService) Get(ctx context.Context, needle string) (articles []*model.Article, err error) {
+  args := o.Called(ctx, needle)
+  arg0 := args.Get(0)
+
+  if nil != arg0 {
+    articles = arg0.([]*model.Article)
+  }
+
+  return articles, args.Error(1)
+}
+
+func (o *ArticlesService) GetHidden(ctx context.Context, needle string) (articles []*model.Article, err error) {
+  args := o.Called(ctx, needle)
+  arg0 := args.Get(0)
+
+  if nil != arg0 {
+    articles = arg0.([]*model.Article)
+  }
+
+  return articles, args.Error(1)
+}
+
+func (o *ArticlesService) GetByID(ctx context.Context, id string) (article *model.Article, err error) {
+  args := o.Called(ctx, id)
+  arg0 := args.Get(0)
+
+  if nil != arg0 {
+    article = arg0.(*model.Article)
+  }
+
+  return article, args.Error(1)
+}
+
+func (o *ArticlesService) Hide(ctx context.Context, id string) error {
+  return o.Called(ctx, id).Error(0)
+}
+
+func (o *ArticlesService) Show(ctx context.Context, id string) error {
+  return o.Called(ctx, id).Error(0)
+}
+
+func (o *ArticlesService) Amend(ctx context.Context, id string) error {
+  return o.Called(ctx, id).Error(0)
+}
+
+func (o *ArticlesService) Remove(ctx context.Context, id string) error {
+  return o.Called(ctx, id).Error(0)
+}
+
+func (o *ArticlesService) Pin(ctx context.Context, id string) error {
+  return o.Called(ctx, id).Error(0)
+}
+
+func (o *ArticlesService) Unpin(ctx context.Context, id string) error {
+  return o.Called(ctx, id).Error(0)
+}
+
+func (o *ArticlesService) AddTopic(ctx context.Context, articleUUID, topicUUID string) error {
+  return o.Called(ctx, articleUUID, topicUUID).Error(0)
+}
+
+func (o *ArticlesService) RemoveTopic(ctx context.Context, articleUUID, topicUUID string) error {
+  return o.Called(ctx, articleUUID, topicUUID).Error(0)
+}
