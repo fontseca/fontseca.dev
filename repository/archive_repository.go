@@ -406,26 +406,32 @@ func (r *archiveRepository) GetByID(ctx context.Context, id string, isDraft bool
   }
 
   getArticleByUUIDQuery := `
-  SELECT "uuid",
-         "title",
-         "author",
-         "slug",
-         "read_time",
-         "content",
-         "draft",
-         "pinned",
-         "drafted_at",
-         "published_at",
-         "updated_at",
-         "modified_at"
-    FROM "article"
-   WHERE "uuid" = @uuid
-     AND "draft" IS @is_draft
-     AND CASE WHEN @is_draft
-              THEN "published_at" IS NULL
-              ELSE "published_at" IS NOT NULL
-               AND "hidden" IS FALSE
-               END;`
+     SELECT a."uuid",
+            a."title",
+            a."author",
+            a."slug",
+            a."read_time",
+            a."content",
+            a."draft",
+            a."pinned",
+            a."drafted_at",
+            a."published_at",
+            a."updated_at",
+            a."modified_at",
+            t."id",
+            t."name",
+            t."created_at",
+            t."updated_at"
+       FROM "article" a
+  LEFT JOIN "topic" t
+         ON t."id" = a."topic" 
+      WHERE "uuid" = @uuid
+        AND "draft" IS @is_draft
+        AND CASE WHEN @is_draft
+                 THEN "published_at" IS NULL
+                 ELSE "published_at" IS NOT NULL
+                  AND "hidden" IS FALSE
+                  END;`
 
   ctx, cancel = context.WithTimeout(ctx, 3*time.Second)
   defer cancel()
@@ -437,6 +443,13 @@ func (r *archiveRepository) GetByID(ctx context.Context, id string, isDraft bool
   if 0 < len(tags) {
     article.Tags = tags
   }
+
+  var (
+    nullableTopicID        sql.NullString
+    nullableTopicName      sql.NullString
+    nullableTopicCreatedAt sql.Null[time.Time]
+    nullableTopicUpdatedAt sql.Null[time.Time]
+  )
 
   err = row.Scan(
     &article.UUID,
@@ -451,7 +464,33 @@ func (r *archiveRepository) GetByID(ctx context.Context, id string, isDraft bool
     &article.PublishedAt,
     &article.UpdatedAt,
     &article.ModifiedAt,
+    &nullableTopicID,
+    &nullableTopicName,
+    &nullableTopicCreatedAt,
+    &nullableTopicUpdatedAt,
   )
+
+  if nullableTopicID.Valid {
+    article.Topic = new(model.Topic)
+    article.Topic.ID = nullableTopicID.String
+    article.Topic.Name = nullableTopicName.String
+
+    value, err := nullableTopicCreatedAt.Value()
+
+    if nil != err {
+      slog.Error(err.Error())
+    } else {
+      article.Topic.CreatedAt = value.(time.Time)
+    }
+
+    value, err = nullableTopicUpdatedAt.Value()
+
+    if nil != err {
+      slog.Error(err.Error())
+    } else {
+      article.Topic.UpdatedAt = value.(time.Time)
+    }
+  }
 
   if nil != err {
     if errors.Is(err, sql.ErrNoRows) {
