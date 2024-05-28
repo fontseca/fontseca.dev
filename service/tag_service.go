@@ -10,34 +10,35 @@ import (
   "strings"
 )
 
-// TopicsService is a high level provider for articles.
-type TopicsService interface {
-  // Add adds a new topic.
-  Add(ctx context.Context, creation *transfer.TopicCreation) (err error)
+// TagsService is a high level provider for tags.
+type TagsService interface {
+  // Add adds a new tag.
+  Add(ctx context.Context, creation *transfer.TagCreation) error
 
-  // Get retrieves all the topics.
-  Get(ctx context.Context) (topics []*model.Topic, err error)
+  // Get retrieves all the tags.
+  Get(ctx context.Context) (tags []*model.Tag, err error)
 
-  // Update updates an existing topic.
-  Update(ctx context.Context, id string, update *transfer.TopicUpdate) error
+  // Update updates an existing tag.
+  Update(ctx context.Context, id string, update *transfer.TagUpdate) error
 
-  // Remove removes a topic and detaches it from any article that uses it.
+  // Remove removes a tag and detaches it from any
+  // article that currently uses it.
   Remove(ctx context.Context, id string) error
 }
 
-type topicsService struct {
-  cache []*model.Topic
-  r     repository.TopicsRepository
+type tagsService struct {
+  cache []*model.Tag
+  r     repository.TagsRepository
 }
 
-func NewTopicsService(r repository.TopicsRepository) TopicsService {
-  return &topicsService{
+func NewTagsService(r repository.TagsRepository) TagsService {
+  return &tagsService{
     cache: nil,
     r:     r,
   }
 }
 
-func (s *topicsService) Add(ctx context.Context, creation *transfer.TopicCreation) error {
+func (s *tagsService) Add(ctx context.Context, creation *transfer.TagCreation) error {
   if nil == creation {
     err := errors.New("nil value for parameter: creation")
     slog.Error(err.Error())
@@ -59,23 +60,23 @@ func (s *topicsService) Add(ctx context.Context, creation *transfer.TopicCreatio
   return nil
 }
 
-func (s *topicsService) Get(ctx context.Context) (topics []*model.Topic, err error) {
+func (s *tagsService) Get(ctx context.Context) (tags []*model.Tag, err error) {
   if s.hasCache() {
     return s.cache, nil
   }
 
-  topics, err = s.r.Get(ctx)
+  tags, err = s.r.Get(ctx)
 
   if nil != err {
     return nil, err
   }
 
-  s.cache = topics
+  s.cache = tags
 
-  return topics, err
+  return tags, err
 }
 
-func (s *topicsService) Update(ctx context.Context, id string, update *transfer.TopicUpdate) error {
+func (s *tagsService) Update(ctx context.Context, id string, update *transfer.TagUpdate) error {
   if nil == update {
     err := errors.New("nil value for parameter: creation")
     slog.Error(err.Error())
@@ -97,7 +98,7 @@ func (s *topicsService) Update(ctx context.Context, id string, update *transfer.
   return nil
 }
 
-func (s *topicsService) Remove(ctx context.Context, id string) error {
+func (s *tagsService) Remove(ctx context.Context, id string) error {
   err := s.r.Remove(ctx, id)
 
   if nil != err {
@@ -109,11 +110,11 @@ func (s *topicsService) Remove(ctx context.Context, id string) error {
   return nil
 }
 
-func (s *topicsService) setCache(ctx context.Context) {
+func (s *tagsService) setCache(ctx context.Context) {
   s.cache = nil
   s.cache, _ = s.Get(ctx)
 }
 
-func (s *topicsService) hasCache() bool {
+func (s *tagsService) hasCache() bool {
   return 0 < len(s.cache)
 }

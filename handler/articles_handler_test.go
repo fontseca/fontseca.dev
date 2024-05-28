@@ -752,30 +752,30 @@ func TestArticlesHandler_Unpin(t *testing.T) {
   })
 }
 
-func TestArticlesHandler_AddTopic(t *testing.T) {
+func TestArticlesHandler_AddTag(t *testing.T) {
   const (
-    routine = "AddTopic"
+    routine = "AddTag"
     method  = http.MethodPost
-    target  = "/archive.articles.topics.add"
+    target  = "/archive.articles.tags.add"
   )
 
   request := httptest.NewRequest(method, target, nil)
   articleUUID := uuid.NewString()
-  topicID := uuid.NewString()
+  tagID := uuid.NewString()
 
   _ = request.ParseForm()
 
   request.PostForm.Add("article_uuid", articleUUID)
-  request.PostForm.Add("topic_id", topicID)
+  request.PostForm.Add("tag_id", tagID)
 
   t.Run("success", func(t *testing.T) {
     expectedStatusCode := http.StatusNoContent
 
     s := mocks.NewArticlesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), articleUUID, topicID).Return(nil)
+    s.On(routine, mock.AnythingOfType("*gin.Context"), articleUUID, tagID).Return(nil)
 
     engine := gin.Default()
-    engine.POST(target, NewArticlesHandler(s).AddTopic)
+    engine.POST(target, NewArticlesHandler(s).AddTag)
 
     recorder := httptest.NewRecorder()
 
@@ -795,10 +795,10 @@ func TestArticlesHandler_AddTopic(t *testing.T) {
     expected.Detail(expectBodyContains)
 
     s := mocks.NewArticlesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), articleUUID, topicID).Return(expected)
+    s.On(routine, mock.AnythingOfType("*gin.Context"), articleUUID, tagID).Return(expected)
 
     engine := gin.Default()
-    engine.POST(target, NewArticlesHandler(s).AddTopic)
+    engine.POST(target, NewArticlesHandler(s).AddTag)
 
     recorder := httptest.NewRecorder()
 
@@ -816,10 +816,10 @@ func TestArticlesHandler_AddTopic(t *testing.T) {
     expectBodyContains := "An unexpected error occurred while processing your request"
 
     s := mocks.NewArticlesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), articleUUID, topicID).Return(unexpected)
+    s.On(routine, mock.AnythingOfType("*gin.Context"), articleUUID, tagID).Return(unexpected)
 
     engine := gin.Default()
-    engine.POST(target, NewArticlesHandler(s).AddTopic)
+    engine.POST(target, NewArticlesHandler(s).AddTag)
 
     recorder := httptest.NewRecorder()
 
@@ -832,30 +832,30 @@ func TestArticlesHandler_AddTopic(t *testing.T) {
   })
 }
 
-func TestArticlesHandler_RemoveTopic(t *testing.T) {
+func TestArticlesHandler_RemoveTag(t *testing.T) {
   const (
-    routine = "RemoveTopic"
+    routine = "RemoveTag"
     method  = http.MethodPost
-    target  = "/archive.articles.topics.remove"
+    target  = "/archive.articles.tags.remove"
   )
 
   request := httptest.NewRequest(method, target, nil)
   articlesUUID := uuid.NewString()
-  topicID := uuid.NewString()
+  tagID := uuid.NewString()
 
   _ = request.ParseForm()
 
   request.PostForm.Add("article_uuid", articlesUUID)
-  request.PostForm.Add("topic_id", topicID)
+  request.PostForm.Add("tag_id", tagID)
 
   t.Run("success", func(t *testing.T) {
     expectedStatusCode := http.StatusNoContent
 
     s := mocks.NewArticlesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), articlesUUID, topicID).Return(nil)
+    s.On(routine, mock.AnythingOfType("*gin.Context"), articlesUUID, tagID).Return(nil)
 
     engine := gin.Default()
-    engine.POST(target, NewArticlesHandler(s).RemoveTopic)
+    engine.POST(target, NewArticlesHandler(s).RemoveTag)
 
     recorder := httptest.NewRecorder()
 
@@ -875,10 +875,10 @@ func TestArticlesHandler_RemoveTopic(t *testing.T) {
     expected.Detail(expectBodyContains)
 
     s := mocks.NewArticlesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), articlesUUID, topicID).Return(expected)
+    s.On(routine, mock.AnythingOfType("*gin.Context"), articlesUUID, tagID).Return(expected)
 
     engine := gin.Default()
-    engine.POST(target, NewArticlesHandler(s).RemoveTopic)
+    engine.POST(target, NewArticlesHandler(s).RemoveTag)
 
     recorder := httptest.NewRecorder()
 
@@ -896,10 +896,10 @@ func TestArticlesHandler_RemoveTopic(t *testing.T) {
     expectBodyContains := "An unexpected error occurred while processing your request"
 
     s := mocks.NewArticlesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), articlesUUID, topicID).Return(unexpected)
+    s.On(routine, mock.AnythingOfType("*gin.Context"), articlesUUID, tagID).Return(unexpected)
 
     engine := gin.Default()
-    engine.POST(target, NewArticlesHandler(s).RemoveTopic)
+    engine.POST(target, NewArticlesHandler(s).RemoveTag)
 
     recorder := httptest.NewRecorder()
 

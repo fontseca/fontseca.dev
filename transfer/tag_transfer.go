@@ -1,13 +1,13 @@
 package transfer
 
-// TopicCreation represents the data required to create a new topic entry.
-type TopicCreation struct {
+// TagCreation represents the data required to create a new tag entry.
+type TagCreation struct {
   ID   string
   Name string `json:"name" binding:"required,max=32"`
 }
 
-// TopicUpdate represents the data required to update an existing topic entry.
-type TopicUpdate struct {
+// TagUpdate represents the data required to update an existing tag entry.
+type TagUpdate struct {
   ID   string
   Name string `json:"name" binding:"required,max=32"`
 }

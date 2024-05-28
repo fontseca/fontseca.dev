@@ -331,18 +331,18 @@ func TestArticlesService_Unpin(t *testing.T) {
   })
 }
 
-func TestArticlesService_AddTopic(t *testing.T) {
-  const routine = "AddTopic"
+func TestArticlesService_AddTag(t *testing.T) {
+  const routine = "AddTag"
 
   ctx := context.TODO()
   articleUUID := uuid.New().String()
-  topicID := uuid.New().String()
+  tagID := uuid.New().String()
 
   t.Run("success", func(t *testing.T) {
     r := mocks.NewArchiveRepository()
-    r.On(routine, ctx, articleUUID, topicID, mock.Anything).Return(nil)
+    r.On(routine, ctx, articleUUID, tagID, mock.Anything).Return(nil)
 
-    assert.NoError(t, NewArticlesService(r).AddTopic(ctx, articleUUID, topicID))
+    assert.NoError(t, NewArticlesService(r).AddTag(ctx, articleUUID, tagID))
   })
 
   t.Run("wrong draft uuid", func(t *testing.T) {
@@ -351,7 +351,7 @@ func TestArticlesService_AddTopic(t *testing.T) {
     r := mocks.NewArchiveRepository()
     r.AssertNotCalled(t, routine)
 
-    assert.Error(t, NewArticlesService(r).AddTopic(ctx, articleUUID, topicID))
+    assert.Error(t, NewArticlesService(r).AddTag(ctx, articleUUID, tagID))
   })
 
   articleUUID = uuid.NewString()
@@ -362,43 +362,31 @@ func TestArticlesService_AddTopic(t *testing.T) {
     r := mocks.NewArchiveRepository()
     r.On(routine, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(unexpected)
 
-    err := NewArticlesService(r).AddTopic(ctx, articleUUID, uuid.NewString())
+    err := NewArticlesService(r).AddTag(ctx, articleUUID, uuid.NewString())
 
     assert.ErrorIs(t, err, unexpected)
   })
 }
 
-func TestArticlesService_RemoveTopic(t *testing.T) {
-  const routine = "RemoveTopic"
+func TestArticlesService_RemoveTag(t *testing.T) {
+  const routine = "RemoveTag"
 
   ctx := context.TODO()
   articleUUID := uuid.New().String()
-  topicID := uuid.New().String()
+  tagID := uuid.New().String()
 
   t.Run("success", func(t *testing.T) {
     r := mocks.NewArchiveRepository()
-    r.On(routine, ctx, articleUUID, topicID, mock.Anything).Return(nil)
+    r.On(routine, ctx, articleUUID, tagID, mock.Anything).Return(nil)
 
-    assert.NoError(t, NewArticlesService(r).RemoveTopic(ctx, articleUUID, topicID))
+    assert.NoError(t, NewArticlesService(r).RemoveTag(ctx, articleUUID, tagID))
   })
 
   t.Run("wrong draft uuid", func(t *testing.T) {
-    articleUUID = "e4d06ba7-f086-47dc-9f5e"
-
     r := mocks.NewArchiveRepository()
     r.AssertNotCalled(t, routine)
 
-    assert.Error(t, NewArticlesService(r).RemoveTopic(ctx, articleUUID, topicID))
-  })
-
-  t.Run("wrong topic uuid", func(t *testing.T) {
-    articleUUID = topicID
-    topicID = "e4d06ba7-f086-47dc-9f5e"
-
-    r := mocks.NewArchiveRepository()
-    r.AssertNotCalled(t, routine)
-
-    assert.Error(t, NewArticlesService(r).RemoveTopic(ctx, articleUUID, topicID))
+    assert.Error(t, NewArticlesService(r).RemoveTag(ctx, "e4d06ba7-f086-47dc-9f5e", tagID))
   })
 
   t.Run("gets a repository failure", func(t *testing.T) {
@@ -407,7 +395,7 @@ func TestArticlesService_RemoveTopic(t *testing.T) {
     r := mocks.NewArchiveRepository()
     r.On(routine, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(unexpected)
 
-    err := NewArticlesService(r).RemoveTopic(ctx, articleUUID, uuid.NewString())
+    err := NewArticlesService(r).RemoveTag(ctx, articleUUID, uuid.NewString())
 
     assert.ErrorIs(t, err, unexpected)
   })

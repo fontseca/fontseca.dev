@@ -354,30 +354,30 @@ func TestDraftsHandler_GetByID(t *testing.T) {
   })
 }
 
-func TestDraftsHandler_AddTopic(t *testing.T) {
+func TestDraftsHandler_AddTag(t *testing.T) {
   const (
-    routine = "AddTopic"
+    routine = "AddTag"
     method  = http.MethodPost
-    target  = "/archive.drafts.topics.add"
+    target  = "/archive.drafts.tags.add"
   )
 
   request := httptest.NewRequest(method, target, nil)
   draftUUID := uuid.NewString()
-  topicID := uuid.NewString()
+  tagID := uuid.NewString()
 
   _ = request.ParseForm()
 
   request.PostForm.Add("draft_uuid", draftUUID)
-  request.PostForm.Add("topic_id", topicID)
+  request.PostForm.Add("tag_id", tagID)
 
   t.Run("success", func(t *testing.T) {
     expectedStatusCode := http.StatusNoContent
 
     s := mocks.NewDraftsService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), draftUUID, topicID).Return(nil)
+    s.On(routine, mock.AnythingOfType("*gin.Context"), draftUUID, tagID).Return(nil)
 
     engine := gin.Default()
-    engine.POST(target, NewDraftsHandler(s).AddTopic)
+    engine.POST(target, NewDraftsHandler(s).AddTag)
 
     recorder := httptest.NewRecorder()
 
@@ -397,10 +397,10 @@ func TestDraftsHandler_AddTopic(t *testing.T) {
     expected.Detail(expectBodyContains)
 
     s := mocks.NewDraftsService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), draftUUID, topicID).Return(expected)
+    s.On(routine, mock.AnythingOfType("*gin.Context"), draftUUID, tagID).Return(expected)
 
     engine := gin.Default()
-    engine.POST(target, NewDraftsHandler(s).AddTopic)
+    engine.POST(target, NewDraftsHandler(s).AddTag)
 
     recorder := httptest.NewRecorder()
 
@@ -418,10 +418,10 @@ func TestDraftsHandler_AddTopic(t *testing.T) {
     expectBodyContains := "An unexpected error occurred while processing your request"
 
     s := mocks.NewDraftsService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), draftUUID, topicID).Return(unexpected)
+    s.On(routine, mock.AnythingOfType("*gin.Context"), draftUUID, tagID).Return(unexpected)
 
     engine := gin.Default()
-    engine.POST(target, NewDraftsHandler(s).AddTopic)
+    engine.POST(target, NewDraftsHandler(s).AddTag)
 
     recorder := httptest.NewRecorder()
 
@@ -434,30 +434,30 @@ func TestDraftsHandler_AddTopic(t *testing.T) {
   })
 }
 
-func TestDraftsHandler_RemoveTopic(t *testing.T) {
+func TestDraftsHandler_RemoveTag(t *testing.T) {
   const (
-    routine = "RemoveTopic"
+    routine = "RemoveTag"
     method  = http.MethodPost
-    target  = "/archive.drafts.topics.remove"
+    target  = "/archive.drafts.tags.remove"
   )
 
   request := httptest.NewRequest(method, target, nil)
   draftUUID := uuid.NewString()
-  topicID := uuid.NewString()
+  tagID := uuid.NewString()
 
   _ = request.ParseForm()
 
   request.PostForm.Add("draft_uuid", draftUUID)
-  request.PostForm.Add("topic_id", topicID)
+  request.PostForm.Add("tag_id", tagID)
 
   t.Run("success", func(t *testing.T) {
     expectedStatusCode := http.StatusNoContent
 
     s := mocks.NewDraftsService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), draftUUID, topicID).Return(nil)
+    s.On(routine, mock.AnythingOfType("*gin.Context"), draftUUID, tagID).Return(nil)
 
     engine := gin.Default()
-    engine.POST(target, NewDraftsHandler(s).RemoveTopic)
+    engine.POST(target, NewDraftsHandler(s).RemoveTag)
 
     recorder := httptest.NewRecorder()
 
@@ -477,10 +477,10 @@ func TestDraftsHandler_RemoveTopic(t *testing.T) {
     expected.Detail(expectBodyContains)
 
     s := mocks.NewDraftsService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), draftUUID, topicID).Return(expected)
+    s.On(routine, mock.AnythingOfType("*gin.Context"), draftUUID, tagID).Return(expected)
 
     engine := gin.Default()
-    engine.POST(target, NewDraftsHandler(s).RemoveTopic)
+    engine.POST(target, NewDraftsHandler(s).RemoveTag)
 
     recorder := httptest.NewRecorder()
 
@@ -498,10 +498,10 @@ func TestDraftsHandler_RemoveTopic(t *testing.T) {
     expectBodyContains := "An unexpected error occurred while processing your request"
 
     s := mocks.NewDraftsService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), draftUUID, topicID).Return(unexpected)
+    s.On(routine, mock.AnythingOfType("*gin.Context"), draftUUID, tagID).Return(unexpected)
 
     engine := gin.Default()
-    engine.POST(target, NewDraftsHandler(s).RemoveTopic)
+    engine.POST(target, NewDraftsHandler(s).RemoveTag)
 
     recorder := httptest.NewRecorder()
 

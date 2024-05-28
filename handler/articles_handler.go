@@ -138,7 +138,7 @@ func (h *ArticlesHandler) Unpin(c *gin.Context) {
   c.Status(http.StatusNoContent)
 }
 
-func (h *ArticlesHandler) AddTopic(c *gin.Context) {
+func (h *ArticlesHandler) AddTag(c *gin.Context) {
   article, ok := c.GetPostForm("article_uuid")
 
   if !ok {
@@ -146,21 +146,21 @@ func (h *ArticlesHandler) AddTopic(c *gin.Context) {
     return
   }
 
-  topic, ok := c.GetPostForm("topic_id")
+  tag, ok := c.GetPostForm("tag_id")
 
   if !ok {
-    problem.NewMissingParameter("topic_id").Emit(c.Writer)
+    problem.NewMissingParameter("tag_id").Emit(c.Writer)
     return
   }
 
-  if err := h.articles.AddTopic(c, article, topic); check(err, c.Writer) {
+  if err := h.articles.AddTag(c, article, tag); check(err, c.Writer) {
     return
   }
 
   c.Status(http.StatusNoContent)
 }
 
-func (h *ArticlesHandler) RemoveTopic(c *gin.Context) {
+func (h *ArticlesHandler) RemoveTag(c *gin.Context) {
   article, ok := c.GetPostForm("article_uuid")
 
   if !ok {
@@ -168,14 +168,14 @@ func (h *ArticlesHandler) RemoveTopic(c *gin.Context) {
     return
   }
 
-  topic, ok := c.GetPostForm("topic_id")
+  tag, ok := c.GetPostForm("tag_id")
 
   if !ok {
-    problem.NewMissingParameter("topic_id").Emit(c.Writer)
+    problem.NewMissingParameter("tag_id").Emit(c.Writer)
     return
   }
 
-  if err := h.articles.RemoveTopic(c, article, topic); check(err, c.Writer) {
+  if err := h.articles.RemoveTag(c, article, tag); check(err, c.Writer) {
     return
   }
 

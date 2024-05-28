@@ -20,7 +20,7 @@ import (
 // and article patches.
 //
 // An article is a piece of writing about a particular subject in my
-// website's archive. Naturally, every article has one or more topics
+// website's archive. Naturally, every article has one or more tags
 // that are inherent to the discussion of the article.
 //
 // An article draft, or just draft, is a rough version of an article
@@ -84,15 +84,15 @@ type ArchiveRepository interface {
   // If you want to remove a draft, use Discard instead.
   Remove(ctx context.Context, id string) error
 
-  // AddTopic adds a topic to the article. If the topic already
+  // AddTag adds a tag to the article. If the tag already
   // exists, it returns an error informing about a conflicting
   // state.
-  AddTopic(ctx context.Context, articleID, topicID string, isDraft ...bool) error
+  AddTag(ctx context.Context, articleID, tagID string, isDraft ...bool) error
 
-  // RemoveTopic removes a topic from the article. If the article has
-  // no topic identified by its UUID, it returns an error indication
+  // RemoveTag removes a tag from the article. If the article has
+  // no tag identified by its UUID, it returns an error indication
   // a not found state.
-  RemoveTopic(ctx context.Context, articleID, topicID string, isDraft ...bool) error
+  RemoveTag(ctx context.Context, articleID, tagID string, isDraft ...bool) error
 
   // SetHidden hides or shows an article depending on the value of hidden.
   SetHidden(ctx context.Context, id string, hidden bool) error
@@ -243,20 +243,20 @@ func (r *archiveRepository) Publish(ctx context.Context, id string) error {
 }
 
 func (r *archiveRepository) Get(ctx context.Context, needle string, hidden, draftsOnly bool) (articles []*model.Article, err error) {
-  getTopicsQuery := `
+  getTagsQuery := `
      SELECT at."article_uuid", 
             t."id",
             t."name",
             t.created_at,
             t.updated_at
-       FROM "article_topic" at
-  LEFT JOIN "topic" t
-         ON at."topic_id" = t."id";`
+       FROM "article_tag" at
+  LEFT JOIN "tag" t
+         ON at."tag_id" = t."id";`
 
   ctx1, cancel := context.WithTimeout(ctx, 5*time.Second)
   defer cancel()
 
-  result, err := r.db.QueryContext(ctx1, getTopicsQuery)
+  result, err := r.db.QueryContext(ctx1, getTagsQuery)
   if err != nil {
     slog.Error(err.Error())
     return nil, err
@@ -264,18 +264,18 @@ func (r *archiveRepository) Get(ctx context.Context, needle string, hidden, draf
 
   defer result.Close()
 
-  articleTopicsDictionary := map[string][]*model.Topic{}
+  articleTagsDictionary := map[string][]*model.Tag{}
 
   for result.Next() {
     var articleID string
-    var topic model.Topic
+    var tag model.Tag
 
     err = result.Scan(
       &articleID,
-      &topic.ID,
-      &topic.Name,
-      &topic.CreatedAt,
-      &topic.UpdatedAt,
+      &tag.ID,
+      &tag.Name,
+      &tag.CreatedAt,
+      &tag.UpdatedAt,
     )
 
     if nil != err {
@@ -283,7 +283,7 @@ func (r *archiveRepository) Get(ctx context.Context, needle string, hidden, draf
       return nil, err
     }
 
-    articleTopicsDictionary[articleID] = append(articleTopicsDictionary[articleID], &topic)
+    articleTagsDictionary[articleID] = append(articleTagsDictionary[articleID], &tag)
   }
 
   getArticlesQuery := `
@@ -356,7 +356,7 @@ func (r *archiveRepository) Get(ctx context.Context, needle string, hidden, draf
       return nil, err
     }
 
-    article.Topics = articleTopicsDictionary[article.UUID.String()]
+    article.Tags = articleTagsDictionary[article.UUID.String()]
     articles = append(articles, &article)
   }
 
@@ -364,20 +364,20 @@ func (r *archiveRepository) Get(ctx context.Context, needle string, hidden, draf
 }
 
 func (r *archiveRepository) GetByID(ctx context.Context, id string, isDraft bool) (article *model.Article, err error) {
-  getTopicsQuery := `
+  getTagsQuery := `
      SELECT t."id",
             t."name",
             t.created_at,
             t.updated_at
-       FROM "article_topic" at
-  LEFT JOIN "topic" t
-         ON at."topic_id" = t."id"
+       FROM "article_tag" at
+  LEFT JOIN "tag" t
+         ON at."tag_id" = t."id"
       WHERE "article_uuid" = @article_uuid;`
 
   ctx1, cancel := context.WithTimeout(ctx, 3*time.Second)
   defer cancel()
 
-  result, err := r.db.QueryContext(ctx1, getTopicsQuery, sql.Named("article_uuid", id))
+  result, err := r.db.QueryContext(ctx1, getTagsQuery, sql.Named("article_uuid", id))
   if err != nil {
     slog.Error(err.Error())
     return nil, err
@@ -385,16 +385,16 @@ func (r *archiveRepository) GetByID(ctx context.Context, id string, isDraft bool
 
   defer result.Close()
 
-  topics := make([]*model.Topic, 0)
+  tags := make([]*model.Tag, 0)
 
   for result.Next() {
-    var topic model.Topic
+    var tag model.Tag
 
     err = result.Scan(
-      &topic.ID,
-      &topic.Name,
-      &topic.CreatedAt,
-      &topic.UpdatedAt,
+      &tag.ID,
+      &tag.Name,
+      &tag.CreatedAt,
+      &tag.UpdatedAt,
     )
 
     if nil != err {
@@ -402,7 +402,7 @@ func (r *archiveRepository) GetByID(ctx context.Context, id string, isDraft bool
       return nil, err
     }
 
-    topics = append(topics, &topic)
+    tags = append(tags, &tag)
   }
 
   getArticleByUUIDQuery := `
@@ -434,8 +434,8 @@ func (r *archiveRepository) GetByID(ctx context.Context, id string, isDraft bool
 
   article = new(model.Article)
 
-  if 0 < len(topics) {
-    article.Topics = topics
+  if 0 < len(tags) {
+    article.Tags = tags
   }
 
   err = row.Scan(
@@ -589,7 +589,7 @@ func (r *archiveRepository) Remove(ctx context.Context, id string) error {
   return nil
 }
 
-func (r *archiveRepository) AddTopic(ctx context.Context, articleID, topicID string, isDraft ...bool) error {
+func (r *archiveRepository) AddTag(ctx context.Context, articleID, tagID string, isDraft ...bool) error {
   var isArticleDraft bool
 
   if 0 < len(isDraft) {
@@ -631,17 +631,17 @@ func (r *archiveRepository) AddTopic(ctx context.Context, articleID, topicID str
     return problem.NewNotFound(articleID, "article")
   }
 
-  topicExistsQuery := `
+  tagExistsQuery := `
   SELECT count (*)
-    FROM "topic"
+    FROM "tag"
    WHERE "id" = $1;`
 
   ctx1, cancel = context.WithTimeout(ctx, 3*time.Second)
   defer cancel()
 
-  var topicExists bool
+  var tagExists bool
 
-  err = r.db.QueryRowContext(ctx, topicExistsQuery, topicID).Scan(&topicExists)
+  err = r.db.QueryRowContext(ctx, tagExistsQuery, tagID).Scan(&tagExists)
   if nil != err {
     if !errors.Is(err, sql.ErrNoRows) {
       slog.Error(err.Error())
@@ -649,25 +649,25 @@ func (r *archiveRepository) AddTopic(ctx context.Context, articleID, topicID str
     }
   }
 
-  if !topicExists {
-    return problem.NewNotFound(topicID, "topic")
+  if !tagExists {
+    return problem.NewNotFound(tagID, "tag")
   }
 
-  topicAlreadyExistsQuery := `
+  tagAlreadyExistsQuery := `
   SELECT count (*)
-    FROM "article_topic"
+    FROM "article_tag"
    WHERE "article_uuid" = @article_uuid
-     AND "topic_id" = @topic_id;`
+     AND "tag_id" = @tag_id;`
 
   ctx, cancel = context.WithTimeout(ctx, 3*time.Second)
   defer cancel()
 
-  var topicAlreadyExists bool
+  var tagAlreadyExists bool
 
-  err = r.db.QueryRowContext(ctx, topicAlreadyExistsQuery,
+  err = r.db.QueryRowContext(ctx, tagAlreadyExistsQuery,
     sql.Named("article_uuid", articleID),
-    sql.Named("topic_id", topicID)).
-    Scan(&topicAlreadyExists)
+    sql.Named("tag_id", tagID)).
+    Scan(&tagAlreadyExists)
 
   if nil != err {
     if !errors.Is(err, sql.ErrNoRows) {
@@ -676,20 +676,20 @@ func (r *archiveRepository) AddTopic(ctx context.Context, articleID, topicID str
     }
   }
 
-  if topicAlreadyExists {
+  if tagAlreadyExists {
     p := problem.Problem{}
     p.Status(http.StatusConflict)
-    p.Title("Could not add a topic.")
+    p.Title("Could not add a tag.")
 
-    detail := "This topic is already added to the current article."
+    detail := "This tag is already added to the current article."
 
     if isArticleDraft {
-      detail = "This topic is already added to the current article draft."
+      detail = "This tag is already added to the current article draft."
     }
 
     p.Detail(detail)
     p.With("article_uuid", articleID)
-    p.With("topic_id", topicID)
+    p.With("tag_id", tagID)
 
     return &p
   }
@@ -702,16 +702,16 @@ func (r *archiveRepository) AddTopic(ctx context.Context, articleID, topicID str
 
   defer tx.Rollback()
 
-  addTopicQuery := `
-  INSERT INTO "article_topic" ("article_uuid", "topic_id")
-                       VALUES (@article_uuid, @topic_id);`
+  addTagQuery := `
+  INSERT INTO "article_tag" ("article_uuid", "tag_id")
+                       VALUES (@article_uuid, @tag_id);`
 
   ctx, cancel = context.WithTimeout(ctx, 2*time.Second)
   defer cancel()
 
-  result, err := tx.ExecContext(ctx, addTopicQuery,
+  result, err := tx.ExecContext(ctx, addTagQuery,
     sql.Named("article_uuid", articleID),
-    sql.Named("topic_id", topicID))
+    sql.Named("tag_id", tagID))
 
   if nil != err {
     slog.Error(err.Error())
@@ -721,17 +721,17 @@ func (r *archiveRepository) AddTopic(ctx context.Context, articleID, topicID str
   if affected, _ := result.RowsAffected(); 1 != affected {
     p := problem.Problem{}
     p.Status(http.StatusAccepted)
-    p.Title("Could not add a topic.")
+    p.Title("Could not add a tag.")
 
-    detail := "Could not add topic to this article."
+    detail := "Could not add tag to this article."
 
     if isArticleDraft {
-      detail = "Could not add topic to this article draft."
+      detail = "Could not add tag to this article draft."
     }
 
     p.Detail(detail)
     p.With("article_uuid", articleID)
-    p.With("topic_id", topicID)
+    p.With("tag_id", tagID)
 
     return &p
   }
@@ -744,7 +744,7 @@ func (r *archiveRepository) AddTopic(ctx context.Context, articleID, topicID str
   return nil
 }
 
-func (r *archiveRepository) RemoveTopic(ctx context.Context, articleID, topicID string, isDraft ...bool) error {
+func (r *archiveRepository) RemoveTag(ctx context.Context, articleID, tagID string, isDraft ...bool) error {
   var isArticleDraft bool
 
   if 0 < len(isDraft) {
@@ -786,17 +786,17 @@ func (r *archiveRepository) RemoveTopic(ctx context.Context, articleID, topicID 
     return problem.NewNotFound(articleID, "article")
   }
 
-  topicExistsQuery := `
+  tagExistsQuery := `
   SELECT count (*)
-    FROM "topic"
+    FROM "tag"
    WHERE "id" = $1;`
 
   ctx1, cancel = context.WithTimeout(ctx, 3*time.Second)
   defer cancel()
 
-  var topicExists bool
+  var tagExists bool
 
-  err = r.db.QueryRowContext(ctx, topicExistsQuery, topicID).Scan(&topicExists)
+  err = r.db.QueryRowContext(ctx, tagExistsQuery, tagID).Scan(&tagExists)
   if nil != err {
     if !errors.Is(err, sql.ErrNoRows) {
       slog.Error(err.Error())
@@ -804,8 +804,8 @@ func (r *archiveRepository) RemoveTopic(ctx context.Context, articleID, topicID 
     }
   }
 
-  if !topicExists {
-    return problem.NewNotFound(topicID, "topic")
+  if !tagExists {
+    return problem.NewNotFound(tagID, "tag")
   }
 
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
@@ -816,17 +816,17 @@ func (r *archiveRepository) RemoveTopic(ctx context.Context, articleID, topicID 
 
   defer tx.Rollback()
 
-  removeTopicQuery := `
-  DELETE FROM "article_topic"
+  removeTagQuery := `
+  DELETE FROM "article_tag"
          WHERE "article_uuid" = @article_uuid
-           AND "topic_id" = @topic_id;`
+           AND "tag_id" = @tag_id;`
 
   ctx, cancel = context.WithTimeout(ctx, 3*time.Second)
   defer cancel()
 
-  result, err := tx.ExecContext(ctx, removeTopicQuery,
+  result, err := tx.ExecContext(ctx, removeTagQuery,
     sql.Named("article_uuid", articleID),
-    sql.Named("topic_id", topicID))
+    sql.Named("tag_id", tagID))
 
   if nil != err {
     slog.Error(err.Error())
@@ -836,10 +836,10 @@ func (r *archiveRepository) RemoveTopic(ctx context.Context, articleID, topicID 
   if affected, _ := result.RowsAffected(); 1 != affected {
     p := problem.Problem{}
     p.Status(http.StatusAccepted)
-    p.Title("Could not remove a topic.")
-    p.Detail("This article is no longer attached to this topic.")
+    p.Title("Could not remove a tag.")
+    p.Detail("This article is no longer attached to this tag.")
     p.With("article_uuid", articleID)
-    p.With("topic_id", topicID)
+    p.With("tag_id", tagID)
 
     return &p
   }

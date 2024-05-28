@@ -55,12 +55,12 @@ func (o *ArchiveRepository) Remove(ctx context.Context, id string) error {
   return o.Called(ctx, id).Error(0)
 }
 
-func (o *ArchiveRepository) AddTopic(ctx context.Context, articleID, topicID string, isDraft ...bool) error {
-  return o.Called(ctx, articleID, topicID, isDraft).Error(0)
+func (o *ArchiveRepository) AddTag(ctx context.Context, articleID, tagID string, isDraft ...bool) error {
+  return o.Called(ctx, articleID, tagID, isDraft).Error(0)
 }
 
-func (o *ArchiveRepository) RemoveTopic(ctx context.Context, articleID, topicID string, isDraft ...bool) error {
-  return o.Called(ctx, articleID, topicID, isDraft).Error(0)
+func (o *ArchiveRepository) RemoveTag(ctx context.Context, articleID, tagID string, isDraft ...bool) error {
+  return o.Called(ctx, articleID, tagID, isDraft).Error(0)
 }
 
 func (o *ArchiveRepository) SetHidden(ctx context.Context, id string, hidden bool) error {
@@ -138,12 +138,12 @@ func (o *DraftsService) GetByID(ctx context.Context, draftUUID string) (draft *m
   return draft, args.Error(1)
 }
 
-func (o *DraftsService) AddTopic(ctx context.Context, draftUUID, topicID string) error {
-  return o.Called(ctx, draftUUID, topicID).Error(0)
+func (o *DraftsService) AddTag(ctx context.Context, draftUUID, tagID string) error {
+  return o.Called(ctx, draftUUID, tagID).Error(0)
 }
 
-func (o *DraftsService) RemoveTopic(ctx context.Context, draftUUID, topicID string) error {
-  return o.Called(ctx, draftUUID, topicID).Error(0)
+func (o *DraftsService) RemoveTag(ctx context.Context, draftUUID, tagID string) error {
+  return o.Called(ctx, draftUUID, tagID).Error(0)
 }
 
 func (o *DraftsService) Share(ctx context.Context, draftUUID string) (link string, err error) {
@@ -224,12 +224,12 @@ func (o *ArticlesService) Unpin(ctx context.Context, id string) error {
   return o.Called(ctx, id).Error(0)
 }
 
-func (o *ArticlesService) AddTopic(ctx context.Context, articleUUID, topicID string) error {
-  return o.Called(ctx, articleUUID, topicID).Error(0)
+func (o *ArticlesService) AddTag(ctx context.Context, articleUUID, tagID string) error {
+  return o.Called(ctx, articleUUID, tagID).Error(0)
 }
 
-func (o *ArticlesService) RemoveTopic(ctx context.Context, articleUUID, topicID string) error {
-  return o.Called(ctx, articleUUID, topicID).Error(0)
+func (o *ArticlesService) RemoveTag(ctx context.Context, articleUUID, tagID string) error {
+  return o.Called(ctx, articleUUID, tagID).Error(0)
 }
 
 type PatchesService struct {

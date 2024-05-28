@@ -7,33 +7,33 @@ import (
   "github.com/stretchr/testify/mock"
 )
 
-type TopicsRepository struct {
+type TagsRepository struct {
   mock.Mock
 }
 
-func NewTopicsRepository() *TopicsRepository {
-  return new(TopicsRepository)
+func NewTagsRepository() *TagsRepository {
+  return new(TagsRepository)
 }
 
-func (o *TopicsRepository) Add(ctx context.Context, creation *transfer.TopicCreation) error {
+func (o *TagsRepository) Add(ctx context.Context, creation *transfer.TagCreation) error {
   return o.Called(ctx, creation).Error(0)
 }
 
-func (o *TopicsRepository) Get(ctx context.Context) (topics []*model.Topic, err error) {
+func (o *TagsRepository) Get(ctx context.Context) (tags []*model.Tag, err error) {
   args := o.Called(ctx)
   arg0 := args.Get(0)
 
   if arg0 != nil {
-    topics = arg0.([]*model.Topic)
+    tags = arg0.([]*model.Tag)
   }
 
-  return topics, args.Error(1)
+  return tags, args.Error(1)
 }
 
-func (o *TopicsRepository) Update(ctx context.Context, id string, update *transfer.TopicUpdate) error {
+func (o *TagsRepository) Update(ctx context.Context, id string, update *transfer.TagUpdate) error {
   return o.Called(ctx, id, update).Error(0)
 }
 
-func (o *TopicsRepository) Remove(ctx context.Context, id string) error {
+func (o *TagsRepository) Remove(ctx context.Context, id string) error {
   return o.Called(ctx, id).Error(0)
 }

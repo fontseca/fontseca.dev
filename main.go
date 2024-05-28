@@ -300,9 +300,9 @@ func main() {
       );`,
     },
     {
-      name: "topic",
+      name: "tag",
       definition: `
-      CREATE TABLE "topic"
+      CREATE TABLE "tag"
       (
         "id"         VARCHAR(32) NOT NULL PRIMARY KEY,
         "name"       VARCHAR(32) NOT NULL,
@@ -311,12 +311,12 @@ func main() {
       );`,
     },
     {
-      name: "article_topic",
+      name: "article_tag",
       definition: `
-      CREATE TABLE "article_topic"
+      CREATE TABLE "article_tag"
       (
         "article_uuid" VARCHAR(36) NOT NULL REFERENCES "article" ("uuid"),
-        "topic_id"     VARCHAR(32) NOT NULL REFERENCES "topic" ("id")
+        "tag_id"     VARCHAR(32) NOT NULL REFERENCES "tag" ("id")
       );`,
     },
   }
@@ -489,15 +489,15 @@ func main() {
   var archive = repository.NewArchiveRepository(db)
 
   var (
-    topicsRepository = repository.NewTopicsRepository(db)
-    topicsService    = service.NewTopicsService(topicsRepository)
-    topics           = handler.NewTopicsHandler(topicsService)
+    tagsRepository = repository.NewTagsRepository(db)
+    tagsService    = service.NewTagsService(tagsRepository)
+    tags           = handler.NewTagsHandler(tagsService)
   )
 
-  engine.POST("/archive.topics.add", topics.Add)
-  engine.GET("/archive.topics.list", topics.Get)
-  engine.POST("/archive.topics.set", topics.Update)
-  engine.POST("/archive.topics.remove", topics.Remove)
+  engine.POST("/archive.tags.add", tags.Add)
+  engine.GET("/archive.tags.list", tags.Get)
+  engine.POST("/archive.tags.set", tags.Update)
+  engine.POST("/archive.tags.remove", tags.Remove)
 
   var (
     draftsService = service.NewDraftsService(archive)
@@ -511,8 +511,8 @@ func main() {
   engine.POST("/archive.drafts.share", drafts.Share)
   engine.POST("/archive.drafts.revise", drafts.Revise)
   engine.POST("/archive.drafts.discard", drafts.Discard)
-  engine.POST("/archive.drafts.topics.add", drafts.AddTopic)
-  engine.POST("/archive.drafts.topics.remove", drafts.RemoveTopic)
+  engine.POST("/archive.drafts.tags.add", drafts.AddTag)
+  engine.POST("/archive.drafts.tags.remove", drafts.RemoveTag)
 
   var (
     articlesService = service.NewArticlesService(archive)
@@ -528,8 +528,8 @@ func main() {
   engine.POST("/archive.articles.remove", articles.Remove)
   engine.POST("/archive.articles.pin", articles.Pin)
   engine.POST("/archive.articles.unpin", articles.Unpin)
-  engine.POST("/archive.articles.topics.add", articles.AddTopic)
-  engine.POST("/archive.articles.topics.remove", articles.RemoveTopic)
+  engine.POST("/archive.articles.tags.add", articles.AddTag)
+  engine.POST("/archive.articles.tags.remove", articles.RemoveTag)
 
   var (
     patchesServices = service.NewPatchesService(archive)

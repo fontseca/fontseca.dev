@@ -73,7 +73,7 @@ func (h *DraftsHandler) GetByID(c *gin.Context) {
   c.JSON(http.StatusOK, draft)
 }
 
-func (h *DraftsHandler) AddTopic(c *gin.Context) {
+func (h *DraftsHandler) AddTag(c *gin.Context) {
   draft, ok := c.GetPostForm("draft_uuid")
 
   if !ok {
@@ -81,21 +81,21 @@ func (h *DraftsHandler) AddTopic(c *gin.Context) {
     return
   }
 
-  topic, ok := c.GetPostForm("topic_id")
+  tag, ok := c.GetPostForm("tag_id")
 
   if !ok {
-    problem.NewMissingParameter("topic_id").Emit(c.Writer)
+    problem.NewMissingParameter("tag_id").Emit(c.Writer)
     return
   }
 
-  if err := h.drafts.AddTopic(c, draft, topic); check(err, c.Writer) {
+  if err := h.drafts.AddTag(c, draft, tag); check(err, c.Writer) {
     return
   }
 
   c.Status(http.StatusNoContent)
 }
 
-func (h *DraftsHandler) RemoveTopic(c *gin.Context) {
+func (h *DraftsHandler) RemoveTag(c *gin.Context) {
   draft, ok := c.GetPostForm("draft_uuid")
 
   if !ok {
@@ -103,14 +103,14 @@ func (h *DraftsHandler) RemoveTopic(c *gin.Context) {
     return
   }
 
-  topic, ok := c.GetPostForm("topic_id")
+  tag, ok := c.GetPostForm("tag_id")
 
   if !ok {
-    problem.NewMissingParameter("topic_id").Emit(c.Writer)
+    problem.NewMissingParameter("tag_id").Emit(c.Writer)
     return
   }
 
-  if err := h.drafts.RemoveTopic(c, draft, topic); check(err, c.Writer) {
+  if err := h.drafts.RemoveTag(c, draft, tag); check(err, c.Writer) {
     return
   }
 

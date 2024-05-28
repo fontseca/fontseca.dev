@@ -8,16 +8,16 @@ import (
   "net/http"
 )
 
-type TopicsHandler struct {
-  topics service.TopicsService
+type TagsHandler struct {
+  tags service.TagsService
 }
 
-func NewTopicsHandler(topics service.TopicsService) *TopicsHandler {
-  return &TopicsHandler{topics: topics}
+func NewTagsHandler(tags service.TagsService) *TagsHandler {
+  return &TagsHandler{tags: tags}
 }
 
-func (h *TopicsHandler) Add(c *gin.Context) {
-  var creation transfer.TopicCreation
+func (h *TagsHandler) Add(c *gin.Context) {
+  var creation transfer.TagCreation
 
   if err := bindPostForm(c, &creation); check(err, c.Writer) {
     return
@@ -27,30 +27,31 @@ func (h *TopicsHandler) Add(c *gin.Context) {
     return
   }
 
-  if err := h.topics.Add(c, &creation); check(err, c.Writer) {
+  if err := h.tags.Add(c, &creation); check(err, c.Writer) {
     return
   }
 
   c.Status(http.StatusCreated)
 }
 
-func (h *TopicsHandler) Get(c *gin.Context) {
-  topics, err := h.topics.Get(c)
+func (h *TagsHandler) Get(c *gin.Context) {
+  tags, err := h.tags.Get(c)
 
   if check(err, c.Writer) {
     return
   }
 
-  c.JSON(http.StatusOK, topics)
+  c.JSON(http.StatusOK, tags)
 }
 
-func (h *TopicsHandler) Update(c *gin.Context) {
-  var update transfer.TopicUpdate
+func (h *TagsHandler) Update(c *gin.Context) {
+  var update transfer.TagUpdate
 
-  topic, ok := c.GetPostForm("topic_id")
+  tag, ok := c.GetPostForm("tag_id")
 
   if !ok {
-    problem.NewMissingParameter("topic_id").Emit(c.Writer)
+    problem.NewMissingParameter("tag_id").Emit(c.Writer)
+    return
   }
 
   if err := bindPostForm(c, &update); check(err, c.Writer) {
@@ -61,21 +62,22 @@ func (h *TopicsHandler) Update(c *gin.Context) {
     return
   }
 
-  if err := h.topics.Update(c, topic, &update); check(err, c.Writer) {
+  if err := h.tags.Update(c, tag, &update); check(err, c.Writer) {
     return
   }
 
   c.Status(http.StatusNoContent)
 }
 
-func (h *TopicsHandler) Remove(c *gin.Context) {
-  topic, ok := c.GetPostForm("topic_id")
+func (h *TagsHandler) Remove(c *gin.Context) {
+  tag, ok := c.GetPostForm("tag_id")
 
   if !ok {
-    problem.NewMissingParameter("topic_id").Emit(c.Writer)
+    problem.NewMissingParameter("tag_id").Emit(c.Writer)
+    return
   }
 
-  if err := h.topics.Remove(c, topic); check(err, c.Writer) {
+  if err := h.tags.Remove(c, tag); check(err, c.Writer) {
     return
   }
 

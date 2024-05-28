@@ -11,146 +11,146 @@ import (
   "testing"
 )
 
-func TestTopicsService_Add(t *testing.T) {
+func TestTagsService_Add(t *testing.T) {
   const routine = "Add"
 
   ctx := context.TODO()
-  creation := &transfer.TopicCreation{
+  creation := &transfer.TagCreation{
     Name: "Consectetur! Adipiscing... Quis nostrud: ELIT?",
     ID:   "consectetur-adipiscing-quis-nostrud-elit",
   }
 
   t.Run("success", func(t *testing.T) {
-    dirty := &transfer.TopicCreation{
+    dirty := &transfer.TagCreation{
       Name: " \n\t " + creation.Name + " \n\t ",
     }
 
-    r := mocks.NewTopicsRepository()
+    r := mocks.NewTagsRepository()
 
     r.On(routine, ctx, creation).Return(nil)
-    r.On("Get", ctx).Return([]*model.Topic{{}, {}}, nil)
+    r.On("Get", ctx).Return([]*model.Tag{{}, {}}, nil)
 
-    err := NewTopicsService(r).Add(ctx, dirty)
+    err := NewTagsService(r).Add(ctx, dirty)
 
     assert.NoError(t, err)
   })
 
   t.Run("gets a repository failure", func(t *testing.T) {
     unexpected := errors.New("unexpected error")
-    r := mocks.NewTopicsRepository()
+    r := mocks.NewTagsRepository()
     r.On(routine, ctx, mock.Anything).Return(unexpected)
 
-    err := NewTopicsService(r).Add(ctx, creation)
+    err := NewTagsService(r).Add(ctx, creation)
     assert.ErrorIs(t, err, unexpected)
   })
 }
 
-func TestTopicsService_Get(t *testing.T) {
+func TestTagsService_Get(t *testing.T) {
   const routine = "Get"
 
   ctx := context.TODO()
 
   t.Run("success without cache", func(t *testing.T) {
-    expectedTopics := []*model.Topic{{}, {}, {}}
+    expectedTags := []*model.Tag{{}, {}, {}}
 
-    r := mocks.NewTopicsRepository()
-    r.On(routine, ctx).Return(expectedTopics, nil)
+    r := mocks.NewTagsRepository()
+    r.On(routine, ctx).Return(expectedTags, nil)
 
-    s := NewTopicsService(r).(*topicsService)
+    s := NewTagsService(r).(*tagsService)
 
     s.cache = nil
 
-    topics, err := s.Get(ctx)
+    tags, err := s.Get(ctx)
 
-    assert.Equal(t, expectedTopics, topics)
+    assert.Equal(t, expectedTags, tags)
     assert.NoError(t, err)
   })
 
   t.Run("success with cache", func(t *testing.T) {
-    expectedTopics := []*model.Topic{{}, {}, {}}
+    expectedTags := []*model.Tag{{}, {}, {}}
 
-    r := mocks.NewTopicsRepository()
+    r := mocks.NewTagsRepository()
     r.AssertNotCalled(t, routine)
 
-    s := NewTopicsService(r).(*topicsService)
+    s := NewTagsService(r).(*tagsService)
 
-    s.cache = expectedTopics
+    s.cache = expectedTags
 
-    topics, err := s.Get(ctx)
+    tags, err := s.Get(ctx)
 
-    assert.Equal(t, expectedTopics, topics)
+    assert.Equal(t, expectedTags, tags)
     assert.NoError(t, err)
   })
 
   t.Run("gets a repository failure", func(t *testing.T) {
     unexpected := errors.New("unexpected error")
 
-    r := mocks.NewTopicsRepository()
+    r := mocks.NewTagsRepository()
     r.On(routine, ctx).Return(nil, unexpected)
 
-    topics, err := NewTopicsService(r).Get(ctx)
+    tags, err := NewTagsService(r).Get(ctx)
 
-    assert.Nil(t, topics)
+    assert.Nil(t, tags)
     assert.ErrorIs(t, err, unexpected)
   })
 }
 
-func TestTopicsService_Update(t *testing.T) {
+func TestTagsService_Update(t *testing.T) {
   const routine = "Update"
 
   ctx := context.TODO()
   id := "consectetur-adipiscing-quis-nostrud-elit"
 
-  update := &transfer.TopicUpdate{
+  update := &transfer.TagUpdate{
     ID:   "consectetur-adipiscing-quis-nostrud-elit",
     Name: "Consectetur! Adipiscing... Quis nostrud: ELIT?",
   }
 
   t.Run("success", func(t *testing.T) {
-    dirty := &transfer.TopicUpdate{
+    dirty := &transfer.TagUpdate{
       Name: " \n\t " + update.Name + " \n\t ",
     }
 
-    r := mocks.NewTopicsRepository()
+    r := mocks.NewTagsRepository()
 
     r.On(routine, ctx, id, update).Return(nil)
-    r.On("Get", ctx).Return([]*model.Topic{{}, {}}, nil)
+    r.On("Get", ctx).Return([]*model.Tag{{}, {}}, nil)
 
-    err := NewTopicsService(r).Update(ctx, id, dirty)
+    err := NewTagsService(r).Update(ctx, id, dirty)
 
     assert.NoError(t, err)
   })
 
   t.Run("gets a repository failure", func(t *testing.T) {
     unexpected := errors.New("unexpected error")
-    r := mocks.NewTopicsRepository()
+    r := mocks.NewTagsRepository()
     r.On(routine, ctx, mock.Anything, mock.Anything).Return(unexpected)
 
-    err := NewTopicsService(r).Update(ctx, id, update)
+    err := NewTagsService(r).Update(ctx, id, update)
     assert.ErrorIs(t, err, unexpected)
   })
 }
 
-func TestTopicsService_Remove(t *testing.T) {
+func TestTagsService_Remove(t *testing.T) {
   const routine = "Remove"
 
   ctx := context.TODO()
   id := "id"
 
   t.Run("success", func(t *testing.T) {
-    r := mocks.NewTopicsRepository()
+    r := mocks.NewTagsRepository()
     r.On(routine, ctx, id).Return(nil)
-    r.On("Get", ctx).Return([]*model.Topic{{}, {}}, nil)
+    r.On("Get", ctx).Return([]*model.Tag{{}, {}}, nil)
 
-    assert.NoError(t, NewTopicsService(r).Remove(ctx, id))
+    assert.NoError(t, NewTagsService(r).Remove(ctx, id))
   })
 
   t.Run("gets a repository failure", func(t *testing.T) {
     unexpected := errors.New("unexpected error")
 
-    r := mocks.NewTopicsRepository()
+    r := mocks.NewTagsRepository()
     r.On(routine, ctx, id).Return(unexpected)
 
-    assert.ErrorIs(t, NewTopicsService(r).Remove(ctx, id), unexpected)
+    assert.ErrorIs(t, NewTagsService(r).Remove(ctx, id), unexpected)
   })
 }

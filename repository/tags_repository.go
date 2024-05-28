@@ -11,31 +11,31 @@ import (
   "time"
 )
 
-// TopicsRepository is a low level API that provides methods for interacting
-// with topics in the database.
-type TopicsRepository interface {
-  // Add adds a new topic.
-  Add(ctx context.Context, creation *transfer.TopicCreation) error
+// TagsRepository is a low level API that provides methods for interacting
+// with tags in the database.
+type TagsRepository interface {
+  // Add adds a new tag.
+  Add(ctx context.Context, creation *transfer.TagCreation) error
 
-  // Get retrieves all the topics.
-  Get(ctx context.Context) (topics []*model.Topic, err error)
+  // Get retrieves all the tags.
+  Get(ctx context.Context) (tags []*model.Tag, err error)
 
-  // Update updates an existing topic.
-  Update(ctx context.Context, id string, update *transfer.TopicUpdate) error
+  // Update updates an existing tag.
+  Update(ctx context.Context, id string, update *transfer.TagUpdate) error
 
-  // Remove removes a topic and detaches it from any article that uses it.
+  // Remove removes a tag and detaches it from any article that uses it.
   Remove(ctx context.Context, id string) error
 }
 
-type topicsRepository struct {
+type tagsRepository struct {
   db *sql.DB
 }
 
-func NewTopicsRepository(db *sql.DB) TopicsRepository {
-  return &topicsRepository{db}
+func NewTagsRepository(db *sql.DB) TagsRepository {
+  return &tagsRepository{db}
 }
 
-func (r *topicsRepository) Add(ctx context.Context, creation *transfer.TopicCreation) error {
+func (r *tagsRepository) Add(ctx context.Context, creation *transfer.TagCreation) error {
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
   if nil != err {
     return err
@@ -43,14 +43,14 @@ func (r *topicsRepository) Add(ctx context.Context, creation *transfer.TopicCrea
 
   defer tx.Rollback()
 
-  addTopicQuery := `
-  INSERT INTO "topic" ("id", "name")
+  addTagQuery := `
+  INSERT INTO "tag" ("id", "name")
                VALUES (@id, @name);`
 
   ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
   defer cancel()
 
-  result, err := tx.ExecContext(ctx, addTopicQuery,
+  result, err := tx.ExecContext(ctx, addTagQuery,
     sql.Named("id", creation.ID),
     sql.Named("name", creation.Name),
   )
@@ -62,8 +62,8 @@ func (r *topicsRepository) Add(ctx context.Context, creation *transfer.TopicCrea
 
   if affected, _ := result.RowsAffected(); 1 != affected {
     p := problem.Problem{}
-    p.Title("Topic not created.")
-    p.Detail("Could not create topic for an unknown reason.")
+    p.Title("Tag not created.")
+    p.Detail("Could not create tag for an unknown reason.")
     p.Status(http.StatusInternalServerError)
 
     return &p
@@ -77,19 +77,19 @@ func (r *topicsRepository) Add(ctx context.Context, creation *transfer.TopicCrea
   return nil
 }
 
-func (r *topicsRepository) Get(ctx context.Context) (topics []*model.Topic, err error) {
-  getTopicsQuery := `
+func (r *tagsRepository) Get(ctx context.Context) (tags []*model.Tag, err error) {
+  getTagsQuery := `
   SELECT "id",
          "name",
          "created_at",
          "updated_at"
-    FROM "topic"
+    FROM "tag"
 ORDER BY lower("name");`
 
   ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
   defer cancel()
 
-  result, err := r.db.QueryContext(ctx, getTopicsQuery)
+  result, err := r.db.QueryContext(ctx, getTagsQuery)
   if nil != err {
     slog.Error(err.Error())
     return nil, err
@@ -97,16 +97,16 @@ ORDER BY lower("name");`
 
   defer result.Close()
 
-  topics = make([]*model.Topic, 0)
+  tags = make([]*model.Tag, 0)
 
   for result.Next() {
-    var topic model.Topic
+    var tag model.Tag
 
     err = result.Scan(
-      &topic.ID,
-      &topic.Name,
-      &topic.CreatedAt,
-      &topic.UpdatedAt,
+      &tag.ID,
+      &tag.Name,
+      &tag.CreatedAt,
+      &tag.UpdatedAt,
     )
 
     if nil != err {
@@ -114,13 +114,13 @@ ORDER BY lower("name");`
       return nil, err
     }
 
-    topics = append(topics, &topic)
+    tags = append(tags, &tag)
   }
 
-  return topics, nil
+  return tags, nil
 }
 
-func (r *topicsRepository) Update(ctx context.Context, id string, update *transfer.TopicUpdate) error {
+func (r *tagsRepository) Update(ctx context.Context, id string, update *transfer.TagUpdate) error {
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
   if nil != err {
     slog.Error(err.Error())
@@ -129,17 +129,17 @@ func (r *topicsRepository) Update(ctx context.Context, id string, update *transf
 
   defer tx.Rollback()
 
-  updateArticleTopicQuery := `
-  UPDATE "article_topic"
-     SET "topic_id" = @new_topic_id
-   WHERE "topic_id" = @topic_id;`
+  updateArticleTagQuery := `
+  UPDATE "article_tag"
+     SET "tag_id" = @new_tag_id
+   WHERE "tag_id" = @tag_id;`
 
   ctx1, cancel := context.WithTimeout(ctx, 5*time.Second)
   defer cancel()
 
-  result, err := tx.ExecContext(ctx1, updateArticleTopicQuery,
-    sql.Named("topic_id", id),
-    sql.Named("new_topic_id", update.ID),
+  result, err := tx.ExecContext(ctx1, updateArticleTagQuery,
+    sql.Named("tag_id", id),
+    sql.Named("new_tag_id", update.ID),
   )
 
   if nil != err {
@@ -147,9 +147,9 @@ func (r *topicsRepository) Update(ctx context.Context, id string, update *transf
     return err
   }
 
-  updateTopicQuery := `
-  UPDATE "topic"
-     SET "id" = @new_topic_id,
+  updateTagQuery := `
+  UPDATE "tag"
+     SET "id" = @new_tag_id,
          "name" = @name,
          "updated_at" = current_timestamp
    WHERE "id" = @id;`
@@ -157,9 +157,9 @@ func (r *topicsRepository) Update(ctx context.Context, id string, update *transf
   ctx, cancel = context.WithTimeout(ctx, 3*time.Second)
   defer cancel()
 
-  result, err = tx.ExecContext(ctx, updateTopicQuery,
+  result, err = tx.ExecContext(ctx, updateTagQuery,
     sql.Named("id", id),
-    sql.Named("new_topic_id", update.ID),
+    sql.Named("new_tag_id", update.ID),
     sql.Named("name", update.Name),
   )
 
@@ -169,7 +169,7 @@ func (r *topicsRepository) Update(ctx context.Context, id string, update *transf
   }
 
   if affected, _ := result.RowsAffected(); 1 != affected {
-    return problem.NewNotFound(id, "topic")
+    return problem.NewNotFound(id, "tag")
   }
 
   if err = tx.Commit(); nil != err {
@@ -180,7 +180,7 @@ func (r *topicsRepository) Update(ctx context.Context, id string, update *transf
   return nil
 }
 
-func (r *topicsRepository) Remove(ctx context.Context, id string) error {
+func (r *tagsRepository) Remove(ctx context.Context, id string) error {
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
   if nil != err {
     slog.Error(err.Error())
@@ -189,14 +189,14 @@ func (r *topicsRepository) Remove(ctx context.Context, id string) error {
 
   defer tx.Rollback()
 
-  removeTopicQuery := `
-  DELETE FROM "topic"
+  removeTagQuery := `
+  DELETE FROM "tag"
         WHERE "id" = $1;`
 
   ctx1, cancel := context.WithTimeout(ctx, 3*time.Second)
   defer cancel()
 
-  result, err := tx.ExecContext(ctx1, removeTopicQuery, id)
+  result, err := tx.ExecContext(ctx1, removeTagQuery, id)
 
   if nil != err {
     slog.Error(err.Error())
@@ -204,12 +204,12 @@ func (r *topicsRepository) Remove(ctx context.Context, id string) error {
   }
 
   if affected, _ := result.RowsAffected(); 1 != affected {
-    return problem.NewNotFound(id, "topic")
+    return problem.NewNotFound(id, "tag")
   }
 
   removeFromAttachedArticlesQuery := `
-  DELETE FROM "article_topic"
-        WHERE "topic_id" = $1;`
+  DELETE FROM "article_tag"
+        WHERE "tag_id" = $1;`
 
   ctx1, cancel = context.WithTimeout(ctx, 5*time.Second)
   defer cancel()

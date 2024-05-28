@@ -37,14 +37,14 @@ type DraftsService interface {
   // GetByID retrieves one article draft by its UUID.
   GetByID(ctx context.Context, draftUUID string) (draft *model.Article, err error)
 
-  // AddTopic adds a topic to the article draft. If the topic already
+  // AddTag adds a tag to the article draft. If the tag already
   // exists, it returns an error informing about a conflicting state.
-  AddTopic(ctx context.Context, draftUUID, topicID string) error
+  AddTag(ctx context.Context, draftUUID, tagID string) error
 
-  // RemoveTopic removes a topic from the article draft. If the article
-  // has  no topic identified by its UUID, it returns an error indication
+  // RemoveTag removes a tag from the article draft. If the article
+  // has  no tag identified by its UUID, it returns an error indication
   // a not found state.
-  RemoveTopic(ctx context.Context, draftUUID, topicID string) error
+  RemoveTag(ctx context.Context, draftUUID, tagID string) error
 
   // Share creates a shareable link for an article draft. Only users
   // with that link can see the progress and provide feedback.
@@ -140,20 +140,20 @@ func (s *draftsService) GetByID(ctx context.Context, draftUUID string) (draft *m
   return s.r.GetByID(ctx, draftUUID, true)
 }
 
-func (s *draftsService) AddTopic(ctx context.Context, draftUUID, topicID string) error {
+func (s *draftsService) AddTag(ctx context.Context, draftUUID, tagID string) error {
   if err := validateUUID(&draftUUID); nil != err {
     return err
   }
 
-  return s.r.AddTopic(ctx, draftUUID, topicID, true)
+  return s.r.AddTag(ctx, draftUUID, tagID, true)
 }
 
-func (s *draftsService) RemoveTopic(ctx context.Context, draftUUID, topicID string) error {
+func (s *draftsService) RemoveTag(ctx context.Context, draftUUID, tagID string) error {
   if err := validateUUID(&draftUUID); nil != err {
     return err
   }
 
-  return s.r.RemoveTopic(ctx, draftUUID, topicID, true)
+  return s.r.RemoveTag(ctx, draftUUID, tagID, true)
 }
 
 func (s *draftsService) Share(ctx context.Context, draftUUID string) (link string, err error) {
