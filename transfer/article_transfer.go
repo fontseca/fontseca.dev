@@ -29,3 +29,19 @@ type Article struct {
   IsPinned    bool      `json:"is_pinned"`
   PublishedAt time.Time `json:"published_at"`
 }
+
+// Publication represents the publication date of an article, consisting of a month and a year.
+type Publication struct {
+  Month time.Month
+  Year  int
+}
+
+// ArticleFilter represents the parameters used to query articles.
+type ArticleFilter struct {
+  Search      string
+  Publication *Publication
+  IsHidden    bool
+  IsDraft     bool
+  Page        int
+  RPP         int // records per page
+}
