@@ -489,6 +489,17 @@ func main() {
   var archive = repository.NewArchiveRepository(db)
 
   var (
+    topicsRepository = repository.NewTopicsRepository(db)
+    topicsService    = service.NewTopicsService(topicsRepository)
+    topics           = handler.NewTopicsHandler(topicsService)
+  )
+
+  engine.POST("/archive.topics.add", topics.Add)
+  engine.GET("/archive.topics.list", topics.Get)
+  engine.POST("/archive.topics.set", topics.Update)
+  engine.POST("/archive.topics.remove", topics.Remove)
+
+  var (
     draftsService = service.NewDraftsService(archive)
     drafts        = handler.NewDraftsHandler(draftsService)
   )
