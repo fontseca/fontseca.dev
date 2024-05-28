@@ -3,6 +3,7 @@ package service
 import (
   "context"
   "fontseca.dev/model"
+  "fontseca.dev/repository"
   "fontseca.dev/transfer"
 )
 
@@ -19,4 +20,36 @@ type TopicsService interface {
 
   // Remove removes a topic and detaches it from any article that uses it.
   Remove(ctx context.Context, id string) error
+}
+
+type topicsService struct {
+  cache []*model.Topic
+  r     repository.TopicsRepository
+}
+
+func NewTopicsService(r repository.TopicsRepository) TopicsService {
+  return &topicsService{
+    cache: nil,
+    r:     r,
+  }
+}
+
+func (s *topicsService) Add(ctx context.Context, creation *transfer.TopicCreation) (insertedUUID string, err error) {
+  // TODO implement me
+  panic("implement me")
+}
+
+func (s *topicsService) Get(ctx context.Context) (topics []*model.Topic, err error) {
+  // TODO implement me
+  panic("implement me")
+}
+
+func (s *topicsService) Update(ctx context.Context, id string, update *transfer.TopicUpdate) error {
+  // TODO implement me
+  panic("implement me")
+}
+
+func (s *topicsService) Remove(ctx context.Context, id string) error {
+  // TODO implement me
+  panic("implement me")
 }
