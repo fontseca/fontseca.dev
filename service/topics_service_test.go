@@ -102,6 +102,7 @@ func TestTopicsService_Update(t *testing.T) {
   id := "consectetur-adipiscing-quis-nostrud-elit"
 
   update := &transfer.TopicUpdate{
+    ID:   "consectetur-adipiscing-quis-nostrud-elit",
     Name: "Consectetur! Adipiscing... Quis nostrud: ELIT?",
   }
 

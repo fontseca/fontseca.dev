@@ -84,6 +84,7 @@ func (s *topicsService) Update(ctx context.Context, id string, update *transfer.
 
   update.Name = strings.TrimSpace(update.Name)
   sanitizeTextWordIntersections(&update.Name)
+  update.ID = toKebabCase(update.Name)
 
   err := s.r.Update(ctx, id, update)
 

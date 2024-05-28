@@ -8,5 +8,6 @@ type TopicCreation struct {
 
 // TopicUpdate represents the data required to update an existing topic entry.
 type TopicUpdate struct {
+  ID   string
   Name string `json:"name" binding:"required,max=32"`
 }

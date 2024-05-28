@@ -129,17 +129,37 @@ func (r *topicsRepository) Update(ctx context.Context, id string, update *transf
 
   defer tx.Rollback()
 
+  updateArticleTopicQuery := `
+  UPDATE "article_topic"
+     SET "topic_id" = @new_topic_id
+   WHERE "topic_id" = @topic_id;`
+
+  ctx1, cancel := context.WithTimeout(ctx, 5*time.Second)
+  defer cancel()
+
+  result, err := tx.ExecContext(ctx1, updateArticleTopicQuery,
+    sql.Named("topic_id", id),
+    sql.Named("new_topic_id", update.ID),
+  )
+
+  if nil != err {
+    slog.Error(err.Error())
+    return err
+  }
+
   updateTopicQuery := `
   UPDATE "topic"
-     SET "name" = coalesce(nullif(@name, ''), "name"),
+     SET "id" = @new_topic_id,
+         "name" = @name,
          "updated_at" = current_timestamp
    WHERE "id" = @id;`
 
-  ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+  ctx, cancel = context.WithTimeout(ctx, 3*time.Second)
   defer cancel()
 
-  result, err := tx.ExecContext(ctx, updateTopicQuery,
+  result, err = tx.ExecContext(ctx, updateTopicQuery,
     sql.Named("id", id),
+    sql.Named("new_topic_id", update.ID),
     sql.Named("name", update.Name),
   )
 
