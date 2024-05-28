@@ -97,8 +97,15 @@ func (s *topicsService) Update(ctx context.Context, id string, update *transfer.
 }
 
 func (s *topicsService) Remove(ctx context.Context, id string) error {
-  // TODO implement me
-  panic("implement me")
+  err := s.r.Remove(ctx, id)
+
+  if nil != err {
+    return err
+  }
+
+  s.setCache(ctx)
+
+  return nil
 }
 
 func (s *topicsService) setCache(ctx context.Context) {

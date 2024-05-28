@@ -88,9 +88,9 @@ func TestTopicsService_Get(t *testing.T) {
     r := mocks.NewTopicsRepository()
     r.On(routine, ctx).Return(nil, unexpected)
 
-    articles, err := NewTopicsService(r).Get(ctx)
+    topics, err := NewTopicsService(r).Get(ctx)
 
-    assert.Nil(t, articles)
+    assert.Nil(t, topics)
     assert.ErrorIs(t, err, unexpected)
   })
 }
@@ -127,5 +127,29 @@ func TestTopicsService_Update(t *testing.T) {
 
     err := NewTopicsService(r).Update(ctx, id, update)
     assert.ErrorIs(t, err, unexpected)
+  })
+}
+
+func TestTopicsService_Remove(t *testing.T) {
+  const routine = "Remove"
+
+  ctx := context.TODO()
+  id := "id"
+
+  t.Run("success", func(t *testing.T) {
+    r := mocks.NewTopicsRepository()
+    r.On(routine, ctx, id).Return(nil)
+    r.On("Get", ctx).Return([]*model.Topic{{}, {}}, nil)
+
+    assert.NoError(t, NewTopicsService(r).Remove(ctx, id))
+  })
+
+  t.Run("gets a repository failure", func(t *testing.T) {
+    unexpected := errors.New("unexpected error")
+
+    r := mocks.NewTopicsRepository()
+    r.On(routine, ctx, id).Return(unexpected)
+
+    assert.ErrorIs(t, NewTopicsService(r).Remove(ctx, id), unexpected)
   })
 }
