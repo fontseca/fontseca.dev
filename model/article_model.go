@@ -20,6 +20,7 @@ type Article struct {
   ModifiedAt  *time.Time `json:"modified_at"`
   DraftedAt   time.Time  `json:"drafted_at"`
   UpdatedAt   time.Time  `json:"updated_at"`
+  Topic       *Topic     `json:"topic"`
   Tags        []*Tag     `json:"tags"`
 }
 
