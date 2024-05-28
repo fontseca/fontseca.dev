@@ -93,5 +93,39 @@ func TestTopicsService_Get(t *testing.T) {
     assert.Nil(t, articles)
     assert.ErrorIs(t, err, unexpected)
   })
+}
 
+func TestTopicsService_Update(t *testing.T) {
+  const routine = "Update"
+
+  ctx := context.TODO()
+  id := "consectetur-adipiscing-quis-nostrud-elit"
+
+  update := &transfer.TopicUpdate{
+    Name: "Consectetur! Adipiscing... Quis nostrud: ELIT?",
+  }
+
+  t.Run("success", func(t *testing.T) {
+    dirty := &transfer.TopicUpdate{
+      Name: " \n\t " + update.Name + " \n\t ",
+    }
+
+    r := mocks.NewTopicsRepository()
+
+    r.On(routine, ctx, id, update).Return(nil)
+    r.On("Get", ctx).Return([]*model.Topic{{}, {}}, nil)
+
+    err := NewTopicsService(r).Update(ctx, id, dirty)
+
+    assert.NoError(t, err)
+  })
+
+  t.Run("gets a repository failure", func(t *testing.T) {
+    unexpected := errors.New("unexpected error")
+    r := mocks.NewTopicsRepository()
+    r.On(routine, ctx, mock.Anything, mock.Anything).Return(unexpected)
+
+    err := NewTopicsService(r).Update(ctx, id, update)
+    assert.ErrorIs(t, err, unexpected)
+  })
 }

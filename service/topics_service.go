@@ -76,8 +76,24 @@ func (s *topicsService) Get(ctx context.Context) (topics []*model.Topic, err err
 }
 
 func (s *topicsService) Update(ctx context.Context, id string, update *transfer.TopicUpdate) error {
-  // TODO implement me
-  panic("implement me")
+  if nil == update {
+    err := errors.New("nil value for parameter: creation")
+    slog.Error(err.Error())
+    return err
+  }
+
+  update.Name = strings.TrimSpace(update.Name)
+  sanitizeTextWordIntersections(&update.Name)
+
+  err := s.r.Update(ctx, id, update)
+
+  if nil != err {
+    return err
+  }
+
+  s.setCache(ctx)
+
+  return nil
 }
 
 func (s *topicsService) Remove(ctx context.Context, id string) error {
