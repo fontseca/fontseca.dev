@@ -142,14 +142,14 @@ func (h *ArticlesHandler) AddTopic(c *gin.Context) {
   article, ok := c.GetPostForm("article_uuid")
 
   if !ok {
-    problem.NewMissingParameter("draft_uuid").Emit(c.Writer)
+    problem.NewMissingParameter("article_uuid").Emit(c.Writer)
     return
   }
 
-  topic, ok := c.GetPostForm("topic_uuid")
+  topic, ok := c.GetPostForm("topic_id")
 
   if !ok {
-    problem.NewMissingParameter("draft_uuid").Emit(c.Writer)
+    problem.NewMissingParameter("topic_id").Emit(c.Writer)
     return
   }
 
@@ -164,14 +164,14 @@ func (h *ArticlesHandler) RemoveTopic(c *gin.Context) {
   article, ok := c.GetPostForm("article_uuid")
 
   if !ok {
-    problem.NewMissingParameter("draft_uuid").Emit(c.Writer)
+    problem.NewMissingParameter("article_uuid").Emit(c.Writer)
     return
   }
 
-  topic, ok := c.GetPostForm("topic_uuid")
+  topic, ok := c.GetPostForm("topic_id")
 
   if !ok {
-    problem.NewMissingParameter("draft_uuid").Emit(c.Writer)
+    problem.NewMissingParameter("topic_id").Emit(c.Writer)
     return
   }
 

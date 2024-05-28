@@ -39,12 +39,12 @@ type DraftsService interface {
 
   // AddTopic adds a topic to the article draft. If the topic already
   // exists, it returns an error informing about a conflicting state.
-  AddTopic(ctx context.Context, draftUUID, topicUUID string) error
+  AddTopic(ctx context.Context, draftUUID, topicID string) error
 
   // RemoveTopic removes a topic from the article draft. If the article
   // has  no topic identified by its UUID, it returns an error indication
   // a not found state.
-  RemoveTopic(ctx context.Context, draftUUID, topicUUID string) error
+  RemoveTopic(ctx context.Context, draftUUID, topicID string) error
 
   // Share creates a shareable link for an article draft. Only users
   // with that link can see the progress and provide feedback.
@@ -140,28 +140,20 @@ func (s *draftsService) GetByID(ctx context.Context, draftUUID string) (draft *m
   return s.r.GetByID(ctx, draftUUID, true)
 }
 
-func (s *draftsService) AddTopic(ctx context.Context, draftUUID, topicUUID string) error {
+func (s *draftsService) AddTopic(ctx context.Context, draftUUID, topicID string) error {
   if err := validateUUID(&draftUUID); nil != err {
     return err
   }
 
-  if err := validateUUID(&topicUUID); nil != err {
-    return err
-  }
-
-  return s.r.AddTopic(ctx, draftUUID, topicUUID, true)
+  return s.r.AddTopic(ctx, draftUUID, topicID, true)
 }
 
-func (s *draftsService) RemoveTopic(ctx context.Context, draftUUID, topicUUID string) error {
+func (s *draftsService) RemoveTopic(ctx context.Context, draftUUID, topicID string) error {
   if err := validateUUID(&draftUUID); nil != err {
     return err
   }
 
-  if err := validateUUID(&topicUUID); nil != err {
-    return err
-  }
-
-  return s.r.RemoveTopic(ctx, draftUUID, topicUUID, true)
+  return s.r.RemoveTopic(ctx, draftUUID, topicID, true)
 }
 
 func (s *draftsService) Share(ctx context.Context, draftUUID string) (link string, err error) {

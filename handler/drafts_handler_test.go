@@ -363,18 +363,18 @@ func TestDraftsHandler_AddTopic(t *testing.T) {
 
   request := httptest.NewRequest(method, target, nil)
   draftUUID := uuid.NewString()
-  topicUUID := uuid.NewString()
+  topicID := uuid.NewString()
 
   _ = request.ParseForm()
 
   request.PostForm.Add("draft_uuid", draftUUID)
-  request.PostForm.Add("topic_uuid", topicUUID)
+  request.PostForm.Add("topic_id", topicID)
 
   t.Run("success", func(t *testing.T) {
     expectedStatusCode := http.StatusNoContent
 
     s := mocks.NewDraftsService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), draftUUID, topicUUID).Return(nil)
+    s.On(routine, mock.AnythingOfType("*gin.Context"), draftUUID, topicID).Return(nil)
 
     engine := gin.Default()
     engine.POST(target, NewDraftsHandler(s).AddTopic)
@@ -397,7 +397,7 @@ func TestDraftsHandler_AddTopic(t *testing.T) {
     expected.Detail(expectBodyContains)
 
     s := mocks.NewDraftsService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), draftUUID, topicUUID).Return(expected)
+    s.On(routine, mock.AnythingOfType("*gin.Context"), draftUUID, topicID).Return(expected)
 
     engine := gin.Default()
     engine.POST(target, NewDraftsHandler(s).AddTopic)
@@ -418,7 +418,7 @@ func TestDraftsHandler_AddTopic(t *testing.T) {
     expectBodyContains := "An unexpected error occurred while processing your request"
 
     s := mocks.NewDraftsService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), draftUUID, topicUUID).Return(unexpected)
+    s.On(routine, mock.AnythingOfType("*gin.Context"), draftUUID, topicID).Return(unexpected)
 
     engine := gin.Default()
     engine.POST(target, NewDraftsHandler(s).AddTopic)
@@ -443,18 +443,18 @@ func TestDraftsHandler_RemoveTopic(t *testing.T) {
 
   request := httptest.NewRequest(method, target, nil)
   draftUUID := uuid.NewString()
-  topicUUID := uuid.NewString()
+  topicID := uuid.NewString()
 
   _ = request.ParseForm()
 
   request.PostForm.Add("draft_uuid", draftUUID)
-  request.PostForm.Add("topic_uuid", topicUUID)
+  request.PostForm.Add("topic_id", topicID)
 
   t.Run("success", func(t *testing.T) {
     expectedStatusCode := http.StatusNoContent
 
     s := mocks.NewDraftsService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), draftUUID, topicUUID).Return(nil)
+    s.On(routine, mock.AnythingOfType("*gin.Context"), draftUUID, topicID).Return(nil)
 
     engine := gin.Default()
     engine.POST(target, NewDraftsHandler(s).RemoveTopic)
@@ -477,7 +477,7 @@ func TestDraftsHandler_RemoveTopic(t *testing.T) {
     expected.Detail(expectBodyContains)
 
     s := mocks.NewDraftsService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), draftUUID, topicUUID).Return(expected)
+    s.On(routine, mock.AnythingOfType("*gin.Context"), draftUUID, topicID).Return(expected)
 
     engine := gin.Default()
     engine.POST(target, NewDraftsHandler(s).RemoveTopic)
@@ -498,7 +498,7 @@ func TestDraftsHandler_RemoveTopic(t *testing.T) {
     expectBodyContains := "An unexpected error occurred while processing your request"
 
     s := mocks.NewDraftsService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), draftUUID, topicUUID).Return(unexpected)
+    s.On(routine, mock.AnythingOfType("*gin.Context"), draftUUID, topicID).Return(unexpected)
 
     engine := gin.Default()
     engine.POST(target, NewDraftsHandler(s).RemoveTopic)

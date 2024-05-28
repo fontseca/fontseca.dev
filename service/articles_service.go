@@ -53,12 +53,12 @@ type ArticlesService interface {
 
   // AddTopic adds a topic to the article. If the topic already
   // exists, it returns an error informing about a conflicting state.
-  AddTopic(ctx context.Context, articleUUID, topicUUID string) error
+  AddTopic(ctx context.Context, articleUUID, topicID string) error
 
   // RemoveTopic removes a topic from article. If the article
   // has no topic identified by its UUID, it returns an error indication
   // a not found state.
-  RemoveTopic(ctx context.Context, articleUUID, topicUUID string) error
+  RemoveTopic(ctx context.Context, articleUUID, topicID string) error
 }
 
 type articlesService struct {
@@ -152,26 +152,22 @@ func (s *articlesService) Unpin(ctx context.Context, id string) error {
   return s.r.SetPinned(ctx, id, false)
 }
 
-func (s *articlesService) AddTopic(ctx context.Context, articleUUID, topicUUID string) error {
+func (s *articlesService) AddTopic(ctx context.Context, articleUUID, topicID string) error {
   if err := validateUUID(&articleUUID); nil != err {
     return err
   }
 
-  if err := validateUUID(&topicUUID); nil != err {
-    return err
-  }
-
-  return s.r.AddTopic(ctx, articleUUID, topicUUID)
+  return s.r.AddTopic(ctx, articleUUID, topicID)
 }
 
-func (s *articlesService) RemoveTopic(ctx context.Context, articleUUID, topicUUID string) error {
+func (s *articlesService) RemoveTopic(ctx context.Context, articleUUID, topicID string) error {
   if err := validateUUID(&articleUUID); nil != err {
     return err
   }
 
-  if err := validateUUID(&topicUUID); nil != err {
+  if err := validateUUID(&topicID); nil != err {
     return err
   }
 
-  return s.r.RemoveTopic(ctx, articleUUID, topicUUID)
+  return s.r.RemoveTopic(ctx, articleUUID, topicID)
 }

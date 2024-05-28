@@ -138,12 +138,12 @@ func (o *DraftsService) GetByID(ctx context.Context, draftUUID string) (draft *m
   return draft, args.Error(1)
 }
 
-func (o *DraftsService) AddTopic(ctx context.Context, draftUUID, topicUUID string) error {
-  return o.Called(ctx, draftUUID, topicUUID).Error(0)
+func (o *DraftsService) AddTopic(ctx context.Context, draftUUID, topicID string) error {
+  return o.Called(ctx, draftUUID, topicID).Error(0)
 }
 
-func (o *DraftsService) RemoveTopic(ctx context.Context, draftUUID, topicUUID string) error {
-  return o.Called(ctx, draftUUID, topicUUID).Error(0)
+func (o *DraftsService) RemoveTopic(ctx context.Context, draftUUID, topicID string) error {
+  return o.Called(ctx, draftUUID, topicID).Error(0)
 }
 
 func (o *DraftsService) Share(ctx context.Context, draftUUID string) (link string, err error) {
@@ -224,12 +224,12 @@ func (o *ArticlesService) Unpin(ctx context.Context, id string) error {
   return o.Called(ctx, id).Error(0)
 }
 
-func (o *ArticlesService) AddTopic(ctx context.Context, articleUUID, topicUUID string) error {
-  return o.Called(ctx, articleUUID, topicUUID).Error(0)
+func (o *ArticlesService) AddTopic(ctx context.Context, articleUUID, topicID string) error {
+  return o.Called(ctx, articleUUID, topicID).Error(0)
 }
 
-func (o *ArticlesService) RemoveTopic(ctx context.Context, articleUUID, topicUUID string) error {
-  return o.Called(ctx, articleUUID, topicUUID).Error(0)
+func (o *ArticlesService) RemoveTopic(ctx context.Context, articleUUID, topicID string) error {
+  return o.Called(ctx, articleUUID, topicID).Error(0)
 }
 
 type PatchesService struct {

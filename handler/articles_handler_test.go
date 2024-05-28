@@ -761,18 +761,18 @@ func TestArticlesHandler_AddTopic(t *testing.T) {
 
   request := httptest.NewRequest(method, target, nil)
   articleUUID := uuid.NewString()
-  topicUUID := uuid.NewString()
+  topicID := uuid.NewString()
 
   _ = request.ParseForm()
 
   request.PostForm.Add("article_uuid", articleUUID)
-  request.PostForm.Add("topic_uuid", topicUUID)
+  request.PostForm.Add("topic_id", topicID)
 
   t.Run("success", func(t *testing.T) {
     expectedStatusCode := http.StatusNoContent
 
     s := mocks.NewArticlesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), articleUUID, topicUUID).Return(nil)
+    s.On(routine, mock.AnythingOfType("*gin.Context"), articleUUID, topicID).Return(nil)
 
     engine := gin.Default()
     engine.POST(target, NewArticlesHandler(s).AddTopic)
@@ -795,7 +795,7 @@ func TestArticlesHandler_AddTopic(t *testing.T) {
     expected.Detail(expectBodyContains)
 
     s := mocks.NewArticlesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), articleUUID, topicUUID).Return(expected)
+    s.On(routine, mock.AnythingOfType("*gin.Context"), articleUUID, topicID).Return(expected)
 
     engine := gin.Default()
     engine.POST(target, NewArticlesHandler(s).AddTopic)
@@ -816,7 +816,7 @@ func TestArticlesHandler_AddTopic(t *testing.T) {
     expectBodyContains := "An unexpected error occurred while processing your request"
 
     s := mocks.NewArticlesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), articleUUID, topicUUID).Return(unexpected)
+    s.On(routine, mock.AnythingOfType("*gin.Context"), articleUUID, topicID).Return(unexpected)
 
     engine := gin.Default()
     engine.POST(target, NewArticlesHandler(s).AddTopic)
@@ -841,18 +841,18 @@ func TestArticlesHandler_RemoveTopic(t *testing.T) {
 
   request := httptest.NewRequest(method, target, nil)
   articlesUUID := uuid.NewString()
-  topicUUID := uuid.NewString()
+  topicID := uuid.NewString()
 
   _ = request.ParseForm()
 
   request.PostForm.Add("article_uuid", articlesUUID)
-  request.PostForm.Add("topic_uuid", topicUUID)
+  request.PostForm.Add("topic_id", topicID)
 
   t.Run("success", func(t *testing.T) {
     expectedStatusCode := http.StatusNoContent
 
     s := mocks.NewArticlesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), articlesUUID, topicUUID).Return(nil)
+    s.On(routine, mock.AnythingOfType("*gin.Context"), articlesUUID, topicID).Return(nil)
 
     engine := gin.Default()
     engine.POST(target, NewArticlesHandler(s).RemoveTopic)
@@ -875,7 +875,7 @@ func TestArticlesHandler_RemoveTopic(t *testing.T) {
     expected.Detail(expectBodyContains)
 
     s := mocks.NewArticlesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), articlesUUID, topicUUID).Return(expected)
+    s.On(routine, mock.AnythingOfType("*gin.Context"), articlesUUID, topicID).Return(expected)
 
     engine := gin.Default()
     engine.POST(target, NewArticlesHandler(s).RemoveTopic)
@@ -896,7 +896,7 @@ func TestArticlesHandler_RemoveTopic(t *testing.T) {
     expectBodyContains := "An unexpected error occurred while processing your request"
 
     s := mocks.NewArticlesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), articlesUUID, topicUUID).Return(unexpected)
+    s.On(routine, mock.AnythingOfType("*gin.Context"), articlesUUID, topicID).Return(unexpected)
 
     engine := gin.Default()
     engine.POST(target, NewArticlesHandler(s).RemoveTopic)
