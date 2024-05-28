@@ -29,20 +29,24 @@ func sanitizeTextWordIntersections(text *string) {
   *text = contiguousSpacesRegexp.ReplaceAllString(*text, " ")
 }
 
-func generateSlug(source string) string {
-  if "" == source {
+func toKebabCase(text string) string {
+  if "" == text {
     return ""
   }
 
-  source = strings.ToLower(source)
+  text = strings.ToLower(text)
 
-  if strings.Contains(source, "_") {
-    source = strings.ReplaceAll(source, "_", "-")
+  if strings.Contains(text, "_") {
+    text = strings.ReplaceAll(text, "_", "-")
   }
 
-  words := wordsOnly.FindAllString(source, -1)
+  words := wordsOnly.FindAllString(text, -1)
 
   return strings.Join(words, "-")
+}
+
+func generateSlug(source string) string {
+  return toKebabCase(source)
 }
 
 func wordsIn(text string) int {
