@@ -10,7 +10,7 @@ import (
 // TopicsService is a high level provider for articles.
 type TopicsService interface {
   // Add adds a new topic.
-  Add(ctx context.Context, creation *transfer.TopicCreation) (insertedUUID string, err error)
+  Add(ctx context.Context, creation *transfer.TopicCreation) (err error)
 
   // Get retrieves all the topics.
   Get(ctx context.Context) (topics []*model.Topic, err error)
@@ -34,7 +34,7 @@ func NewTopicsService(r repository.TopicsRepository) TopicsService {
   }
 }
 
-func (s *topicsService) Add(ctx context.Context, creation *transfer.TopicCreation) (insertedUUID string, err error) {
+func (s *topicsService) Add(ctx context.Context, creation *transfer.TopicCreation) error {
   // TODO implement me
   panic("implement me")
 }

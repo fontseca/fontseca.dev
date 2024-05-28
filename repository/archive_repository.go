@@ -245,13 +245,13 @@ func (r *archiveRepository) Publish(ctx context.Context, id string) error {
 func (r *archiveRepository) Get(ctx context.Context, needle string, hidden, draftsOnly bool) (articles []*model.Article, err error) {
   getTopicsQuery := `
      SELECT at."article_uuid", 
-            t."uuid",
+            t."id",
             t."name",
             t.created_at,
             t.updated_at
        FROM "article_topic" at
   LEFT JOIN "topic" t
-         ON at."topic_uuid" = t."uuid";`
+         ON at."topic_id" = t."id";`
 
   ctx1, cancel := context.WithTimeout(ctx, 5*time.Second)
   defer cancel()
@@ -272,7 +272,7 @@ func (r *archiveRepository) Get(ctx context.Context, needle string, hidden, draf
 
     err = result.Scan(
       &articleID,
-      &topic.UUID,
+      &topic.ID,
       &topic.Name,
       &topic.CreatedAt,
       &topic.UpdatedAt,
@@ -365,13 +365,13 @@ func (r *archiveRepository) Get(ctx context.Context, needle string, hidden, draf
 
 func (r *archiveRepository) GetByID(ctx context.Context, id string, isDraft bool) (article *model.Article, err error) {
   getTopicsQuery := `
-     SELECT t."uuid",
+     SELECT t."id",
             t."name",
             t.created_at,
             t.updated_at
        FROM "article_topic" at
   LEFT JOIN "topic" t
-         ON at."topic_uuid" = t."uuid"
+         ON at."topic_id" = t."id"
       WHERE "article_uuid" = @article_uuid;`
 
   ctx1, cancel := context.WithTimeout(ctx, 3*time.Second)
@@ -391,7 +391,7 @@ func (r *archiveRepository) GetByID(ctx context.Context, id string, isDraft bool
     var topic model.Topic
 
     err = result.Scan(
-      &topic.UUID,
+      &topic.ID,
       &topic.Name,
       &topic.CreatedAt,
       &topic.UpdatedAt,
@@ -634,7 +634,7 @@ func (r *archiveRepository) AddTopic(ctx context.Context, articleID, topicID str
   topicExistsQuery := `
   SELECT count (*)
     FROM "topic"
-   WHERE "uuid" = $1;`
+   WHERE "id" = $1;`
 
   ctx1, cancel = context.WithTimeout(ctx, 3*time.Second)
   defer cancel()
@@ -657,7 +657,7 @@ func (r *archiveRepository) AddTopic(ctx context.Context, articleID, topicID str
   SELECT count (*)
     FROM "article_topic"
    WHERE "article_uuid" = @article_uuid
-     AND "topic_uuid" = @topic_uuid;`
+     AND "topic_id" = @topic_id;`
 
   ctx, cancel = context.WithTimeout(ctx, 3*time.Second)
   defer cancel()
@@ -666,7 +666,7 @@ func (r *archiveRepository) AddTopic(ctx context.Context, articleID, topicID str
 
   err = r.db.QueryRowContext(ctx, topicAlreadyExistsQuery,
     sql.Named("article_uuid", articleID),
-    sql.Named("topic_uuid", topicID)).
+    sql.Named("topic_id", topicID)).
     Scan(&topicAlreadyExists)
 
   if nil != err {
@@ -689,7 +689,7 @@ func (r *archiveRepository) AddTopic(ctx context.Context, articleID, topicID str
 
     p.Detail(detail)
     p.With("article_uuid", articleID)
-    p.With("topic_uuid", topicID)
+    p.With("topic_id", topicID)
 
     return &p
   }
@@ -703,15 +703,15 @@ func (r *archiveRepository) AddTopic(ctx context.Context, articleID, topicID str
   defer tx.Rollback()
 
   addTopicQuery := `
-  INSERT INTO "article_topic" ("article_uuid", "topic_uuid")
-                       VALUES (@article_uuid, @topic_uuid);`
+  INSERT INTO "article_topic" ("article_uuid", "topic_id")
+                       VALUES (@article_uuid, @topic_id);`
 
   ctx, cancel = context.WithTimeout(ctx, 2*time.Second)
   defer cancel()
 
   result, err := tx.ExecContext(ctx, addTopicQuery,
     sql.Named("article_uuid", articleID),
-    sql.Named("topic_uuid", topicID))
+    sql.Named("topic_id", topicID))
 
   if nil != err {
     slog.Error(err.Error())
@@ -731,7 +731,7 @@ func (r *archiveRepository) AddTopic(ctx context.Context, articleID, topicID str
 
     p.Detail(detail)
     p.With("article_uuid", articleID)
-    p.With("topic_uuid", topicID)
+    p.With("topic_id", topicID)
 
     return &p
   }
@@ -789,7 +789,7 @@ func (r *archiveRepository) RemoveTopic(ctx context.Context, articleID, topicID 
   topicExistsQuery := `
   SELECT count (*)
     FROM "topic"
-   WHERE "uuid" = $1;`
+   WHERE "id" = $1;`
 
   ctx1, cancel = context.WithTimeout(ctx, 3*time.Second)
   defer cancel()
@@ -819,14 +819,14 @@ func (r *archiveRepository) RemoveTopic(ctx context.Context, articleID, topicID 
   removeTopicQuery := `
   DELETE FROM "article_topic"
          WHERE "article_uuid" = @article_uuid
-           AND "topic_uuid" = @topic_uuid;`
+           AND "topic_id" = @topic_id;`
 
   ctx, cancel = context.WithTimeout(ctx, 3*time.Second)
   defer cancel()
 
   result, err := tx.ExecContext(ctx, removeTopicQuery,
     sql.Named("article_uuid", articleID),
-    sql.Named("topic_uuid", topicID))
+    sql.Named("topic_id", topicID))
 
   if nil != err {
     slog.Error(err.Error())
@@ -839,7 +839,7 @@ func (r *archiveRepository) RemoveTopic(ctx context.Context, articleID, topicID 
     p.Title("Could not remove a topic.")
     p.Detail("This article is no longer attached to this topic.")
     p.With("article_uuid", articleID)
-    p.With("topic_uuid", topicID)
+    p.With("topic_id", topicID)
 
     return &p
   }

@@ -304,8 +304,8 @@ func main() {
       definition: `
       CREATE TABLE "topic"
       (
-        "uuid"       VARCHAR(36) NOT NULL PRIMARY KEY DEFAULT (uuid_generate_v4 ()),
-        "name"       VARCHAR(64) NOT NULL,
+        "id"         VARCHAR(32) NOT NULL PRIMARY KEY,
+        "name"       VARCHAR(32) NOT NULL,
         "created_at" TIMESTAMP NOT NULL DEFAULT current_timestamp,
         "updated_at" TIMESTAMP NOT NULL DEFAULT current_timestamp
       );`,
@@ -316,7 +316,7 @@ func main() {
       CREATE TABLE "article_topic"
       (
         "article_uuid" VARCHAR(36) NOT NULL REFERENCES "article" ("uuid"),
-        "topic_uuid"   VARCHAR(36) NOT NULL REFERENCES "topic" ("uuid")
+        "topic_id"     VARCHAR(32) NOT NULL REFERENCES "topic" ("id")
       );`,
     },
   }

@@ -6,8 +6,8 @@ import (
   "fontseca.dev/model"
   "fontseca.dev/problem"
   "fontseca.dev/transfer"
-  "github.com/google/uuid"
   "log/slog"
+  "net/http"
   "time"
 )
 
@@ -15,7 +15,7 @@ import (
 // with topics in the database.
 type TopicsRepository interface {
   // Add adds a new topic.
-  Add(ctx context.Context, creation *transfer.TopicCreation) (insertedUUID string, err error)
+  Add(ctx context.Context, creation *transfer.TopicCreation) error
 
   // Get retrieves all the topics.
   Get(ctx context.Context) (topics []*model.Topic, err error)
@@ -35,43 +35,51 @@ func NewTopicsRepository(db *sql.DB) TopicsRepository {
   return &topicsRepository{db}
 }
 
-func (r *topicsRepository) Add(ctx context.Context, creation *transfer.TopicCreation) (insertedUUID string, err error) {
+func (r *topicsRepository) Add(ctx context.Context, creation *transfer.TopicCreation) error {
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
   if nil != err {
-    return uuid.Nil.String(), err
+    return err
   }
 
   defer tx.Rollback()
 
   addTopicQuery := `
-  INSERT INTO "topic" (name)
-               VALUES (@name)
-    RETURNING "uuid";`
+  INSERT INTO "topic" ("id", "name")
+               VALUES (@id, @name);`
 
   ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
   defer cancel()
 
-  result := tx.QueryRowContext(ctx, addTopicQuery,
+  result, err := tx.ExecContext(ctx, addTopicQuery,
+    sql.Named("id", creation.ID),
     sql.Named("name", creation.Name),
   )
 
-  err = result.Scan(&insertedUUID)
   if nil != err {
     slog.Error(err.Error())
-    return uuid.Nil.String(), err
+    return err
+  }
+
+  if affected, _ := result.RowsAffected(); 1 != affected {
+    p := problem.Problem{}
+    p.Title("Topic not created.")
+    p.Detail("Could not create topic for an unknown reason.")
+    p.Status(http.StatusInternalServerError)
+
+    return &p
   }
 
   if err = tx.Commit(); nil != err {
     slog.Error(err.Error())
-    return uuid.Nil.String(), err
+    return err
   }
 
-  return insertedUUID, nil
+  return nil
 }
 
 func (r *topicsRepository) Get(ctx context.Context) (topics []*model.Topic, err error) {
   getTopicsQuery := `
-  SELECT "uuid",
+  SELECT "id",
          "name",
          "created_at",
          "updated_at"
@@ -95,7 +103,7 @@ ORDER BY lower("name");`
     var topic model.Topic
 
     err = result.Scan(
-      &topic.UUID,
+      &topic.ID,
       &topic.Name,
       &topic.CreatedAt,
       &topic.UpdatedAt,
@@ -125,13 +133,13 @@ func (r *topicsRepository) Update(ctx context.Context, id string, update *transf
   UPDATE "topic"
      SET "name" = coalesce(nullif(@name, ''), "name"),
          "updated_at" = current_timestamp
-   WHERE "uuid" = @uuid;`
+   WHERE "id" = @id;`
 
   ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
   defer cancel()
 
   result, err := tx.ExecContext(ctx, updateTopicQuery,
-    sql.Named("uuid", id),
+    sql.Named("id", id),
     sql.Named("name", update.Name),
   )
 
@@ -163,7 +171,7 @@ func (r *topicsRepository) Remove(ctx context.Context, id string) error {
 
   removeTopicQuery := `
   DELETE FROM "topic"
-        WHERE "uuid" = $1;`
+        WHERE "id" = $1;`
 
   ctx1, cancel := context.WithTimeout(ctx, 3*time.Second)
   defer cancel()
@@ -181,7 +189,7 @@ func (r *topicsRepository) Remove(ctx context.Context, id string) error {
 
   removeFromAttachedArticlesQuery := `
   DELETE FROM "article_topic"
-        WHERE topic_uuid = $1;`
+        WHERE "topic_id" = $1;`
 
   ctx1, cancel = context.WithTimeout(ctx, 5*time.Second)
   defer cancel()
