@@ -23,7 +23,7 @@ func (o *TopicsRepository) Get(ctx context.Context) (topics []*model.Topic, err 
   args := o.Called(ctx)
   arg0 := args.Get(0)
 
-  if arg0 == nil {
+  if arg0 != nil {
     topics = arg0.([]*model.Topic)
   }
 
