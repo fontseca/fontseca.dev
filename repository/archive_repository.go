@@ -64,7 +64,7 @@ type ArchiveRepository interface {
   // function over non-hidden articles, so it attempts to find and
   // amass every article whose title contains any of the keywords
   // (if more than one) in needle.
-  Get(ctx context.Context, needle string, hidden, draftsOnly bool) (articles []*model.Article, err error)
+  Get(ctx context.Context, needle string, hidden, draftsOnly bool) (articles []*transfer.Article, err error)
 
   // GetByID retrieves one article (or article draft) by its UUID.
   GetByID(ctx context.Context, id string, isDraft bool) (article *model.Article, err error)
@@ -242,63 +242,14 @@ func (r *archiveRepository) Publish(ctx context.Context, id string) error {
   return nil
 }
 
-func (r *archiveRepository) Get(ctx context.Context, needle string, hidden, draftsOnly bool) (articles []*model.Article, err error) {
-  getTagsQuery := `
-     SELECT at."article_uuid", 
-            t."id",
-            t."name",
-            t.created_at,
-            t.updated_at
-       FROM "article_tag" at
-  LEFT JOIN "tag" t
-         ON at."tag_id" = t."id";`
-
-  ctx1, cancel := context.WithTimeout(ctx, 5*time.Second)
-  defer cancel()
-
-  result, err := r.db.QueryContext(ctx1, getTagsQuery)
-  if err != nil {
-    slog.Error(err.Error())
-    return nil, err
-  }
-
-  defer result.Close()
-
-  articleTagsDictionary := map[string][]*model.Tag{}
-
-  for result.Next() {
-    var articleID string
-    var tag model.Tag
-
-    err = result.Scan(
-      &articleID,
-      &tag.ID,
-      &tag.Name,
-      &tag.CreatedAt,
-      &tag.UpdatedAt,
-    )
-
-    if nil != err {
-      slog.Error(err.Error())
-      return nil, err
-    }
-
-    articleTagsDictionary[articleID] = append(articleTagsDictionary[articleID], &tag)
-  }
-
+func (r *archiveRepository) Get(ctx context.Context, needle string, hidden, draftsOnly bool) (articles []*transfer.Article, err error) {
   getArticlesQuery := `
   SELECT "uuid",
          "title",
-         "author",
          "slug",
-         "read_time",
-         "content",
-         "draft",
+         "topic",
          "pinned",
-         "drafted_at",
-         "published_at",
-         "updated_at",
-         "modified_at"
+         "published_at"
     FROM "article"
    WHERE "draft" IS @drafts_only
      AND CASE WHEN @drafts_only
@@ -321,42 +272,61 @@ func (r *archiveRepository) Get(ctx context.Context, needle string, hidden, draf
     getArticlesQuery += searchAnnex
   }
 
-  ctx, cancel = context.WithTimeout(ctx, 5*time.Second)
+  ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
   defer cancel()
 
-  result, err = r.db.QueryContext(ctx, getArticlesQuery,
+  result, err := r.db.QueryContext(ctx, getArticlesQuery,
     sql.Named("needle", needle), sql.Named("drafts_only", draftsOnly), sql.Named("hidden", hidden))
+
   if nil != err {
     slog.Error(err.Error())
     return nil, err
   }
 
-  articles = make([]*model.Article, 0)
+  articles = make([]*transfer.Article, 0)
 
   for result.Next() {
-    var article model.Article
+    var (
+      article       transfer.Article
+      slug          string
+      nullableTopic sql.NullString
+    )
 
     err = result.Scan(
       &article.UUID,
       &article.Title,
-      &article.Author,
-      &article.Slug,
-      &article.ReadTime,
-      &article.Content,
-      &article.IsDraft,
+      &slug,
+      &nullableTopic,
       &article.IsPinned,
-      &article.DraftedAt,
       &article.PublishedAt,
-      &article.UpdatedAt,
-      &article.ModifiedAt,
     )
+
+    if !draftsOnly {
+      var publishedAt time.Time
+
+      if nil != article.PublishedAt {
+        publishedAt = *article.PublishedAt
+      }
+
+      topic := nullableTopic.String
+      year := publishedAt.Year()
+      month := int(publishedAt.Month())
+
+      if "" == topic {
+        topic = "none"
+      }
+
+      // The URL has the form: 'https://fontseca.dev/archive/:topic/:year/:month/:slug'.
+      article.URL = fmt.Sprintf("https://fontseca.dev/archive/%s/%d/%d/%s", topic, year, month, slug)
+    } else {
+      article.URL = "about:blank"
+    }
 
     if nil != err {
       slog.Error(err.Error())
       return nil, err
     }
 
-    article.Tags = articleTagsDictionary[article.UUID.String()]
     articles = append(articles, &article)
   }
 

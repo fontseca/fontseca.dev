@@ -25,7 +25,7 @@ func (o *ArchiveRepository) Publish(ctx context.Context, id string) error {
   return o.Called(ctx, id).Error(0)
 }
 
-func (o *ArchiveRepository) Get(ctx context.Context, needle string, hidden, draftsOnly bool) (articles []*model.Article, err error) {
+func (o *ArchiveRepository) Get(ctx context.Context, needle string, hidden, draftsOnly bool) (articles []*transfer.Article, err error) {
   args := o.Called(ctx, needle, hidden, draftsOnly)
   arg0 := args.Get(0)
 
@@ -116,7 +116,7 @@ func (o *DraftsService) Publish(ctx context.Context, draftUUID string) error {
   return o.Called(ctx, draftUUID).Error(0)
 }
 
-func (o *DraftsService) Get(ctx context.Context, needle string) (drafts []*model.Article, err error) {
+func (o *DraftsService) Get(ctx context.Context, needle string) (drafts []*transfer.Article, err error) {
   args := o.Called(ctx, needle)
   arg0 := args.Get(0)
 
@@ -167,7 +167,7 @@ func NewArticlesService() *ArticlesService {
   return new(ArticlesService)
 }
 
-func (o *ArticlesService) Get(ctx context.Context, needle string) (articles []*model.Article, err error) {
+func (o *ArticlesService) Get(ctx context.Context, needle string) (articles []*transfer.Article, err error) {
   args := o.Called(ctx, needle)
   arg0 := args.Get(0)
 
@@ -178,7 +178,7 @@ func (o *ArticlesService) Get(ctx context.Context, needle string) (articles []*m
   return articles, args.Error(1)
 }
 
-func (o *ArticlesService) GetHidden(ctx context.Context, needle string) (articles []*model.Article, err error) {
+func (o *ArticlesService) GetHidden(ctx context.Context, needle string) (articles []*transfer.Article, err error) {
   args := o.Called(ctx, needle)
   arg0 := args.Get(0)
 

@@ -4,6 +4,7 @@ import (
   "context"
   "fontseca.dev/model"
   "fontseca.dev/repository"
+  "fontseca.dev/transfer"
   "strings"
 )
 
@@ -15,7 +16,7 @@ type ArticlesService interface {
   // function over articles, so it attempts to find and amass every
   // article whose title contains any of the keywords (if more than one)
   // in needle.
-  Get(ctx context.Context, needle string) (articles []*model.Article, err error)
+  Get(ctx context.Context, needle string) (articles []*transfer.Article, err error)
 
   // GetHidden retrieves all the published articles thar are hidden.
   //
@@ -23,7 +24,7 @@ type ArticlesService interface {
   // function over articles, so it attempts to find and amass every
   // article whose title contains any of the keywords (if more than one)
   // in needle.
-  GetHidden(ctx context.Context, needle string) (articles []*model.Article, err error)
+  GetHidden(ctx context.Context, needle string) (articles []*transfer.Article, err error)
 
   // GetByID retrieves one article by its UUID.
   GetByID(ctx context.Context, articleUUID string) (article *model.Article, err error)
@@ -69,7 +70,7 @@ func NewArticlesService(r repository.ArchiveRepository) ArticlesService {
   return &articlesService{r}
 }
 
-func (s *articlesService) doGet(ctx context.Context, needle string, hidden ...bool) (articles []*model.Article, err error) {
+func (s *articlesService) doGet(ctx context.Context, needle string, hidden ...bool) (articles []*transfer.Article, err error) {
   needle = strings.TrimSpace(needle)
 
   if "" != needle {
@@ -88,11 +89,11 @@ func (s *articlesService) doGet(ctx context.Context, needle string, hidden ...bo
   return s.r.Get(ctx, needle, false, false)
 }
 
-func (s *articlesService) Get(ctx context.Context, needle string) (articles []*model.Article, err error) {
+func (s *articlesService) Get(ctx context.Context, needle string) (articles []*transfer.Article, err error) {
   return s.doGet(ctx, needle)
 }
 
-func (s *articlesService) GetHidden(ctx context.Context, needle string) (articles []*model.Article, err error) {
+func (s *articlesService) GetHidden(ctx context.Context, needle string) (articles []*transfer.Article, err error) {
   return s.doGet(ctx, needle, true)
 }
 
