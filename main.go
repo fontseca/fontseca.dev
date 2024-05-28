@@ -258,6 +258,17 @@ func main() {
       );`,
     },
     {
+      name: "topic",
+      definition: `
+      CREATE TABLE "topic"
+      (
+        "id"         VARCHAR(32) PRIMARY KEY,
+        "name"       VARCHAR(32) NOT NULL,
+        "created_at" TIMESTAMP NOT NULL DEFAULT current_timestamp,
+        "updated_at" TIMESTAMP NOT NULL DEFAULT current_timestamp
+      );`,
+    },
+    {
       name: "article",
       definition: `
       CREATE TABLE "article"
@@ -271,6 +282,7 @@ func main() {
         "draft"        BOOLEAN DEFAULT TRUE,
         "pinned"       BOOLEAN DEFAULT FALSE,
         "hidden"       BOOLEAN DEFAULT FALSE,
+        "topic"        VARCHAR(32) REFERENCES "topic" ("id")
         "drafted_at"   TIMESTAMP NOT NULL DEFAULT current_timestamp,
         "published_at" TIMESTAMP DEFAULT NULL,
         "updated_at"   TIMESTAMP NOT NULL DEFAULT current_timestamp
