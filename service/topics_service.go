@@ -2,9 +2,12 @@ package service
 
 import (
   "context"
+  "errors"
   "fontseca.dev/model"
   "fontseca.dev/repository"
   "fontseca.dev/transfer"
+  "log/slog"
+  "strings"
 )
 
 // TopicsService is a high level provider for articles.
@@ -35,8 +38,17 @@ func NewTopicsService(r repository.TopicsRepository) TopicsService {
 }
 
 func (s *topicsService) Add(ctx context.Context, creation *transfer.TopicCreation) error {
-  // TODO implement me
-  panic("implement me")
+  if nil == creation {
+    err := errors.New("nil value for parameter: creation")
+    slog.Error(err.Error())
+    return err
+  }
+
+  creation.Name = strings.TrimSpace(creation.Name)
+  sanitizeTextWordIntersections(&creation.Name)
+  creation.ID = toKebabCase(creation.Name)
+
+  return s.r.Add(ctx, creation)
 }
 
 func (s *topicsService) Get(ctx context.Context) (topics []*model.Topic, err error) {
