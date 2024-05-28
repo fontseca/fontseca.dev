@@ -48,12 +48,31 @@ func (s *topicsService) Add(ctx context.Context, creation *transfer.TopicCreatio
   sanitizeTextWordIntersections(&creation.Name)
   creation.ID = toKebabCase(creation.Name)
 
-  return s.r.Add(ctx, creation)
+  err := s.r.Add(ctx, creation)
+
+  if nil != err {
+    return err
+  }
+
+  s.setCache(ctx)
+
+  return nil
 }
 
 func (s *topicsService) Get(ctx context.Context) (topics []*model.Topic, err error) {
-  // TODO implement me
-  panic("implement me")
+  if s.hasCache() {
+    return s.cache, nil
+  }
+
+  topics, err = s.r.Get(ctx)
+
+  if nil != err {
+    return nil, err
+  }
+
+  s.cache = topics
+
+  return topics, err
 }
 
 func (s *topicsService) Update(ctx context.Context, id string, update *transfer.TopicUpdate) error {
@@ -64,4 +83,13 @@ func (s *topicsService) Update(ctx context.Context, id string, update *transfer.
 func (s *topicsService) Remove(ctx context.Context, id string) error {
   // TODO implement me
   panic("implement me")
+}
+
+func (s *topicsService) setCache(ctx context.Context) {
+  s.cache = nil
+  s.cache, _ = s.Get(ctx)
+}
+
+func (s *topicsService) hasCache() bool {
+  return 0 < len(s.cache)
 }
