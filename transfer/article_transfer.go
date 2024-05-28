@@ -23,11 +23,11 @@ type ArticleUpdate struct {
 
 // Article is a shallow article entry for transferring metadata.
 type Article struct {
-  UUID        uuid.UUID `json:"uuid"`
-  Title       string    `json:"title"`
-  URL         string    `json:"url"` // in the form: 'https://fontseca.dev/archive/:topic/:year/:month/:slug'
-  IsPinned    bool      `json:"is_pinned"`
-  PublishedAt time.Time `json:"published_at"`
+  UUID        uuid.UUID  `json:"uuid"`
+  Title       string     `json:"title"`
+  URL         string     `json:"url"` // in the form: 'https://fontseca.dev/archive/:topic/:year/:month/:slug'
+  IsPinned    bool       `json:"is_pinned"`
+  PublishedAt *time.Time `json:"published_at"`
 }
 
 // Publication represents the publication date of an article, consisting of a month and a year.
