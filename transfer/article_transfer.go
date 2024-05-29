@@ -39,9 +39,8 @@ type Publication struct {
 // ArticleFilter represents the parameters used to query articles.
 type ArticleFilter struct {
   Search      string
+  Topic       string
   Publication *Publication
-  IsHidden    bool
-  IsDraft     bool
   Page        int
   RPP         int // records per page
 }
