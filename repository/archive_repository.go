@@ -243,7 +243,8 @@ func (r *archiveRepository) Publish(ctx context.Context, id string) error {
 }
 
 func (r *archiveRepository) Get(ctx context.Context, filter *transfer.ArticleFilter, hidden, draftsOnly bool) (articles []*transfer.Article, err error) {
-  getArticlesQuery := `
+  query := strings.Builder{}
+  query.WriteString(`
   SELECT "uuid",
          "title",
          "slug",
@@ -265,29 +266,22 @@ func (r *archiveRepository) Get(ctx context.Context, filter *transfer.ArticleFil
                    THEN
                         "topic" = @topic
                    ELSE TRUE END
-               END`
+               END`)
 
   if "" != filter.Search {
-    searchAnnex := ""
-
     for _, chunk := range strings.Fields(filter.Search) {
       if strings.Contains(chunk, "'") {
         chunk = strings.ReplaceAll(chunk, "'", "''")
       }
 
-      searchAnnex += fmt.Sprintf("\nAND \"title\" LIKE '%%%s%%'", chunk)
+      query.WriteString("\nAND \"title\" LIKE '%" + chunk + "%'")
     }
-
-    getArticlesQuery += searchAnnex
   }
 
-  getArticlesQuery += `
+  query.WriteString(`
   ORDER BY "pinned" DESC, "published_at" DESC
   LIMIT @rpp
-  OFFSET @rpp * (@page - 1);`
-
-  ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
-  defer cancel()
+  OFFSET @rpp * (@page - 1);`)
 
   var (
     year  = 0
@@ -299,8 +293,10 @@ func (r *archiveRepository) Get(ctx context.Context, filter *transfer.ArticleFil
     month = int(filter.Publication.Month)
   }
 
-  result, err := r.db.QueryContext(ctx, getArticlesQuery,
-    sql.Named("needle", filter.Search),
+  ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+  defer cancel()
+
+  result, err := r.db.QueryContext(ctx, query.String(),
     sql.Named("drafts_only", draftsOnly),
     sql.Named("hidden", hidden),
     sql.Named("page", filter.Page),
