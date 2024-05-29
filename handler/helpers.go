@@ -5,6 +5,7 @@ import (
   "errors"
   "fmt"
   "fontseca.dev/problem"
+  "fontseca.dev/transfer"
   "github.com/gin-gonic/gin"
   "github.com/gin-gonic/gin/binding"
   "github.com/go-playground/validator/v10"
@@ -13,9 +14,11 @@ import (
   "math"
   "net/http"
   "reflect"
+  "regexp"
   "strconv"
   "strings"
   "testing"
+  "time"
 )
 
 func marshal(t *testing.T, value any) []byte {
@@ -231,4 +234,99 @@ func bindPostForm(c *gin.Context, val any) error {
     }
   }
   return nil
+}
+
+var (
+  wordsOnly = regexp.MustCompile(`\w+`)
+)
+
+// getArticleFilter creates a transfer.ArticleFilter object with the values extracted from
+// c.Request.URL. If no values are provided, then it injects default values.
+func getArticleFilter(c *gin.Context) *transfer.ArticleFilter {
+  var (
+    filter transfer.ArticleFilter
+    err    error
+  )
+
+  var search = strings.TrimSpace(c.Query("search"))
+
+  if "" != search {
+    if strings.Contains(search, "_") {
+      search = strings.ReplaceAll(search, "_", " ")
+    }
+
+    words := wordsOnly.FindAllString(search, -1)
+    search = strings.Join(words, " ")
+  }
+
+  filter.Search = search
+
+  var topic = strings.TrimSpace(c.Query("topic"))
+
+  if "" != topic {
+    words := wordsOnly.FindAllString(topic, -1)
+    topic = strings.Join(words, "-")
+  }
+
+  filter.Topic = topic
+
+  var page = c.Query("page")
+
+  if "" != page {
+    filter.Page, err = strconv.Atoi(page)
+    if nil != err {
+      slog.Error(err.Error())
+    }
+  }
+
+  if 0 >= filter.Page {
+    filter.Page = 1
+  }
+
+  var rpp = c.Query("rpp")
+
+  if "" != rpp {
+    filter.RPP, err = strconv.Atoi(rpp)
+    if nil != err {
+      slog.Error(err.Error())
+    }
+  }
+
+  if 0 >= filter.RPP {
+    filter.RPP = 20
+  }
+
+  var from = c.Query("from")
+
+  if "" != from {
+    publication := strings.Split(from, "/")
+
+    if 2 != len(publication) {
+      goto finish
+    }
+
+    year, err := strconv.Atoi(publication[0])
+    if nil != err {
+      slog.Error(err.Error())
+      goto finish
+    }
+
+    month, err := strconv.Atoi(publication[1])
+    if nil != err {
+      slog.Error(err.Error())
+      goto finish
+    }
+
+    if 0 >= month || 12 < month {
+      goto finish
+    }
+
+    filter.Publication = &transfer.Publication{
+      Year:  year,
+      Month: time.Month(month),
+    }
+  }
+
+finish:
+  return &filter
 }
