@@ -28,11 +28,11 @@ type DraftsService interface {
 
   // Get retrieves all the ongoing articles drafts.
   //
-  // If needle is a non-empty string, then Get behaves like a search
+  // If filter.Search is a non-empty string, then Get behaves like a search
   // function over draft articles, so it attempts to find and
   // amass every article whose title contains any of the keywords
-  // (if more than one) in needle.
-  Get(ctx context.Context, needle string) (drafts []*transfer.Article, err error)
+  // (if more than one) in filter.Search.
+  Get(ctx context.Context, filter *transfer.ArticleFilter) (drafts []*transfer.Article, err error)
 
   // GetByID retrieves one article draft by its UUID.
   GetByID(ctx context.Context, draftUUID string) (draft *model.Article, err error)
@@ -117,19 +117,8 @@ func (s *draftsService) Publish(ctx context.Context, draftUUID string) error {
   return s.r.Publish(ctx, draftUUID)
 }
 
-func (s *draftsService) Get(ctx context.Context, needle string) (drafts []*transfer.Article, err error) {
-  needle = strings.TrimSpace(needle)
-
-  if "" != needle {
-    if strings.Contains(needle, "_") {
-      needle = strings.ReplaceAll(needle, "_", " ")
-    }
-
-    words := wordsOnly.FindAllString(needle, -1)
-    needle = strings.Join(words, " ")
-  }
-
-  return s.r.Get(ctx, needle, false, true)
+func (s *draftsService) Get(ctx context.Context, filter *transfer.ArticleFilter) (drafts []*transfer.Article, err error) {
+  return s.r.Get(ctx, filter, false, true)
 }
 
 func (s *draftsService) GetByID(ctx context.Context, draftUUID string) (draft *model.Article, err error) {

@@ -5,6 +5,7 @@ import (
   "fontseca.dev/mocks"
   "fontseca.dev/model"
   "fontseca.dev/problem"
+  "fontseca.dev/transfer"
   "github.com/gin-gonic/gin"
   "github.com/google/uuid"
   "github.com/stretchr/testify/assert"
@@ -22,14 +23,14 @@ func TestArticlesHandler_Get(t *testing.T) {
   )
 
   request := httptest.NewRequest(method, target, nil)
-  articles := []*model.Article{{}, {}, {}}
+  articles := []*transfer.Article{{}, {}, {}}
 
-  t.Run("success without search", func(t *testing.T) {
+  t.Run("success", func(t *testing.T) {
     expectedStatusCode := http.StatusOK
     expectedBody := string(marshal(t, articles))
 
     s := mocks.NewArticlesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), "").Return(articles, nil)
+    s.On(routine, mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("*transfer.ArticleFilter")).Return(articles, nil)
 
     engine := gin.Default()
     engine.GET(target, NewArticlesHandler(s).Get)
@@ -52,7 +53,7 @@ func TestArticlesHandler_Get(t *testing.T) {
     expected.Detail(expectBodyContains)
 
     s := mocks.NewArticlesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), "").Return(nil, expected)
+    s.On(routine, mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("*transfer.ArticleFilter")).Return(nil, expected)
 
     engine := gin.Default()
     engine.GET(target, NewArticlesHandler(s).Get)
@@ -73,7 +74,7 @@ func TestArticlesHandler_Get(t *testing.T) {
     expectBodyContains := "An unexpected error occurred while processing your request"
 
     s := mocks.NewArticlesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), "").Return(nil, unexpected)
+    s.On(routine, mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("*transfer.ArticleFilter")).Return(nil, unexpected)
 
     engine := gin.Default()
     engine.GET(target, NewArticlesHandler(s).Get)
@@ -86,26 +87,6 @@ func TestArticlesHandler_Get(t *testing.T) {
     assert.Contains(t, recorder.Body.String(), expectBodyContains)
     assert.Empty(t, recorder.Result().Cookies())
     assert.Contains(t, recorder.Result().Header.Get("Content-Type"), "application/problem+json")
-  })
-
-  t.Run("success with search", func(t *testing.T) {
-    request.URL.RawQuery = request.URL.RawQuery + "&search=needle"
-
-    expectedStatusCode := http.StatusOK
-
-    s := mocks.NewArticlesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), "needle").Return(articles, nil)
-
-    engine := gin.Default()
-    engine.GET(target, NewArticlesHandler(s).Get)
-
-    recorder := httptest.NewRecorder()
-
-    engine.ServeHTTP(recorder, request)
-
-    assert.Equal(t, expectedStatusCode, recorder.Code)
-    assert.NotEmpty(t, recorder.Body.String())
-    assert.Empty(t, recorder.Result().Cookies())
   })
 }
 
@@ -117,14 +98,14 @@ func TestArticlesHandler_GetHidden(t *testing.T) {
   )
 
   request := httptest.NewRequest(method, target, nil)
-  articles := []*model.Article{{}, {}, {}}
+  articles := []*transfer.Article{{}, {}, {}}
 
-  t.Run("success without search", func(t *testing.T) {
+  t.Run("success", func(t *testing.T) {
     expectedStatusCode := http.StatusOK
     expectedBody := string(marshal(t, articles))
 
     s := mocks.NewArticlesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), "").Return(articles, nil)
+    s.On(routine, mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("*transfer.ArticleFilter")).Return(articles, nil)
 
     engine := gin.Default()
     engine.GET(target, NewArticlesHandler(s).GetHidden)
@@ -147,7 +128,7 @@ func TestArticlesHandler_GetHidden(t *testing.T) {
     expected.Detail(expectBodyContains)
 
     s := mocks.NewArticlesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), "").Return(nil, expected)
+    s.On(routine, mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("*transfer.ArticleFilter")).Return(nil, expected)
 
     engine := gin.Default()
     engine.GET(target, NewArticlesHandler(s).GetHidden)
@@ -168,7 +149,7 @@ func TestArticlesHandler_GetHidden(t *testing.T) {
     expectBodyContains := "An unexpected error occurred while processing your request"
 
     s := mocks.NewArticlesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), "").Return(nil, unexpected)
+    s.On(routine, mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("*transfer.ArticleFilter")).Return(nil, unexpected)
 
     engine := gin.Default()
     engine.GET(target, NewArticlesHandler(s).GetHidden)
@@ -181,26 +162,6 @@ func TestArticlesHandler_GetHidden(t *testing.T) {
     assert.Contains(t, recorder.Body.String(), expectBodyContains)
     assert.Empty(t, recorder.Result().Cookies())
     assert.Contains(t, recorder.Result().Header.Get("Content-Type"), "application/problem+json")
-  })
-
-  t.Run("success with search", func(t *testing.T) {
-    request.URL.RawQuery = request.URL.RawQuery + "&search=needle"
-
-    expectedStatusCode := http.StatusOK
-
-    s := mocks.NewArticlesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), "needle").Return(articles, nil)
-
-    engine := gin.Default()
-    engine.GET(target, NewArticlesHandler(s).GetHidden)
-
-    recorder := httptest.NewRecorder()
-
-    engine.ServeHTTP(recorder, request)
-
-    assert.Equal(t, expectedStatusCode, recorder.Code)
-    assert.NotEmpty(t, recorder.Body.String())
-    assert.Empty(t, recorder.Result().Cookies())
   })
 }
 

@@ -52,8 +52,8 @@ func (h *DraftsHandler) Publish(c *gin.Context) {
 }
 
 func (h *DraftsHandler) Get(c *gin.Context) {
-  search := c.Query("search")
-  drafts, err := h.drafts.Get(c, search)
+  filter := getArticleFilter(c)
+  drafts, err := h.drafts.Get(c, filter)
 
   if check(err, c.Writer) {
     return

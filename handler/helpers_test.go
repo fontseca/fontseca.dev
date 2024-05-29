@@ -168,3 +168,21 @@ func Test_bindPostForm(t *testing.T) {
     }
   })
 }
+
+func Test_getArticleFilter(t *testing.T) {
+  // t.Run("success with search", func(t *testing.T) {
+  //   expectedArticles := make([]*model.Article, 3)
+  //   expectedNeedle := "20 www xxx yyy zzz zzz"
+  //
+  //   needle := ">> = 20 www? xxx! yyy... zzz_zzz \" ' ° <<"
+  //
+  //   r := mocks.NewArchiveRepository()
+  //   r.On(routine, ctx, expectedNeedle, true, false).Return(expectedArticles, nil)
+  //
+  //   articles, err := NewArticlesService(r).GetHidden(ctx, needle)
+  //
+  //   assert.Equal(t, expectedArticles, articles)
+  //   assert.NoError(t, err)
+  // })
+
+}

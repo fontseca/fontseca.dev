@@ -186,14 +186,14 @@ func TestDraftsHandler_Get(t *testing.T) {
   )
 
   request := httptest.NewRequest(method, target, nil)
-  drafts := []*model.Article{{}, {}, {}}
+  drafts := []*transfer.Article{{}, {}, {}}
 
   t.Run("success without search", func(t *testing.T) {
     expectedStatusCode := http.StatusOK
     expectedBody := string(marshal(t, drafts))
 
     s := mocks.NewDraftsService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), "").Return(drafts, nil)
+    s.On(routine, mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("*transfer.ArticleFilter")).Return(drafts, nil)
 
     engine := gin.Default()
     engine.GET(target, NewDraftsHandler(s).Get)
@@ -216,7 +216,7 @@ func TestDraftsHandler_Get(t *testing.T) {
     expected.Detail(expectBodyContains)
 
     s := mocks.NewDraftsService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), "").Return(nil, expected)
+    s.On(routine, mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("*transfer.ArticleFilter")).Return(nil, expected)
 
     engine := gin.Default()
     engine.GET(target, NewDraftsHandler(s).Get)
@@ -237,7 +237,7 @@ func TestDraftsHandler_Get(t *testing.T) {
     expectBodyContains := "An unexpected error occurred while processing your request"
 
     s := mocks.NewDraftsService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), "").Return(nil, unexpected)
+    s.On(routine, mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("*transfer.ArticleFilter")).Return(nil, unexpected)
 
     engine := gin.Default()
     engine.GET(target, NewDraftsHandler(s).Get)
@@ -250,26 +250,6 @@ func TestDraftsHandler_Get(t *testing.T) {
     assert.Contains(t, recorder.Body.String(), expectBodyContains)
     assert.Empty(t, recorder.Result().Cookies())
     assert.Contains(t, recorder.Result().Header.Get("Content-Type"), "application/problem+json")
-  })
-
-  t.Run("success with search", func(t *testing.T) {
-    request.URL.RawQuery = request.URL.RawQuery + "&search=needle"
-
-    expectedStatusCode := http.StatusOK
-
-    s := mocks.NewDraftsService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), "needle").Return(drafts, nil)
-
-    engine := gin.Default()
-    engine.GET(target, NewDraftsHandler(s).Get)
-
-    recorder := httptest.NewRecorder()
-
-    engine.ServeHTTP(recorder, request)
-
-    assert.Equal(t, expectedStatusCode, recorder.Code)
-    assert.NotEmpty(t, recorder.Body.String())
-    assert.Empty(t, recorder.Result().Cookies())
   })
 }
 

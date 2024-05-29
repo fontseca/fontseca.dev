@@ -16,8 +16,8 @@ func NewArticlesHandler(articles service.ArticlesService) *ArticlesHandler {
 }
 
 func (h *ArticlesHandler) Get(c *gin.Context) {
-  search := c.Query("search")
-  articles, err := h.articles.Get(c, search)
+  filter := getArticleFilter(c)
+  articles, err := h.articles.Get(c, filter)
 
   if check(err, c.Writer) {
     return
@@ -27,8 +27,8 @@ func (h *ArticlesHandler) Get(c *gin.Context) {
 }
 
 func (h *ArticlesHandler) GetHidden(c *gin.Context) {
-  search := c.Query("search")
-  articles, err := h.articles.GetHidden(c, search)
+  filter := getArticleFilter(c)
+  articles, err := h.articles.GetHidden(c, filter)
 
   if check(err, c.Writer) {
     return

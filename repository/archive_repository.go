@@ -64,7 +64,7 @@ type ArchiveRepository interface {
   // function over non-hidden articles, so it attempts to find and
   // amass every article whose title contains any of the keywords
   // (if more than one) in needle.
-  Get(ctx context.Context, needle string, hidden, draftsOnly bool) (articles []*transfer.Article, err error)
+  Get(ctx context.Context, filter *transfer.ArticleFilter, hidden, draftsOnly bool) (articles []*transfer.Article, err error)
 
   // GetByID retrieves one article (or article draft) by its UUID.
   GetByID(ctx context.Context, id string, isDraft bool) (article *model.Article, err error)
@@ -242,7 +242,7 @@ func (r *archiveRepository) Publish(ctx context.Context, id string) error {
   return nil
 }
 
-func (r *archiveRepository) Get(ctx context.Context, needle string, hidden, draftsOnly bool) (articles []*transfer.Article, err error) {
+func (r *archiveRepository) Get(ctx context.Context, filter *transfer.ArticleFilter, hidden, draftsOnly bool) (articles []*transfer.Article, err error) {
   getArticlesQuery := `
   SELECT "uuid",
          "title",
@@ -256,12 +256,21 @@ func (r *archiveRepository) Get(ctx context.Context, needle string, hidden, draf
               THEN "published_at" IS NULL
               ELSE "published_at" IS NOT NULL
                AND "hidden" IS @hidden
+               AND CASE WHEN @publication_year <> 0 AND @publication_month <> 0 
+                   THEN
+                        CAST(strftime('%Y', "published_at") AS INTEGER) = @publication_year AND
+                        CAST(strftime('%m', "published_at") AS INTEGER) = @publication_month
+                    ELSE TRUE END
+               AND CASE WHEN @topic <> ""
+                   THEN
+                        "topic" = @topic
+                   ELSE TRUE END
                END`
 
-  if "" != needle {
+  if "" != filter.Search {
     searchAnnex := ""
 
-    for _, chunk := range strings.Fields(needle) {
+    for _, chunk := range strings.Fields(filter.Search) {
       if strings.Contains(chunk, "'") {
         chunk = strings.ReplaceAll(chunk, "'", "''")
       }
@@ -272,11 +281,34 @@ func (r *archiveRepository) Get(ctx context.Context, needle string, hidden, draf
     getArticlesQuery += searchAnnex
   }
 
+  getArticlesQuery += `
+  ORDER BY "pinned" DESC, "published_at" DESC
+  LIMIT @rpp
+  OFFSET @rpp * (@page - 1);`
+
   ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
   defer cancel()
 
+  var (
+    year  = 0
+    month = 0
+  )
+
+  if nil != filter.Publication {
+    year = filter.Publication.Year
+    month = int(filter.Publication.Month)
+  }
+
   result, err := r.db.QueryContext(ctx, getArticlesQuery,
-    sql.Named("needle", needle), sql.Named("drafts_only", draftsOnly), sql.Named("hidden", hidden))
+    sql.Named("needle", filter.Search),
+    sql.Named("drafts_only", draftsOnly),
+    sql.Named("hidden", hidden),
+    sql.Named("page", filter.Page),
+    sql.Named("rpp", filter.RPP),
+    sql.Named("topic", filter.Topic),
+    sql.Named("publication_year", year),
+    sql.Named("publication_month", month),
+  )
 
   if nil != err {
     slog.Error(err.Error())

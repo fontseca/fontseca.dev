@@ -5,6 +5,7 @@ import (
   "errors"
   "fontseca.dev/mocks"
   "fontseca.dev/model"
+  "fontseca.dev/transfer"
   "github.com/google/uuid"
   "github.com/stretchr/testify/assert"
   "github.com/stretchr/testify/mock"
@@ -15,29 +16,15 @@ func TestArticlesService_Get(t *testing.T) {
   const routine = "Get"
 
   ctx := context.TODO()
+  filter := &transfer.ArticleFilter{}
 
   t.Run("success", func(t *testing.T) {
-    expectedArticles := make([]*model.Article, 3)
+    expectedArticles := []*transfer.Article{{}, {}, {}}
 
     r := mocks.NewArchiveRepository()
-    r.On(routine, ctx, "", false, false).Return(expectedArticles, nil)
+    r.On(routine, ctx, filter, false, false).Return(expectedArticles, nil)
 
-    articles, err := NewArticlesService(r).Get(ctx, "\n \t \n")
-
-    assert.Equal(t, expectedArticles, articles)
-    assert.NoError(t, err)
-  })
-
-  t.Run("success with search", func(t *testing.T) {
-    expectedArticles := make([]*model.Article, 3)
-    expectedNeedle := "20 www xxx yyy zzz zzz"
-
-    needle := ">> = 20 www? xxx! yyy... zzz_zzz \" ' ° <<"
-
-    r := mocks.NewArchiveRepository()
-    r.On(routine, ctx, expectedNeedle, false, false).Return(expectedArticles, nil)
-
-    articles, err := NewArticlesService(r).Get(ctx, needle)
+    articles, err := NewArticlesService(r).Get(ctx, filter)
 
     assert.Equal(t, expectedArticles, articles)
     assert.NoError(t, err)
@@ -49,7 +36,7 @@ func TestArticlesService_Get(t *testing.T) {
     r := mocks.NewArchiveRepository()
     r.On(routine, ctx, mock.Anything, mock.Anything, mock.Anything).Return(nil, unexpected)
 
-    _, err := NewArticlesService(r).Get(ctx, "")
+    _, err := NewArticlesService(r).Get(ctx, filter)
     assert.ErrorIs(t, err, unexpected)
   })
 }
@@ -58,29 +45,15 @@ func TestArticlesService_GetHidden(t *testing.T) {
   const routine = "Get"
 
   ctx := context.TODO()
+  filter := &transfer.ArticleFilter{}
 
   t.Run("success", func(t *testing.T) {
-    expectedArticles := make([]*model.Article, 3)
+    expectedArticles := []*transfer.Article{{}, {}, {}}
 
     r := mocks.NewArchiveRepository()
-    r.On(routine, ctx, "", true, false).Return(expectedArticles, nil)
+    r.On(routine, ctx, filter, true, false).Return(expectedArticles, nil)
 
-    articles, err := NewArticlesService(r).GetHidden(ctx, "\n \t \n")
-
-    assert.Equal(t, expectedArticles, articles)
-    assert.NoError(t, err)
-  })
-
-  t.Run("success with search", func(t *testing.T) {
-    expectedArticles := make([]*model.Article, 3)
-    expectedNeedle := "20 www xxx yyy zzz zzz"
-
-    needle := ">> = 20 www? xxx! yyy... zzz_zzz \" ' ° <<"
-
-    r := mocks.NewArchiveRepository()
-    r.On(routine, ctx, expectedNeedle, true, false).Return(expectedArticles, nil)
-
-    articles, err := NewArticlesService(r).GetHidden(ctx, needle)
+    articles, err := NewArticlesService(r).GetHidden(ctx, filter)
 
     assert.Equal(t, expectedArticles, articles)
     assert.NoError(t, err)
@@ -92,7 +65,7 @@ func TestArticlesService_GetHidden(t *testing.T) {
     r := mocks.NewArchiveRepository()
     r.On(routine, ctx, mock.Anything, mock.Anything, mock.Anything).Return(nil, unexpected)
 
-    _, err := NewArticlesService(r).GetHidden(ctx, "")
+    _, err := NewArticlesService(r).GetHidden(ctx, filter)
     assert.ErrorIs(t, err, unexpected)
   })
 }

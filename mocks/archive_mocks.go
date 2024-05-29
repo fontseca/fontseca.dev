@@ -25,12 +25,12 @@ func (o *ArchiveRepository) Publish(ctx context.Context, id string) error {
   return o.Called(ctx, id).Error(0)
 }
 
-func (o *ArchiveRepository) Get(ctx context.Context, needle string, hidden, draftsOnly bool) (articles []*transfer.Article, err error) {
-  args := o.Called(ctx, needle, hidden, draftsOnly)
+func (o *ArchiveRepository) Get(ctx context.Context, filter *transfer.ArticleFilter, hidden, draftsOnly bool) (articles []*transfer.Article, err error) {
+  args := o.Called(ctx, filter, hidden, draftsOnly)
   arg0 := args.Get(0)
 
   if nil != arg0 {
-    articles = arg0.([]*model.Article)
+    articles = arg0.([]*transfer.Article)
   }
 
   return articles, args.Error(1)
@@ -116,12 +116,12 @@ func (o *DraftsService) Publish(ctx context.Context, draftUUID string) error {
   return o.Called(ctx, draftUUID).Error(0)
 }
 
-func (o *DraftsService) Get(ctx context.Context, needle string) (drafts []*transfer.Article, err error) {
-  args := o.Called(ctx, needle)
+func (o *DraftsService) Get(ctx context.Context, filter *transfer.ArticleFilter) (drafts []*transfer.Article, err error) {
+  args := o.Called(ctx, filter)
   arg0 := args.Get(0)
 
   if nil != arg0 {
-    drafts = arg0.([]*model.Article)
+    drafts = arg0.([]*transfer.Article)
   }
 
   return drafts, args.Error(1)
@@ -167,23 +167,23 @@ func NewArticlesService() *ArticlesService {
   return new(ArticlesService)
 }
 
-func (o *ArticlesService) Get(ctx context.Context, needle string) (articles []*transfer.Article, err error) {
-  args := o.Called(ctx, needle)
+func (o *ArticlesService) Get(ctx context.Context, filter *transfer.ArticleFilter) (articles []*transfer.Article, err error) {
+  args := o.Called(ctx, filter)
   arg0 := args.Get(0)
 
   if nil != arg0 {
-    articles = arg0.([]*model.Article)
+    articles = arg0.([]*transfer.Article)
   }
 
   return articles, args.Error(1)
 }
 
-func (o *ArticlesService) GetHidden(ctx context.Context, needle string) (articles []*transfer.Article, err error) {
-  args := o.Called(ctx, needle)
+func (o *ArticlesService) GetHidden(ctx context.Context, filter *transfer.ArticleFilter) (articles []*transfer.Article, err error) {
+  args := o.Called(ctx, filter)
   arg0 := args.Get(0)
 
   if nil != arg0 {
-    articles = arg0.([]*model.Article)
+    articles = arg0.([]*transfer.Article)
   }
 
   return articles, args.Error(1)

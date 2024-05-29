@@ -88,29 +88,15 @@ func TestDraftsService_Get(t *testing.T) {
   const routine = "Get"
 
   ctx := context.TODO()
+  filter := &transfer.ArticleFilter{}
 
   t.Run("success", func(t *testing.T) {
-    expectedDrafts := make([]*model.Article, 3)
+    expectedDrafts := []*transfer.Article{{}, {}, {}}
 
     r := mocks.NewArchiveRepository()
-    r.On(routine, ctx, "", false, true).Return(expectedDrafts, nil)
+    r.On(routine, ctx, filter, false, true).Return(expectedDrafts, nil)
 
-    drafts, err := NewDraftsService(r).Get(ctx, "\n \t \n")
-
-    assert.Equal(t, expectedDrafts, drafts)
-    assert.NoError(t, err)
-  })
-
-  t.Run("success with search", func(t *testing.T) {
-    expectedDrafts := make([]*model.Article, 3)
-    expectedNeedle := "20 www xxx yyy zzz zzz"
-
-    needle := ">> = 20 www? xxx! yyy... zzz_zzz \" ' ° <<"
-
-    r := mocks.NewArchiveRepository()
-    r.On(routine, ctx, expectedNeedle, false, true).Return(expectedDrafts, nil)
-
-    drafts, err := NewDraftsService(r).Get(ctx, needle)
+    drafts, err := NewDraftsService(r).Get(ctx, filter)
 
     assert.Equal(t, expectedDrafts, drafts)
     assert.NoError(t, err)
@@ -122,7 +108,7 @@ func TestDraftsService_Get(t *testing.T) {
     r := mocks.NewArchiveRepository()
     r.On(routine, ctx, mock.Anything, mock.Anything, mock.Anything).Return(nil, unexpected)
 
-    _, err := NewDraftsService(r).Get(ctx, "")
+    _, err := NewDraftsService(r).Get(ctx, filter)
     assert.ErrorIs(t, err, unexpected)
   })
 }

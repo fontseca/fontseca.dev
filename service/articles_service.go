@@ -5,26 +5,25 @@ import (
   "fontseca.dev/model"
   "fontseca.dev/repository"
   "fontseca.dev/transfer"
-  "strings"
 )
 
 // ArticlesService is a high level provider for articles.
 type ArticlesService interface {
   // Get retrieves all the published articles.
   //
-  // If needle is a non-empty string, then Get behaves like a search
+  // If filter.Search is a non-empty string, then Get behaves like a search
   // function over articles, so it attempts to find and amass every
   // article whose title contains any of the keywords (if more than one)
-  // in needle.
-  Get(ctx context.Context, needle string) (articles []*transfer.Article, err error)
+  // in filter.Search.
+  Get(ctx context.Context, filter *transfer.ArticleFilter) (articles []*transfer.Article, err error)
 
   // GetHidden retrieves all the published articles thar are hidden.
   //
-  // If needle is a non-empty string, then Get behaves like a search
+  // If filter.Search is a non-empty string, then Get behaves like a search
   // function over articles, so it attempts to find and amass every
   // article whose title contains any of the keywords (if more than one)
-  // in needle.
-  GetHidden(ctx context.Context, needle string) (articles []*transfer.Article, err error)
+  // in filter.Search.
+  GetHidden(ctx context.Context, filter *transfer.ArticleFilter) (articles []*transfer.Article, err error)
 
   // GetByID retrieves one article by its UUID.
   GetByID(ctx context.Context, articleUUID string) (article *model.Article, err error)
@@ -70,31 +69,20 @@ func NewArticlesService(r repository.ArchiveRepository) ArticlesService {
   return &articlesService{r}
 }
 
-func (s *articlesService) doGet(ctx context.Context, needle string, hidden ...bool) (articles []*transfer.Article, err error) {
-  needle = strings.TrimSpace(needle)
-
-  if "" != needle {
-    if strings.Contains(needle, "_") {
-      needle = strings.ReplaceAll(needle, "_", " ")
-    }
-
-    words := wordsOnly.FindAllString(needle, -1)
-    needle = strings.Join(words, " ")
-  }
-
+func (s *articlesService) doGet(ctx context.Context, filter *transfer.ArticleFilter, hidden ...bool) (articles []*transfer.Article, err error) {
   if 0 < len(hidden) {
-    return s.r.Get(ctx, needle, hidden[0], false)
+    return s.r.Get(ctx, filter, hidden[0], false)
   }
 
-  return s.r.Get(ctx, needle, false, false)
+  return s.r.Get(ctx, filter, false, false)
 }
 
-func (s *articlesService) Get(ctx context.Context, needle string) (articles []*transfer.Article, err error) {
-  return s.doGet(ctx, needle)
+func (s *articlesService) Get(ctx context.Context, filter *transfer.ArticleFilter) (articles []*transfer.Article, err error) {
+  return s.doGet(ctx, filter)
 }
 
-func (s *articlesService) GetHidden(ctx context.Context, needle string) (articles []*transfer.Article, err error) {
-  return s.doGet(ctx, needle, true)
+func (s *articlesService) GetHidden(ctx context.Context, filter *transfer.ArticleFilter) (articles []*transfer.Article, err error) {
+  return s.doGet(ctx, filter, true)
 }
 
 func (s *articlesService) GetByID(ctx context.Context, articleUUID string) (article *model.Article, err error) {
