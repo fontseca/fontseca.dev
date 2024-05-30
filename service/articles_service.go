@@ -17,6 +17,9 @@ type ArticlesService interface {
   // in filter.Search.
   Get(ctx context.Context, filter *transfer.ArticleFilter) (articles []*transfer.Article, err error)
 
+  // Publications retrieves a list of distinct months during which articles have been published.
+  Publications(ctx context.Context) (publications []*transfer.Publication, err error)
+
   // GetHidden retrieves all the published articles thar are hidden.
   //
   // If filter.Search is a non-empty string, then Get behaves like a search
@@ -79,6 +82,10 @@ func (s *articlesService) doGet(ctx context.Context, filter *transfer.ArticleFil
 
 func (s *articlesService) Get(ctx context.Context, filter *transfer.ArticleFilter) (articles []*transfer.Article, err error) {
   return s.doGet(ctx, filter)
+}
+
+func (s *articlesService) Publications(ctx context.Context) (publications []*transfer.Publication, err error) {
+  return s.r.Publications(ctx)
 }
 
 func (s *articlesService) GetHidden(ctx context.Context, filter *transfer.ArticleFilter) (articles []*transfer.Article, err error) {

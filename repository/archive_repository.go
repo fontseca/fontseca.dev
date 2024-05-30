@@ -57,6 +57,9 @@ type ArchiveRepository interface {
   // no effect.
   Publish(ctx context.Context, id string) error
 
+  // Publications retrieves a list of distinct months during which articles have been published.
+  Publications(ctx context.Context) (publications []*transfer.Publication, err error)
+
   // Get retrieves all the articles that are either hidden or not. If
   // draftsOnly is true, then only retrieves all the ongoing drafts.
   //
@@ -128,11 +131,15 @@ type ArchiveRepository interface {
 }
 
 type archiveRepository struct {
-  db *sql.DB
+  db                *sql.DB
+  publicationsCache []*transfer.Publication
 }
 
 func NewArchiveRepository(db *sql.DB) ArchiveRepository {
-  return &archiveRepository{db}
+  return &archiveRepository{
+    db:                db,
+    publicationsCache: []*transfer.Publication{},
+  }
 }
 
 func (r *archiveRepository) Draft(ctx context.Context, creation *transfer.ArticleCreation) (id string, err error) {
@@ -239,7 +246,64 @@ func (r *archiveRepository) Publish(ctx context.Context, id string) error {
     return err
   }
 
+  r.setPublicationsCache(ctx)
+
   return nil
+}
+
+func (r *archiveRepository) setPublicationsCache(ctx context.Context) {
+  r.publicationsCache = nil
+  r.publicationsCache, _ = r.Publications(ctx)
+}
+
+func (r *archiveRepository) Publications(ctx context.Context) (publications []*transfer.Publication, err error) {
+  if 0 < len(r.publicationsCache) {
+    return r.publicationsCache, nil
+  }
+
+  getPublicationsQuery := `
+  SELECT cast(strftime('%m', "published_at") AS INTEGER) AS "month",
+         cast(strftime('%Y', "published_at") AS INTEGER) AS "year"
+    FROM "article"
+   WHERE "draft" IS FALSE
+     AND "published_at" IS NOT NULL
+     AND "hidden" IS FALSE
+     GROUP BY "month"
+     ORDER BY "year" DESC, "month" DESC;`
+
+  ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+  defer cancel()
+
+  result, err := r.db.QueryContext(ctx, getPublicationsQuery)
+
+  if nil != err {
+    slog.Error(err.Error())
+    return nil, err
+  }
+
+  defer result.Close()
+
+  publications = make([]*transfer.Publication, 0)
+
+  for result.Next() {
+    var publication transfer.Publication
+
+    err = result.Scan(
+      &publication.Month,
+      &publication.Year,
+    )
+
+    if nil != err {
+      slog.Error(err.Error())
+      return nil, err
+    }
+
+    publications = append(publications, &publication)
+  }
+
+  r.publicationsCache = publications
+
+  return publications, nil
 }
 
 func (r *archiveRepository) Get(ctx context.Context, filter *transfer.ArticleFilter, hidden, draftsOnly bool) (articles []*transfer.Article, err error) {
@@ -623,6 +687,8 @@ func (r *archiveRepository) Remove(ctx context.Context, id string) error {
     return err
   }
 
+  r.setPublicationsCache(ctx)
+
   return nil
 }
 
@@ -923,6 +989,8 @@ func (r *archiveRepository) SetHidden(ctx context.Context, id string, hidden boo
     slog.Error(err.Error())
     return err
   }
+
+  r.setPublicationsCache(ctx)
 
   return nil
 }

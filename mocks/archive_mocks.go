@@ -25,6 +25,17 @@ func (o *ArchiveRepository) Publish(ctx context.Context, id string) error {
   return o.Called(ctx, id).Error(0)
 }
 
+func (o *ArchiveRepository) Publications(ctx context.Context) (publications []*transfer.Publication, err error) {
+  args := o.Called(ctx)
+  arg0 := args.Get(0)
+
+  if nil != arg0 {
+    publications = arg0.([]*transfer.Publication)
+  }
+
+  return publications, args.Error(1)
+}
+
 func (o *ArchiveRepository) Get(ctx context.Context, filter *transfer.ArticleFilter, hidden, draftsOnly bool) (articles []*transfer.Article, err error) {
   args := o.Called(ctx, filter, hidden, draftsOnly)
   arg0 := args.Get(0)
@@ -176,6 +187,17 @@ func (o *ArticlesService) Get(ctx context.Context, filter *transfer.ArticleFilte
   }
 
   return articles, args.Error(1)
+}
+
+func (o *ArticlesService) Publications(ctx context.Context) (publications []*transfer.Publication, err error) {
+  args := o.Called(ctx)
+  arg0 := args.Get(0)
+
+  if nil != arg0 {
+    publications = arg0.([]*transfer.Publication)
+  }
+
+  return publications, args.Error(1)
 }
 
 func (o *ArticlesService) GetHidden(ctx context.Context, filter *transfer.ArticleFilter) (articles []*transfer.Article, err error) {
