@@ -47,6 +47,17 @@ func (o *ArchiveRepository) Get(ctx context.Context, filter *transfer.ArticleFil
   return articles, args.Error(1)
 }
 
+func (o *ArchiveRepository) GetOne(ctx context.Context, request *transfer.ArticleRequest) (article *model.Article, err error) {
+  args := o.Called(ctx, request)
+  arg0 := args.Get(0)
+
+  if nil != arg0 {
+    article = arg0.(*model.Article)
+  }
+
+  return article, args.Error(1)
+}
+
 func (o *ArchiveRepository) GetByID(ctx context.Context, id string, isDraft bool) (article *model.Article, err error) {
   args := o.Called(ctx, id, isDraft)
   arg0 := args.Get(0)
@@ -136,6 +147,17 @@ func (o *DraftsService) Get(ctx context.Context, filter *transfer.ArticleFilter)
   }
 
   return drafts, args.Error(1)
+}
+
+func (o *DraftsService) GetOne(ctx context.Context, request *transfer.ArticleRequest) (article *model.Article, err error) {
+  args := o.Called(ctx, request)
+  arg0 := args.Get(0)
+
+  if nil != arg0 {
+    article = arg0.(*model.Article)
+  }
+
+  return article, args.Error(1)
 }
 
 func (o *DraftsService) GetByID(ctx context.Context, draftUUID string) (draft *model.Article, err error) {

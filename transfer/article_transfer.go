@@ -34,7 +34,8 @@ type Article struct {
   PublishedAt *time.Time `json:"published_at"`
 }
 
-// Publication represents the publication date of an article, consisting of a month and a year.
+// Publication represents the publication date of an article,
+// consisting of a month and a year.
 type Publication struct {
   Month time.Month
   Year  int
@@ -47,4 +48,12 @@ type ArticleFilter struct {
   Publication *Publication
   Page        int
   RPP         int // records per page
+}
+
+// ArticleRequest represents the parameters used to query one
+// article by its full URL.
+type ArticleRequest struct {
+  Topic       string
+  Publication *Publication
+  Slug        string
 }

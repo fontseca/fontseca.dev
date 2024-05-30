@@ -2,9 +2,11 @@ package service
 
 import (
   "context"
+  "errors"
   "fontseca.dev/model"
   "fontseca.dev/repository"
   "fontseca.dev/transfer"
+  "log/slog"
 )
 
 // ArticlesService is a high level provider for articles.
@@ -27,6 +29,9 @@ type ArticlesService interface {
   // article whose title contains any of the keywords (if more than one)
   // in filter.Search.
   GetHidden(ctx context.Context, filter *transfer.ArticleFilter) (articles []*transfer.Article, err error)
+
+  // GetOne retrieves one published article by the URL '/archive/:topic/:year/:month/:slug'.
+  GetOne(ctx context.Context, request *transfer.ArticleRequest) (article *model.Article, err error)
 
   // GetByID retrieves one article by its UUID.
   GetByID(ctx context.Context, articleUUID string) (article *model.Article, err error)
@@ -90,6 +95,16 @@ func (s *articlesService) Publications(ctx context.Context) (publications []*tra
 
 func (s *articlesService) GetHidden(ctx context.Context, filter *transfer.ArticleFilter) (articles []*transfer.Article, err error) {
   return s.doGet(ctx, filter, true)
+}
+
+func (s *articlesService) GetOne(ctx context.Context, request *transfer.ArticleRequest) (article *model.Article, err error) {
+  if nil == request {
+    err = errors.New("nil value for parameter: request")
+    slog.Error(err.Error())
+    return nil, err
+  }
+
+  return s.r.GetOne(ctx, request)
 }
 
 func (s *articlesService) GetByID(ctx context.Context, articleUUID string) (article *model.Article, err error) {

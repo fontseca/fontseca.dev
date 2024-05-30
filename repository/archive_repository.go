@@ -70,6 +70,9 @@ type ArchiveRepository interface {
   // (if more than one) in needle.
   Get(ctx context.Context, filter *transfer.ArticleFilter, hidden, draftsOnly bool) (articles []*transfer.Article, err error)
 
+  // GetOne retrieves one published article by the URL '/archive/:topic/:year/:month/:slug'.
+  GetOne(ctx context.Context, request *transfer.ArticleRequest) (article *model.Article, err error)
+
   // GetByID retrieves one article (or article draft) by its UUID.
   GetByID(ctx context.Context, id string, isDraft bool) (article *model.Article, err error)
 
@@ -446,6 +449,52 @@ func (r *archiveRepository) Get(ctx context.Context, filter *transfer.ArticleFil
   }
 
   return articles, nil
+}
+
+func (r *archiveRepository) GetOne(ctx context.Context, request *transfer.ArticleRequest) (article *model.Article, err error) {
+  requestArticleUUIDQuery := `
+  SELECT "uuid"
+    FROM "article"
+   WHERE "draft" IS FALSE
+     AND "published_at" IS NOT NULL
+     AND "hidden" IS FALSE
+     AND "topic" = @topic
+     AND cast(strftime('%Y', "published_at") AS INTEGER) = @year
+     AND cast(strftime('%m', "published_at") AS INTEGER) = @month
+     AND "slug" = @slug;`
+
+  var (
+    year  = 0
+    month = 0
+  )
+
+  if nil != request.Publication {
+    year = request.Publication.Year
+    month = int(request.Publication.Month)
+  }
+
+  var id string
+
+  ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+  defer cancel()
+
+  err = r.db.QueryRowContext(ctx, requestArticleUUIDQuery,
+    sql.Named("topic", request.Topic),
+    sql.Named("year", year),
+    sql.Named("month", month),
+    sql.Named("slug", request.Slug),
+  ).Scan(&id)
+
+  if nil != err {
+    slog.Error(err.Error())
+    return nil, err
+  }
+
+  if "" == id {
+    return nil, problem.NewNotFound(id, "article") // TODO: Do not return this kind of problem.
+  }
+
+  return r.GetByID(ctx, id, false)
 }
 
 func (r *archiveRepository) GetByID(ctx context.Context, id string, isDraft bool) (article *model.Article, err error) {
