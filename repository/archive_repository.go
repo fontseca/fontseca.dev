@@ -408,6 +408,9 @@ func (r *archiveRepository) Get(ctx context.Context, filter *transfer.ArticleFil
         topic = "none"
       }
 
+      article.Topic.ID = topic
+      article.Topic.URL = fmt.Sprintf("https://fontseca.dev/archive/%s", topic)
+
       // The URL has the form: 'https://fontseca.dev/archive/:topic/:year/:month/:slug'.
       article.URL = fmt.Sprintf("https://fontseca.dev/archive/%s/%d/%d/%s", topic, year, month, slug)
     } else {
