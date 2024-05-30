@@ -9,6 +9,7 @@ import (
   "fontseca.dev/model"
   "fontseca.dev/problem"
   "fontseca.dev/transfer"
+  "github.com/gin-gonic/gin"
   "github.com/google/uuid"
   "log/slog"
   "net/http"
@@ -375,6 +376,23 @@ func (r *archiveRepository) Get(ctx context.Context, filter *transfer.ArticleFil
     return nil, err
   }
 
+  URLBase := ""
+
+  value := ctx.Value(gin.ContextKey)
+  if nil != value {
+    c := value.(*gin.Context)
+
+    if nil != c {
+      schema := "http"
+
+      if nil != c.Request.TLS {
+        schema = "https"
+      }
+
+      URLBase = schema + "://" + c.Request.Host
+    }
+  }
+
   articles = make([]*transfer.Article, 0)
 
   for result.Next() {
@@ -409,10 +427,12 @@ func (r *archiveRepository) Get(ctx context.Context, filter *transfer.ArticleFil
       }
 
       article.Topic.ID = topic
-      article.Topic.URL = fmt.Sprintf("https://fontseca.dev/archive/%s", topic)
 
-      // The URL has the form: 'https://fontseca.dev/archive/:topic/:year/:month/:slug'.
-      article.URL = fmt.Sprintf("https://fontseca.dev/archive/%s/%d/%d/%s", topic, year, month, slug)
+      // The topic URL has the form: '.../archive/:topic'.
+      article.Topic.URL = fmt.Sprintf("%s/archive/%s", URLBase, topic)
+
+      // The URL has the form: '.../archive/:topic/:year/:month/:slug'.
+      article.URL = fmt.Sprintf("%s/archive/%s/%d/%d/%s", URLBase, topic, year, month, slug)
     } else {
       article.URL = "about:blank"
     }
