@@ -603,13 +603,16 @@ func main() {
     p.Emit(c.Writer)
   })
 
-  var port = strings.TrimSpace(os.Getenv("SERVER_PORT"))
+  var port = strings.TrimSpace(os.Getenv("PORT"))
   if "" == port {
-    port = ":5487"
+    port = "8080"
+    slog.Warn("environment variable not found",
+      slog.String("variable", "PORT"),
+      slog.String("default", port))
   }
 
   var server = http.Server{
-    Addr:           port,
+    Addr:           "0.0.0.0:" + port,
     IdleTimeout:    1 * time.Minute,
     ReadTimeout:    5 * time.Second,
     WriteTimeout:   5 * time.Second,
