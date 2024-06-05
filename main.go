@@ -3,7 +3,7 @@ package main
 import (
   "context"
   "database/sql"
-  "encoding/json"
+  "errors"
   "fmt"
   "fontseca.dev/handler"
   "fontseca.dev/problem"
@@ -19,59 +19,14 @@ import (
   "log/slog"
   "net/http"
   "os"
+  "os/signal"
   "path/filepath"
   "reflect"
   "strconv"
   "strings"
+  "syscall"
   "time"
 )
-
-// indentedWriter is a decorator that writes line-delimited JSON objects received from calls to
-// the methods of the default slog.Logger to an io.Write, typically a *os.File; these
-// writes are indented and the order of the object fields is conveniently rearranged.
-type indentedWriter struct {
-  io.Writer
-}
-
-func withIndentedWrite(w io.Writer) io.Writer {
-  return &indentedWriter{Writer: w}
-}
-
-func (a *indentedWriter) Write(p []byte) (n int, err error) {
-  n = len(p)
-
-  if err = a.indent(&p); nil != err {
-    return 0, err
-  }
-
-  _, err = a.Writer.Write(p) // discard n to avoid an 'io.ErrShortWrite' error in multiWriter.Write
-  if nil != err {
-    return 0, err
-  }
-
-  _, err = a.Writer.Write([]byte("\n"))
-  if nil != err {
-    return 0, err
-  }
-
-  return n, nil
-}
-
-func (a *indentedWriter) indent(p *[]byte) (err error) {
-  var s = struct {
-    Level  string `json:"level"`
-    Time   string `json:"time"`
-    Msg    string `json:"msg"`
-    Source any    `json:"source"`
-  }{}
-  if err = json.Unmarshal(*p, &s); nil != err {
-    return err
-  }
-  if *p, err = json.MarshalIndent(s, "", "  "); nil != err {
-    return err
-  }
-  return nil
-}
 
 // table contains information about a relation in the database.
 type table struct {
@@ -153,10 +108,15 @@ func main() {
   }
 
   defer func(db *sql.DB) {
+    fmt.Fprint(os.Stdout, "closing database... ")
+
     err := db.Close()
     if err != nil {
-      log.Fatal(err)
+      fmt.Fprintf(os.Stderr, "could not close database: %v", err)
+      return
     }
+
+    fmt.Fprintln(os.Stdout, "done")
   }(db)
 
   if err = db.Ping(); nil != err {
@@ -353,19 +313,25 @@ func main() {
   if nil != err {
     log.Fatal(err)
   }
+
   defer failLogFile.Close()
 
-  var multiWriter = io.MultiWriter(withIndentedWrite(os.Stderr), failLogFile)
-  var logger = slog.New(slog.NewJSONHandler(multiWriter,
+  var multiWriter = io.MultiWriter(os.Stderr, failLogFile)
+  var logger = slog.New(slog.NewTextHandler(multiWriter,
     &slog.HandlerOptions{
       AddSource: true,
       ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
+        if a.Key == slog.TimeKey {
+          a.Value = slog.TimeValue(a.Value.Time().UTC())
+        }
+
         if slog.SourceKey == a.Key {
           var source, _ = a.Value.Any().(*slog.Source)
           if nil != source {
             source.File = filepath.Base(source.File)
           }
         }
+
         return a
       },
     }))
@@ -375,6 +341,9 @@ func main() {
   var mode = strings.TrimSpace(os.Getenv("SERVER_MODE"))
   if "" == mode {
     mode = gin.DebugMode
+    slog.Warn("environment variable not found",
+      slog.String("variable", "SERVER_MODE"),
+      slog.String("default", mode))
   }
 
   gin.SetMode(mode)
@@ -407,8 +376,10 @@ func main() {
 
   serverLogFile, err := os.OpenFile("server.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
   if nil != err {
-    log.Fatal(err)
+    slog.Error(err.Error())
+    return
   }
+
   defer serverLogFile.Close()
 
   engine.Use(gin.LoggerWithConfig(gin.LoggerConfig{
@@ -620,5 +591,34 @@ func main() {
     Handler:        engine,
   }
 
-  slog.Error(server.ListenAndServe().Error())
+  slog.Info("running server",
+    slog.String("address", server.Addr),
+    slog.String("mode", mode))
+
+  var (
+    didNotServe = make(chan struct{})
+    shutdown    = make(chan os.Signal, 1)
+  )
+
+  signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL)
+
+  go func() {
+    err = server.ListenAndServe()
+    if !errors.Is(err, http.ErrServerClosed) {
+      slog.Error(err.Error())
+    }
+
+    didNotServe <- struct{}{}
+  }()
+
+  select {
+  case <-didNotServe:
+    return
+  case sig := <-shutdown:
+    fmt.Fprintf(os.Stdout, "received %s signal, gracefully shutting down...\n", sig.String())
+
+    if err := server.Shutdown(context.TODO()); nil != err {
+      fmt.Fprintf(os.Stderr, "could not shutdown server: %v", err)
+    }
+  }
 }
