@@ -238,6 +238,7 @@ func main() {
         "author"       VARCHAR(64) NOT NULL REFERENCES "me" ("username"),
         "slug"         VARCHAR(512) NOT NULL,
         "read_time"    INT NOT NULL ON CONFLICT REPLACE DEFAULT 0,
+        "views"        INTEGER NOT NULL ON CONFLICT REPLACE DEFAULT 0,
         "content"      TEXT NOT NULL ON CONFLICT REPLACE DEFAULT 'No content.',
         "draft"        BOOLEAN DEFAULT TRUE,
         "pinned"       BOOLEAN DEFAULT FALSE,

@@ -12,6 +12,7 @@ type Article struct {
   Title       string     `json:"title"`
   Author      string     `json:"author"`
   Slug        string     `json:"slug"`
+  Views       int64      `json:"views"`
   ReadTime    int        `json:"read_time"`
   Content     string     `json:"content"`
   IsDraft     bool       `json:"is_draft"`
