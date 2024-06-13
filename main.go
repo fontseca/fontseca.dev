@@ -20,7 +20,6 @@ import (
   "net/http"
   "os"
   "os/signal"
-  "path/filepath"
   "reflect"
   "strconv"
   "strings"
@@ -80,6 +79,8 @@ func (t *table) create(ctx context.Context, tx *sql.Tx) {
 }
 
 func main() {
+  log.SetFlags(log.LstdFlags | log.Lshortfile)
+
   sql.Register("sqlite3_custom", &sqlite3.SQLiteDriver{
     ConnectHook: func(conn *sqlite3.SQLiteConn) error {
       if err := conn.RegisterFunc(
@@ -310,34 +311,14 @@ func main() {
     log.Fatal(err)
   }
 
-  failLogFile, err := os.OpenFile("fail.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+  logfile, err := os.OpenFile("logfile", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
   if nil != err {
     log.Fatal(err)
   }
 
-  defer failLogFile.Close()
+  defer logfile.Close()
 
-  var multiWriter = io.MultiWriter(os.Stderr, failLogFile)
-  var logger = slog.New(slog.NewTextHandler(multiWriter,
-    &slog.HandlerOptions{
-      AddSource: true,
-      ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
-        if a.Key == slog.TimeKey {
-          a.Value = slog.TimeValue(a.Value.Time().UTC())
-        }
-
-        if slog.SourceKey == a.Key {
-          var source, _ = a.Value.Any().(*slog.Source)
-          if nil != source {
-            source.File = filepath.Base(source.File)
-          }
-        }
-
-        return a
-      },
-    }))
-
-  slog.SetDefault(logger)
+  log.SetOutput(io.MultiWriter(os.Stderr, logfile))
 
   var mode = strings.TrimSpace(os.Getenv("SERVER_MODE"))
   if "" == mode {
@@ -385,7 +366,7 @@ func main() {
 
   engine.Use(gin.LoggerWithConfig(gin.LoggerConfig{
     Formatter: formatter,
-    Output:    io.MultiWriter(os.Stdout, serverLogFile),
+    Output:    serverLogFile,
   }))
 
   engine.Static("/public", "public")
