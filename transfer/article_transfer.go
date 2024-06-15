@@ -16,6 +16,7 @@ type ArticleCreation struct {
 // ArticleUpdate represents the data required to update an existing article entry.
 type ArticleUpdate struct {
   Title    string `json:"title"`
+  Topic    string `json:"topic_id"`
   Slug     string
   ReadTime int
   Content  string `json:"content"`

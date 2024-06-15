@@ -128,7 +128,7 @@ type ArchiveRepository interface {
 
   // Revise adds a correction or inclusion to a draft or patch in order
   // to correct or improve it.
-  Revise(ctx context.Context, id string, revision *transfer.ArticleUpdate) error
+  Revise(ctx context.Context, id string, revision *transfer.ArticleRevision) error
 
   // Release merges patch into the original article and published the
   // update immediately after merging.
@@ -1579,7 +1579,7 @@ func (r *archiveRepository) Discard(ctx context.Context, id string) error {
   return nil
 }
 
-func (r *archiveRepository) Revise(ctx context.Context, id string, revision *transfer.ArticleUpdate) error {
+func (r *archiveRepository) Revise(ctx context.Context, id string, revision *transfer.ArticleRevision) error {
   isArticlePatchQuery := `
   SELECT count(*)
     FROM "article_patch"
@@ -1596,6 +1596,28 @@ func (r *archiveRepository) Revise(ctx context.Context, id string, revision *tra
     return err
   }
 
+  if "" != revision.Topic {
+    exists := false
+    topicExistsQuery := `
+    SELECT count (1)
+      FROM "topic"
+     WHERE "id" = $1;`
+
+    ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+    defer cancel()
+
+    err := r.db.QueryRowContext(ctx, topicExistsQuery, revision.Topic).Scan(&exists)
+
+    if nil != err {
+      slog.Error(err.Error())
+      return err
+    }
+
+    if !exists {
+      return problem.NewNotFound(revision.Topic, "topic")
+    }
+  }
+
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelReadCommitted})
   if nil != err {
     slog.Error(err.Error())
@@ -1608,6 +1630,7 @@ func (r *archiveRepository) Revise(ctx context.Context, id string, revision *tra
   UPDATE "article"
      SET "title" = coalesce (nullif (@title, ''), "title"),
          "slug" = coalesce (nullif (@slug, ''), "slug"),
+         "topic" = coalesce (nullif (@topic, ''), "topic"),
          "read_time" = CASE WHEN @read_time = "read_time"
                               OR @read_time IS NULL
                               OR @read_time = 0
@@ -1624,6 +1647,7 @@ func (r *archiveRepository) Revise(ctx context.Context, id string, revision *tra
     UPDATE "article_patch"
        SET "title" = coalesce (nullif (@title, ''), "title"),
            "slug" = coalesce (nullif (@slug, ''), "slug"),
+           "topic" = coalesce (nullif (@topic, ''), "topic"),
            "read_time" = CASE WHEN @read_time = "read_time"
                                 OR @read_time IS NULL
                                 OR @read_time = 0
@@ -1641,6 +1665,7 @@ func (r *archiveRepository) Revise(ctx context.Context, id string, revision *tra
     sql.Named("uuid", id),
     sql.Named("title", revision.Title),
     sql.Named("slug", revision.Slug),
+    sql.Named("topic", revision.Topic),
     sql.Named("read_time", revision.ReadTime),
     sql.Named("content", revision.Content),
   )
