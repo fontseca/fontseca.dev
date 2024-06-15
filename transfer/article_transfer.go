@@ -25,7 +25,7 @@ type ArticleUpdate struct {
 type Article struct {
   UUID  uuid.UUID `json:"uuid"`
   Title string    `json:"title"`
-  Topic struct {
+  Topic *struct {
     ID  string `json:"id"`
     URL string `json:"url"` // in the form: 'https://fontseca.dev/archive/:topic'
   } `json:"topic"`

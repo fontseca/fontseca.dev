@@ -13,6 +13,8 @@ import (
   "github.com/google/uuid"
   "log/slog"
   "net/http"
+  "net/url"
+  "strconv"
   "strings"
   "sync"
   "time"
@@ -405,6 +407,33 @@ func (r *archiveRepository) Publish(ctx context.Context, id string) error {
     return &p
   }
 
+  var hasTopic bool
+
+  hasTopicQuery := `
+  SELECT count (1)
+    FROM "article"
+   WHERE "uuid" = $1
+     AND "draft" IS TRUE
+     AND "published_at" IS NULL
+     AND "topic" IS NOT NULL
+     AND "topic" <> '';`
+
+  err = r.db.QueryRowContext(ctx, hasTopicQuery, id).Scan(&hasTopic)
+
+  if nil != err {
+    slog.Error(err.Error())
+    return err
+  }
+
+  if !hasTopic {
+    p := &problem.Problem{}
+    p.Status(http.StatusBadRequest)
+    p.Title("Could not publish draft.")
+    p.Detail("Cannot publish a draft without making it belong to a topic first.")
+    p.With("draft_uuid", id)
+    return p
+  }
+
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
   if nil != err {
     slog.Error(err.Error())
@@ -607,6 +636,8 @@ func (r *archiveRepository) Get(ctx context.Context, filter *transfer.ArticleFil
     return nil, err
   }
 
+  defer result.Close()
+
   URLBase := ""
 
   value := ctx.Value(gin.ContextKey)
@@ -642,28 +673,51 @@ func (r *archiveRepository) Get(ctx context.Context, filter *transfer.ArticleFil
       &article.PublishedAt,
     )
 
-    if !draftsOnly {
+    topic := nullableTopic.String
+
+    if "" == topic {
+      article.Topic = nil
+    } else {
+      // The topic URL has the form: '.../archive/:topic'.
+      topicURL, err := url.JoinPath(URLBase, "archive", "topic")
+
+      if nil == err {
+        article.Topic = &struct {
+          ID  string `json:"id"`
+          URL string `json:"url"`
+        }{
+          ID:  topic,
+          URL: topicURL,
+        }
+      } else {
+        slog.Error(err.Error())
+      }
+    }
+
+    if !draftsOnly && nil != article.Topic {
       var publishedAt time.Time
 
       if nil != article.PublishedAt {
         publishedAt = *article.PublishedAt
       }
 
-      topic := nullableTopic.String
       year := publishedAt.Year()
       month := int(publishedAt.Month())
 
-      if "" == topic {
-        topic = "none"
-      }
-
-      article.Topic.ID = topic
-
-      // The topic URL has the form: '.../archive/:topic'.
-      article.Topic.URL = fmt.Sprintf("%s/archive/%s", URLBase, topic)
-
       // The URL has the form: '.../archive/:topic/:year/:month/:slug'.
-      article.URL = fmt.Sprintf("%s/archive/%s/%d/%d/%s", URLBase, topic, year, month, slug)
+      u, err := url.JoinPath(
+        URLBase,
+        "archive",
+        article.Topic.ID,
+        strconv.Itoa(year),
+        strconv.Itoa(month),
+        slug)
+
+      if nil == err {
+        article.URL = u
+      } else {
+        slog.Error(err.Error())
+      }
     } else {
       article.URL = "about:blank"
     }
