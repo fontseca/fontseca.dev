@@ -45,6 +45,7 @@ a:hover {
 .logo-text span {
   font-family: 'Source Serif 4', sans-serif;
   font-weight: 400;
+  font-style: italic;
 }
 
 .logo-motto {
