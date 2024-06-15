@@ -106,7 +106,7 @@ func (o *ArchiveRepository) Discard(ctx context.Context, id string) error {
   return o.Called(ctx, id).Error(0)
 }
 
-func (o *ArchiveRepository) Revise(ctx context.Context, id string, revision *transfer.ArticleUpdate) error {
+func (o *ArchiveRepository) Revise(ctx context.Context, id string, revision *transfer.ArticleRevision) error {
   return o.Called(ctx, id, revision).Error(0)
 }
 
@@ -196,7 +196,7 @@ func (o *DraftsService) Discard(ctx context.Context, draftUUID string) error {
   return o.Called(ctx, draftUUID).Error(0)
 }
 
-func (o *DraftsService) Revise(ctx context.Context, draftUUID string, revision *transfer.ArticleUpdate) error {
+func (o *DraftsService) Revise(ctx context.Context, draftUUID string, revision *transfer.ArticleRevision) error {
   return o.Called(ctx, draftUUID, revision).Error(0)
 }
 
@@ -318,7 +318,7 @@ func (o *PatchesService) Get(ctx context.Context) (patches []*model.ArticlePatch
   return patches, args.Error(1)
 }
 
-func (o *PatchesService) Revise(ctx context.Context, id string, revision *transfer.ArticleUpdate) error {
+func (o *PatchesService) Revise(ctx context.Context, id string, revision *transfer.ArticleRevision) error {
   return o.Called(ctx, id, revision).Error(0)
 }
 

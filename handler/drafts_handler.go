@@ -157,7 +157,7 @@ func (h *DraftsHandler) Revise(c *gin.Context) {
     return
   }
 
-  var revision transfer.ArticleUpdate
+  var revision transfer.ArticleRevision
 
   if err := bindPostForm(c, &revision); check(err, c.Writer) {
     return

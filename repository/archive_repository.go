@@ -336,6 +336,8 @@ func (r *archiveRepository) incrementViews(ctx context.Context, article string) 
 }
 
 func (r *archiveRepository) Draft(ctx context.Context, creation *transfer.ArticleCreation) (id string, err error) {
+  slog.Info("drafting new article", slog.String("title", creation.Title))
+
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
   if nil != err {
     slog.Error(err.Error())
@@ -447,6 +449,8 @@ func (r *archiveRepository) Publish(ctx context.Context, id string) error {
      SET "draft" = FALSE,
          "published_at" = current_timestamp
    WHERE "uuid" = @uuid;`
+
+  slog.Info("publishing draft", slog.String("uuid", id))
 
   ctx, cancel = context.WithTimeout(ctx, 2*time.Second)
   defer cancel()

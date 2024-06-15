@@ -13,8 +13,8 @@ type ArticleCreation struct {
   Content  string `json:"content"`
 }
 
-// ArticleUpdate represents the data required to update an existing article entry.
-type ArticleUpdate struct {
+// ArticleRevision represents the data required to update an existing article entry.
+type ArticleRevision struct {
   Title    string `json:"title"`
   Topic    string `json:"topic_id"`
   Slug     string

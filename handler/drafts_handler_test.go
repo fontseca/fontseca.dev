@@ -659,7 +659,7 @@ func TestDraftsHandler_Revise(t *testing.T) {
     target  = "/archive.drafts.revise"
   )
 
-  revision := &transfer.ArticleUpdate{
+  revision := &transfer.ArticleRevision{
     Title:   "Title",
     Content: "Content",
   }

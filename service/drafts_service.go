@@ -58,7 +58,7 @@ type DraftsService interface {
 
   // Revise adds a correction or inclusion to an article draft in order
   // to correct or improve it.
-  Revise(ctx context.Context, draftUUID string, revision *transfer.ArticleUpdate) error
+  Revise(ctx context.Context, draftUUID string, revision *transfer.ArticleRevision) error
 }
 
 type draftsService struct {
@@ -167,7 +167,7 @@ func (s *draftsService) Discard(ctx context.Context, draftUUID string) error {
   return s.r.Discard(ctx, draftUUID)
 }
 
-func (s *draftsService) Revise(ctx context.Context, draftUUID string, revision *transfer.ArticleUpdate) error {
+func (s *draftsService) Revise(ctx context.Context, draftUUID string, revision *transfer.ArticleRevision) error {
   if nil == revision {
     err := errors.New("nil value for parameter: revision")
     slog.Error(err.Error())

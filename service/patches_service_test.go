@@ -49,14 +49,14 @@ func TestPatchesService_Revise(t *testing.T) {
   id := uuid.NewString()
 
   t.Run("success", func(t *testing.T) {
-    revision := &transfer.ArticleUpdate{
+    revision := &transfer.ArticleRevision{
       Title:    "Consectetur! Adipiscing... Quis nostrud: ELIT?",
       Slug:     "consectetur-adipiscing-quis-nostrud-elit",
       ReadTime: 11,
       Content:  strings.Repeat("word ", 1999) + "word",
     }
 
-    dirty := &transfer.ArticleUpdate{
+    dirty := &transfer.ArticleRevision{
       Title:   " \t\n " + revision.Title + " \t\n ",
       Content: " \t\n " + revision.Content + " \t\n ",
     }
@@ -68,13 +68,13 @@ func TestPatchesService_Revise(t *testing.T) {
   })
 
   t.Run("success: changing title", func(t *testing.T) {
-    revision := &transfer.ArticleUpdate{
+    revision := &transfer.ArticleRevision{
       Title:    "Consectetur-Adipiscing!!... Quis nostrud: ELIT??? +-'\"",
       Slug:     "consectetur-adipiscing-quis-nostrud-elit",
       ReadTime: 1,
     }
 
-    dirty := &transfer.ArticleUpdate{
+    dirty := &transfer.ArticleRevision{
       Title: " \t\n " + revision.Title + " \t\n ",
     }
 
@@ -85,12 +85,12 @@ func TestPatchesService_Revise(t *testing.T) {
   })
 
   t.Run("success: changing content", func(t *testing.T) {
-    revision := &transfer.ArticleUpdate{
+    revision := &transfer.ArticleRevision{
       Content:  strings.Repeat("word ", 299) + "word",
       ReadTime: 2,
     }
 
-    dirty := &transfer.ArticleUpdate{
+    dirty := &transfer.ArticleRevision{
       Content: " \t\n " + revision.Content + " \t\n ",
     }
 
@@ -109,7 +109,7 @@ func TestPatchesService_Revise(t *testing.T) {
   t.Run("wrong uuid: id", func(t *testing.T) {
     r := mocks.NewArchiveRepository()
     r.AssertNotCalled(t, routine)
-    assert.Error(t, NewPatchesService(r).Revise(ctx, "x", &transfer.ArticleUpdate{}))
+    assert.Error(t, NewPatchesService(r).Revise(ctx, "x", &transfer.ArticleRevision{}))
   })
 
   t.Run("gets a repository failure", func(t *testing.T) {
@@ -118,7 +118,7 @@ func TestPatchesService_Revise(t *testing.T) {
     r := mocks.NewArchiveRepository()
     r.On(routine, mock.Anything, mock.Anything, mock.Anything).Return(unexpected)
 
-    assert.ErrorIs(t, NewPatchesService(r).Revise(ctx, id, &transfer.ArticleUpdate{}), unexpected)
+    assert.ErrorIs(t, NewPatchesService(r).Revise(ctx, id, &transfer.ArticleRevision{}), unexpected)
   })
 }
 

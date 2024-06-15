@@ -97,7 +97,7 @@ func TestPatchesHandler_Revise(t *testing.T) {
     target  = "/archive.articles.revise"
   )
 
-  revision := &transfer.ArticleUpdate{
+  revision := &transfer.ArticleRevision{
     Title:   "Title",
     Content: "Content",
   }

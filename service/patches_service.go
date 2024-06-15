@@ -18,7 +18,7 @@ type PatchesService interface {
 
   // Revise adds a correction or inclusion to an article patch in order
   // to correct or improve it.
-  Revise(ctx context.Context, id string, revision *transfer.ArticleUpdate) error
+  Revise(ctx context.Context, id string, revision *transfer.ArticleRevision) error
 
   // Share creates a shareable link for an article patch. Only users
   // with that link can see the progress and provide feedback.
@@ -48,7 +48,7 @@ func (s *patchesService) Get(ctx context.Context) (patches []*model.ArticlePatch
   return s.r.GetPatches(ctx)
 }
 
-func (s *patchesService) Revise(ctx context.Context, id string, revision *transfer.ArticleUpdate) error {
+func (s *patchesService) Revise(ctx context.Context, id string, revision *transfer.ArticleRevision) error {
   if nil == revision {
     err := errors.New("nil value for parameter: revision")
     slog.Error(err.Error())
