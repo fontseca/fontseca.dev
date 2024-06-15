@@ -34,6 +34,9 @@ type DraftsService interface {
   // (if more than one) in filter.Search.
   Get(ctx context.Context, filter *transfer.ArticleFilter) (drafts []*transfer.Article, err error)
 
+  // GetByLink retrieves a draft by its shareable link.
+  GetByLink(ctx context.Context, link string) (article *model.Article, err error)
+
   // GetByID retrieves one article draft by its UUID.
   GetByID(ctx context.Context, draftUUID string) (draft *model.Article, err error)
 
@@ -119,6 +122,10 @@ func (s *draftsService) Publish(ctx context.Context, draftUUID string) error {
 
 func (s *draftsService) Get(ctx context.Context, filter *transfer.ArticleFilter) (drafts []*transfer.Article, err error) {
   return s.r.Get(ctx, filter, false, true)
+}
+
+func (s *draftsService) GetByLink(ctx context.Context, link string) (article *model.Article, err error) {
+  return s.r.GetByLink(ctx, link)
 }
 
 func (s *draftsService) GetByID(ctx context.Context, draftUUID string) (draft *model.Article, err error) {

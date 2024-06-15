@@ -79,6 +79,9 @@ type ArchiveRepository interface {
   // GetOne retrieves one published article by the URL '/archive/:topic/:year/:month/:slug'.
   GetOne(ctx context.Context, request *transfer.ArticleRequest) (article *model.Article, err error)
 
+  // GetByLink retrieves a draft by its shareable link.
+  GetByLink(ctx context.Context, link string) (article *model.Article, err error)
+
   // GetByID retrieves one article (or article draft) by its UUID.
   GetByID(ctx context.Context, id string, isDraft bool) (article *model.Article, err error)
 
@@ -783,6 +786,34 @@ func (r *archiveRepository) GetOne(ctx context.Context, request *transfer.Articl
   go r.incrementViews(ctx, id)
 
   return r.GetByID(ctx, id, false)
+}
+
+func (r *archiveRepository) GetByLink(ctx context.Context, link string) (article *model.Article, err error) {
+  getByLinkQuery := `
+  SELECT "article_uuid"
+    FROM "article_link"
+   WHERE "sharable_link" = $1;`
+
+  var id string
+
+  err = r.db.QueryRowContext(ctx, getByLinkQuery, link).Scan(&id)
+
+  if nil != err {
+    if errors.Is(err, sql.ErrNoRows) {
+      p := &problem.Problem{}
+      p.Status(http.StatusGone)
+      p.Title("Broken link.")
+      p.Detail("This shareable link is not valid. It might have expired or be blocked.")
+      err = p
+    } else {
+      slog.Error(err.Error())
+    }
+
+    return nil, err
+  }
+
+  slog.Info("retrieving shared draft", slog.String("link", link))
+  return r.GetByID(ctx, id, true)
 }
 
 func (r *archiveRepository) GetByID(ctx context.Context, id string, isDraft bool) (article *model.Article, err error) {

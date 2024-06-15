@@ -51,6 +51,17 @@ func (o *ArchiveRepository) Get(ctx context.Context, filter *transfer.ArticleFil
   return articles, args.Error(1)
 }
 
+func (o *ArchiveRepository) GetByLink(ctx context.Context, link string) (article *model.Article, err error) {
+  args := o.Called(ctx, link)
+  arg0 := args.Get(0)
+
+  if nil != arg0 {
+    article = arg0.(*model.Article)
+  }
+
+  return article, args.Error(1)
+}
+
 func (o *ArchiveRepository) GetOne(ctx context.Context, request *transfer.ArticleRequest) (article *model.Article, err error) {
   args := o.Called(ctx, request)
   arg0 := args.Get(0)
@@ -159,6 +170,17 @@ func (o *DraftsService) Get(ctx context.Context, filter *transfer.ArticleFilter)
 
 func (o *DraftsService) GetOne(ctx context.Context, request *transfer.ArticleRequest) (article *model.Article, err error) {
   args := o.Called(ctx, request)
+  arg0 := args.Get(0)
+
+  if nil != arg0 {
+    article = arg0.(*model.Article)
+  }
+
+  return article, args.Error(1)
+}
+
+func (o *DraftsService) GetByLink(ctx context.Context, link string) (article *model.Article, err error) {
+  args := o.Called(ctx, link)
   arg0 := args.Get(0)
 
   if nil != arg0 {
