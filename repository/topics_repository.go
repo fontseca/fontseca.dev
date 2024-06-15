@@ -36,6 +36,23 @@ func NewTopicsRepository(db *sql.DB) TopicsRepository {
 }
 
 func (r *topicsRepository) Add(ctx context.Context, creation *transfer.TopicCreation) error {
+  slog.Info("adding new article topic",
+    slog.String("id", creation.ID),
+    slog.String("name", creation.Name))
+
+  exists := false
+  r.db.QueryRowContext(ctx, `SELECT count (1) FROM "topic" WHERE "id" = $1;`, creation.ID).Scan(&exists)
+
+  if exists {
+    p := &problem.Problem{}
+    p.Status(http.StatusConflict)
+    p.Title("Could not create topic.")
+    p.Detail("This topic is already registered.")
+    p.With("topic_id", creation.ID)
+
+    return p
+  }
+
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
   if nil != err {
     return err
@@ -181,6 +198,8 @@ func (r *topicsRepository) Update(ctx context.Context, id string, update *transf
 }
 
 func (r *topicsRepository) Remove(ctx context.Context, id string) error {
+  slog.Info("removing article topic", slog.String("id", id))
+
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
   if nil != err {
     slog.Error(err.Error())
