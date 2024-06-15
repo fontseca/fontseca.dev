@@ -25,6 +25,10 @@ func (o *ArchiveRepository) Publish(ctx context.Context, id string) error {
   return o.Called(ctx, id).Error(0)
 }
 
+func (o *ArchiveRepository) SetSlug(ctx context.Context, id, slug string) error {
+  return o.Called(ctx, id, slug).Error(0)
+}
+
 func (o *ArchiveRepository) Publications(ctx context.Context) (publications []*transfer.Publication, err error) {
   args := o.Called(ctx)
   arg0 := args.Get(0)
@@ -119,6 +123,10 @@ func (o *ArchiveRepository) GetPatches(ctx context.Context) (patches []*model.Ar
   }
 
   return patches, args.Error(1)
+}
+
+func (o *ArchiveRepository) Close() {
+  o.Called()
 }
 
 type DraftsService struct {
@@ -233,6 +241,17 @@ func (o *ArticlesService) GetHidden(ctx context.Context, filter *transfer.Articl
   return articles, args.Error(1)
 }
 
+func (o *ArticlesService) GetOne(ctx context.Context, request *transfer.ArticleRequest) (article *model.Article, err error) {
+  args := o.Called(ctx, request)
+  arg0 := args.Get(0)
+
+  if nil != arg0 {
+    article = arg0.(*model.Article)
+  }
+
+  return article, args.Error(1)
+}
+
 func (o *ArticlesService) GetByID(ctx context.Context, id string) (article *model.Article, err error) {
   args := o.Called(ctx, id)
   arg0 := args.Get(0)
@@ -254,6 +273,10 @@ func (o *ArticlesService) Show(ctx context.Context, id string) error {
 
 func (o *ArticlesService) Amend(ctx context.Context, id string) error {
   return o.Called(ctx, id).Error(0)
+}
+
+func (o *ArticlesService) SetSlug(ctx context.Context, id, slug string) error {
+  return o.Called(ctx, id, slug).Error(0)
 }
 
 func (o *ArticlesService) Remove(ctx context.Context, id string) error {

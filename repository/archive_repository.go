@@ -59,6 +59,9 @@ type ArchiveRepository interface {
   // no effect.
   Publish(ctx context.Context, id string) error
 
+  // SetSlug changes the slug of a published article.
+  SetSlug(ctx context.Context, id, slug string) error
+
   // Publications retrieves a list of distinct months during which articles have been published.
   Publications(ctx context.Context) (publications []*transfer.Publication, err error)
 
@@ -435,6 +438,47 @@ func (r *archiveRepository) Publish(ctx context.Context, id string) error {
   }
 
   r.setPublicationsCache(ctx)
+
+  return nil
+}
+
+func (r *archiveRepository) SetSlug(ctx context.Context, id, slug string) error {
+  slog.Info("changing article slug", slog.String("article_uuid", id), slog.String("new_slug", slug))
+
+  tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+
+  if nil != err {
+    slog.Error(err.Error())
+    return err
+  }
+
+  defer tx.Rollback()
+
+  setSlugQuery := `
+  UPDATE "article"
+     SET "slug" = @slug
+   WHERE "uuid" = @uuid
+     AND "draft" IS FALSE
+     AND "published_at" IS NOT NULL;`
+
+  ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+  defer cancel()
+
+  result, err := tx.ExecContext(ctx, setSlugQuery, sql.Named("uuid", id), sql.Named("slug", slug))
+
+  if nil != err && !errors.Is(sql.ErrNoRows, err) {
+    slog.Error(err.Error())
+    return err
+  }
+
+  if affected, _ := result.RowsAffected(); 1 != affected {
+    return problem.NewNotFound(id, "article")
+  }
+
+  if err := tx.Commit(); nil != err {
+    slog.Error(err.Error())
+    return err
+  }
 
   return nil
 }

@@ -7,6 +7,7 @@ import (
   "fontseca.dev/repository"
   "fontseca.dev/transfer"
   "log/slog"
+  "strings"
 )
 
 // ArticlesService is a high level provider for articles.
@@ -49,6 +50,9 @@ type ArticlesService interface {
   // If the article is already being amended, any call to this method has
   // no effect.
   Amend(ctx context.Context, id string) error
+
+  // SetSlug changes the slug of an article.
+  SetSlug(ctx context.Context, id, slug string) error
 
   // Remove completely removes an article and any patch it currently has.
   Remove(ctx context.Context, id string) error
@@ -129,6 +133,20 @@ func (s *articlesService) Show(ctx context.Context, id string) error {
   }
 
   return s.r.SetHidden(ctx, id, false)
+}
+
+func (s *articlesService) SetSlug(ctx context.Context, id, slug string) error {
+  if err := validateUUID(&id); nil != err {
+    return err
+  }
+
+  slug = strings.TrimSpace(slug)
+
+  if "" == slug {
+    return nil
+  }
+
+  return s.r.SetSlug(ctx, id, generateSlug(slug))
 }
 
 func (s *articlesService) Amend(ctx context.Context, id string) error {

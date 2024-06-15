@@ -499,6 +499,7 @@ func main() {
   engine.GET("/archive.articles.hidden.list", articles.GetHidden)
   engine.GET("/archive.articles.info", articles.GetByID)
   engine.POST("/archive.articles.amend", articles.Amend)
+  engine.POST("/archive.articles.setSlug", articles.SetSlug)
   engine.POST("/archive.articles.hide", articles.Hide)
   engine.POST("/archive.articles.show", articles.Show)
   engine.POST("/archive.articles.remove", articles.Remove)

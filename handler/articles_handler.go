@@ -93,6 +93,28 @@ func (h *ArticlesHandler) Amend(c *gin.Context) {
   c.Status(http.StatusNoContent)
 }
 
+func (h *ArticlesHandler) SetSlug(c *gin.Context) {
+  article, ok := c.GetPostForm("article_uuid")
+
+  if !ok {
+    problem.NewMissingParameter("article_uuid").Emit(c.Writer)
+    return
+  }
+
+  slug, ok := c.GetPostForm("slug")
+
+  if !ok {
+    problem.NewMissingParameter("slug").Emit(c.Writer)
+    return
+  }
+
+  if err := h.articles.SetSlug(c, article, slug); check(err, c.Writer) {
+    return
+  }
+
+  c.Status(http.StatusNoContent)
+}
+
 func (h *ArticlesHandler) Remove(c *gin.Context) {
   article, ok := c.GetPostForm("article_uuid")
 
