@@ -14,6 +14,7 @@ import (
   "log/slog"
   "net/http"
   "strings"
+  "sync"
   "time"
 )
 
@@ -132,17 +133,200 @@ type ArchiveRepository interface {
 
   // GetPatches retrieves all the ongoing patches of every article.
   GetPatches(ctx context.Context) (patches []*model.ArticlePatch, err error)
+
+  // Close forces all caches be written.
+  Close()
 }
+
+// visitor is the IP address of an article reader.
+type visitor string
+
+// entry is the metadata needed for an article views caching.
+type entry struct {
+  watchers map[visitor]struct{}
+  views    int64
+}
+
+// articleViewsCache is the article views cache abstraction.
+type articleViewsCache map[string]*entry
 
 type archiveRepository struct {
   db                *sql.DB
   publicationsCache []*transfer.Publication
+  articleViewsCache articleViewsCache
+  done              chan struct{}
 }
 
 func NewArchiveRepository(db *sql.DB) ArchiveRepository {
-  return &archiveRepository{
+  r := &archiveRepository{
     db:                db,
     publicationsCache: []*transfer.Publication{},
+    articleViewsCache: articleViewsCache{},
+    done:              make(chan struct{}),
+  }
+
+  go r.cacheWriter()
+
+  return r
+}
+
+// cacheWriter is a goroutine that writes articles view cache every midnight.
+func (r *archiveRepository) cacheWriter() {
+  var (
+    now           = time.Now()
+    midnight      = time.Date(now.Year(), now.Month(), 1+now.Day(), 0, 0, 0, 0, now.Location())
+    untilMidnight = midnight.Sub(now)
+  )
+
+  <-time.After(untilMidnight)
+
+  var (
+    ticker    = time.NewTicker(1) // Since we're at midnight, we need the first tick right now!
+    firstTick = true
+  )
+
+  defer ticker.Stop()
+
+  for {
+    select {
+    case <-r.done:
+      return
+    case <-ticker.C:
+      if firstTick {
+        ticker.Reset(24 * time.Hour) // Now keep ticking every midnight.
+        firstTick = false
+      }
+
+      r.writeViewsCache(context.TODO())
+    }
+  }
+}
+
+func (r *archiveRepository) Close() {
+  close(r.done)
+  r.writeViewsCache(context.TODO())
+}
+
+// closed checks if the repository has been closed, that is the
+// Close method was invoked.
+func (r *archiveRepository) closed() bool {
+  select {
+  default:
+    return false
+  case <-r.done:
+    return true
+  }
+}
+
+func (r *archiveRepository) writeViewsCache(ctx context.Context) {
+  if 0 == len(r.articleViewsCache) {
+    return
+  }
+
+  slog.Info("writing article views cache to database")
+
+  tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+
+  if nil != err {
+    slog.Error(err.Error())
+    return
+  }
+
+  defer tx.Rollback()
+
+  writeViewsQuery := `
+  UPDATE "article"
+     SET "views" = "views" + @views
+   WHERE "uuid" = @uuid;`
+
+  writers := sync.WaitGroup{}
+  ctx, cancel := context.WithTimeout(ctx, time.Minute)
+  defer cancel()
+
+  for article, metadata := range r.articleViewsCache {
+    writers.Add(1)
+
+    go func() {
+      defer writers.Done()
+
+      slog.Info("writing cached view(s)",
+        slog.Int64("count", metadata.views),
+        slog.String("article_uuid", article))
+
+      _, err := tx.ExecContext(ctx, writeViewsQuery,
+        sql.Named("uuid", article),
+        sql.Named("views", metadata.views))
+
+      if nil != err {
+        slog.Error(err.Error(), slog.String("article_uuid", article))
+      }
+    }()
+  }
+
+  writers.Wait()
+
+  if !r.closed() {
+    slog.Info("resetting article views cache")
+
+    r.articleViewsCache = articleViewsCache{}
+  }
+
+  if err := tx.Commit(); nil != err {
+    slog.Error(err.Error())
+  }
+}
+
+// views returns the cached views of the given article.
+func (r *archiveRepository) views(article string) int64 {
+  metadata, cached := r.articleViewsCache[article]
+
+  if cached {
+    return metadata.views
+  }
+
+  return 0
+}
+
+// incrementViews increments the views counter of the given article,
+func (r *archiveRepository) incrementViews(ctx context.Context, article string) {
+  var (
+    value         = ctx.Value(gin.ContextKey)
+    ip    visitor = ""
+  )
+
+  if nil != value {
+    c := value.(*gin.Context)
+
+    if nil != c {
+      ip = visitor(c.ClientIP())
+    }
+  }
+
+  if _, isCached := r.articleViewsCache[article]; !isCached {
+    slog.Info("caching new article entry",
+      slog.String("article_uuid", article),
+      slog.String("ip_address", string(ip)),
+    )
+
+    watchers := make(map[visitor]struct{})
+    watchers[ip] = struct{}{}
+
+    r.articleViewsCache[article] = &entry{
+      watchers: watchers,
+      views:    1,
+    }
+
+    return
+  }
+
+  if "" == ip {
+    r.articleViewsCache[article].views++
+    return
+  }
+
+  if _, hasViewed := r.articleViewsCache[article].watchers[ip]; !hasViewed {
+    r.articleViewsCache[article].watchers[ip] = struct{}{}
+    r.articleViewsCache[article].views++
   }
 }
 
@@ -494,6 +678,8 @@ func (r *archiveRepository) GetOne(ctx context.Context, request *transfer.Articl
     return nil, problem.NewNotFound(id, "article") // TODO: Do not return this kind of problem.
   }
 
+  go r.incrementViews(ctx, id)
+
   return r.GetByID(ctx, id, false)
 }
 
@@ -545,6 +731,7 @@ func (r *archiveRepository) GetByID(ctx context.Context, id string, isDraft bool
             a."author",
             a."slug",
             a."read_time",
+            a."views",
             a."content",
             a."draft",
             a."pinned",
@@ -591,6 +778,7 @@ func (r *archiveRepository) GetByID(ctx context.Context, id string, isDraft bool
     &article.Author,
     &article.Slug,
     &article.ReadTime,
+    &article.Views,
     &article.Content,
     &article.IsDraft,
     &article.IsPinned,
@@ -603,6 +791,8 @@ func (r *archiveRepository) GetByID(ctx context.Context, id string, isDraft bool
     &nullableTopicCreatedAt,
     &nullableTopicUpdatedAt,
   )
+
+  article.Views += r.views(article.UUID.String())
 
   if nullableTopicID.Valid {
     article.Topic = new(model.Topic)

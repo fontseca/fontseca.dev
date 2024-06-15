@@ -599,6 +599,8 @@ func main() {
   case sig := <-shutdown:
     fmt.Fprintf(os.Stdout, "received %s signal, gracefully shutting down...\n", sig.String())
 
+    archive.Close()
+
     if err := server.Shutdown(context.TODO()); nil != err {
       fmt.Fprintf(os.Stderr, "could not shutdown server: %v", err)
     }
