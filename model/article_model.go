@@ -10,11 +10,10 @@ import (
 type Article struct {
   UUID        uuid.UUID  `json:"uuid"`
   Title       string     `json:"title"`
-  Author      string     `json:"author"`
   Slug        string     `json:"slug"`
+  Author      string     `json:"author"`
   Views       int64      `json:"views"`
   ReadTime    int        `json:"read_time"`
-  Content     string     `json:"content"`
   IsDraft     bool       `json:"is_draft"`
   IsPinned    bool       `json:"is_pinned"`
   PublishedAt *time.Time `json:"published_at"`
@@ -23,6 +22,7 @@ type Article struct {
   UpdatedAt   time.Time  `json:"updated_at"`
   Topic       *Topic     `json:"topic"`
   Tags        []*Tag     `json:"tags"`
+  Content     string     `json:"content"`
 }
 
 // ArticlePatch is a patch for a published article.
