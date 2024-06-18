@@ -1732,6 +1732,7 @@ func (r *archiveRepository) Release(ctx context.Context, id string) error {
   SELECT "article_uuid",
          "title",
          "slug",
+         "topic",
          "read_time",
          "content"
     FROM "article_patch"
@@ -1746,6 +1747,7 @@ func (r *archiveRepository) Release(ctx context.Context, id string) error {
     Scan(&patch.ArticleUUID,
       &patch.Title,
       &patch.Slug,
+      &patch.TopicID,
       &patch.ReadTime,
       &patch.Content,
     )
@@ -1769,6 +1771,7 @@ func (r *archiveRepository) Release(ctx context.Context, id string) error {
   UPDATE "article"
      SET "title" = coalesce(nullif(@title, ''), "title"),
          "slug" = coalesce(nullif(@slug, ''), "slug"),
+         "topic" = coalesce(nullif(@topic, ''), "topic"),
          "read_time" = CASE WHEN @read_time = "read_time"
                               OR @read_time IS NULL
                               OR @read_time = 0
@@ -1789,6 +1792,7 @@ func (r *archiveRepository) Release(ctx context.Context, id string) error {
     sql.Named("uuid", id),
     sql.Named("title", patch.Title),
     sql.Named("slug", patch.Slug),
+    sql.Named("topic", patch.TopicID),
     sql.Named("read_time", patch.ReadTime),
     sql.Named("content", patch.Content))
 
@@ -1829,6 +1833,7 @@ func (r *archiveRepository) GetPatches(ctx context.Context) (patches []*model.Ar
   SELECT "article_uuid",
          "title",
          "slug",
+         "topic",
          "content"
     FROM "article_patch";`
 
@@ -1852,6 +1857,7 @@ func (r *archiveRepository) GetPatches(ctx context.Context) (patches []*model.Ar
       &patch.ArticleUUID,
       &patch.Title,
       &patch.Slug,
+      &patch.TopicID,
       &patch.Content)
 
     if nil != err {

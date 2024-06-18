@@ -258,6 +258,7 @@ func main() {
       (
         "article_uuid" VARCHAR(36) UNIQUE PRIMARY KEY NOT NULL REFERENCES "article" ("uuid"),
         "title"        VARCHAR(256),
+        "topic"        VARCHAR(32) REFERENCES "topic" ("id"),
         "slug"         VARCHAR(512),
         "read_time"    INT DEFAULT 0,
         "content"      TEXT

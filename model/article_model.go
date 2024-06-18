@@ -31,5 +31,6 @@ type ArticlePatch struct {
   Title       *string   `json:"title"`
   Slug        *string   `json:"slug"`
   ReadTime    *int      `json:"-"`
+  TopicID     *string   `json:"topic_id"`
   Content     *string   `json:"content"`
 }
