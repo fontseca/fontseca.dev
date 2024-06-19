@@ -163,6 +163,8 @@ type archiveRepository struct {
   publicationsCache []*transfer.Publication
   articleViewsCache articleViewsCache
   done              chan struct{}
+  mu                sync.RWMutex
+  cleanOnce         sync.Once // for cleaning broken links once per share
 }
 
 func NewArchiveRepository(db *sql.DB) ArchiveRepository {
@@ -226,10 +228,17 @@ func (r *archiveRepository) closed() bool {
   }
 }
 
+// writeViewsCache is a goroutine that writes the cached article views to the database;
+// it should be run every midnight.
 func (r *archiveRepository) writeViewsCache(ctx context.Context) {
+  r.mu.RLock()
+
   if 0 == len(r.articleViewsCache) {
+    r.mu.RUnlock()
     return
   }
+
+  r.mu.RUnlock()
 
   slog.Info("writing article views cache to database")
 
@@ -255,7 +264,9 @@ func (r *archiveRepository) writeViewsCache(ctx context.Context) {
     writers.Add(1)
 
     go func() {
+      r.mu.RLock()
       defer writers.Done()
+      defer r.mu.RUnlock()
 
       slog.Info("writing cached view(s)",
         slog.Int64("count", metadata.views),
@@ -286,6 +297,9 @@ func (r *archiveRepository) writeViewsCache(ctx context.Context) {
 
 // views returns the cached views of the given article.
 func (r *archiveRepository) views(article string) int64 {
+  r.mu.RLock()
+  defer r.mu.RUnlock()
+
   metadata, cached := r.articleViewsCache[article]
 
   if cached {
@@ -295,26 +309,26 @@ func (r *archiveRepository) views(article string) int64 {
   return 0
 }
 
+// VisitorKey is the key that I use to get the remote IP
+// address which represents a visitor.
+const VisitorKey string = "visitor-ip"
+
 // incrementViews increments the views counter of the given article,
 func (r *archiveRepository) incrementViews(ctx context.Context, article string) {
+  r.mu.Lock()
+  defer r.mu.Unlock()
+
   var (
-    value         = ctx.Value(gin.ContextKey)
+    value         = ctx.Value(VisitorKey)
     ip    visitor = ""
   )
 
-  if nil != value {
-    c := value.(*gin.Context)
-
-    if nil != c {
-      ip = visitor(c.ClientIP())
-    }
+  if "" != value {
+    ip = visitor(value.(string))
   }
 
   if _, isCached := r.articleViewsCache[article]; !isCached {
-    slog.Info("caching new article entry",
-      slog.String("article_uuid", article),
-      slog.String("ip_address", string(ip)),
-    )
+    slog.Info("caching article views count", slog.String("article_uuid", article))
 
     watchers := make(map[visitor]struct{})
     watchers[ip] = struct{}{}
@@ -336,6 +350,80 @@ func (r *archiveRepository) incrementViews(ctx context.Context, article string) 
     r.articleViewsCache[article].watchers[ip] = struct{}{}
     r.articleViewsCache[article].views++
   }
+}
+
+// cleanBrokenLinks is a goroutine that cleans up shareable links that
+// are no longer valid because have already expired.
+func (r *archiveRepository) cleanBrokenLinks() {
+  r.cleanOnce.Do(func() {
+    ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+    defer cancel()
+
+    checkThereAreBrokenLinksQuery := `
+    SELECT count (*)
+      FROM "article_link"
+     WHERE "expires_at" <= current_timestamp;`
+
+    nbroken := 0
+
+    err := r.db.QueryRowContext(ctx, checkThereAreBrokenLinksQuery).Scan(&nbroken)
+
+    if nil != err {
+      slog.Error(err.Error())
+    }
+
+    if 0 == nbroken {
+      return
+    }
+
+    attempts := 1
+    anew := func() { attempts++ }
+    done := func() bool { return attempts > 3 }
+
+  again:
+    slog.Info("trying to clear all broken shareable links",
+      slog.Int("broken_links", nbroken),
+      slog.Int("attempt", attempts))
+
+    tx, err := r.db.BeginTx(context.Background(), &sql.TxOptions{Isolation: sql.LevelSerializable})
+
+    if nil != err {
+      slog.Error(err.Error())
+
+      anew()
+      if done() {
+        return
+      }
+
+      goto again
+    }
+
+    defer tx.Rollback()
+
+    removeBrokenLinksQuery := `
+    DELETE FROM "article_link"
+          WHERE "expires_at" <= current_timestamp;`
+
+    ctx, cancel = context.WithTimeout(context.Background(), 30*time.Second)
+    defer cancel()
+
+    _, err = tx.ExecContext(ctx, removeBrokenLinksQuery)
+
+    if nil != err {
+      slog.Error(err.Error())
+
+      anew()
+      if done() {
+        return
+      }
+
+      goto again
+    }
+
+    if err = tx.Commit(); nil != err {
+      slog.Error(err.Error())
+    }
+  })
 }
 
 func (r *archiveRepository) Draft(ctx context.Context, creation *transfer.ArticleCreation) (id string, err error) {
@@ -764,10 +852,10 @@ func (r *archiveRepository) GetOne(ctx context.Context, request *transfer.Articl
 
   var id string
 
-  ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
-  defer cancel()
+  ctx1, cancel1 := context.WithTimeout(ctx, 10*time.Second)
+  defer cancel1()
 
-  err = r.db.QueryRowContext(ctx, requestArticleUUIDQuery,
+  err = r.db.QueryRowContext(ctx1, requestArticleUUIDQuery,
     sql.Named("topic", request.Topic),
     sql.Named("year", year),
     sql.Named("month", month),
@@ -790,20 +878,30 @@ func (r *archiveRepository) GetOne(ctx context.Context, request *transfer.Articl
 
 func (r *archiveRepository) GetByLink(ctx context.Context, link string) (article *model.Article, err error) {
   getByLinkQuery := `
-  SELECT "article_uuid"
+  SELECT "article_uuid",
+         "expires_at"
     FROM "article_link"
    WHERE "sharable_link" = $1;`
 
-  var id string
+  var (
+    id           string
+    expiresAtStr string
+  )
 
-  err = r.db.QueryRowContext(ctx, getByLinkQuery, link).Scan(&id)
+  ctx1, cancel1 := context.WithTimeout(ctx, 5*time.Second)
+  defer cancel1()
+
+  err = r.db.QueryRowContext(ctx1, getByLinkQuery, link).Scan(&id, &expiresAtStr)
 
   if nil != err {
     if errors.Is(err, sql.ErrNoRows) {
+      go r.cleanBrokenLinks() // TODO: Improve this side effect by using a background worker.
+
       p := &problem.Problem{}
       p.Status(http.StatusGone)
-      p.Title("Broken link.")
-      p.Detail("This shareable link is not valid. It might have expired or be blocked.")
+      p.Title("Orphan shareable link.")
+      p.Detail("No article was found referenced by this shareable link; it might have been either removed or blocked.")
+      p.With("shareable_link", link)
       err = p
     } else {
       slog.Error(err.Error())
@@ -812,7 +910,30 @@ func (r *archiveRepository) GetByLink(ctx context.Context, link string) (article
     return nil, err
   }
 
+  expiresAt, err := time.Parse(time.RFC3339, expiresAtStr)
+
+  if nil != err {
+    slog.Error(err.Error())
+    expiresAt = time.Time{}
+  }
+
+  now := time.Now()
+  if -1 == expiresAt.Compare(now) || 0 == expiresAt.Compare(now) {
+    go r.cleanBrokenLinks() // TODO: Improve this side effect by using a background worker.
+
+    p := &problem.Problem{}
+    p.Status(http.StatusGone)
+    p.Title("Broken shareable link.")
+    p.Detail("This shareable link is no longer valid because it has expired.")
+    p.With("shareable_link", link)
+
+    return nil, p
+  }
+
   slog.Info("retrieving shared draft", slog.String("link", link))
+
+  go r.incrementViews(ctx, id)
+
   return r.GetByID(ctx, id, true)
 }
 
@@ -827,8 +948,8 @@ func (r *archiveRepository) GetByID(ctx context.Context, id string, isDraft bool
          ON at."tag_id" = t."id"
       WHERE "article_uuid" = @article_uuid;`
 
-  ctx1, cancel := context.WithTimeout(ctx, 3*time.Second)
-  defer cancel()
+  ctx1, cancel1 := context.WithTimeout(ctx, 10*time.Second)
+  defer cancel1()
 
   result, err := r.db.QueryContext(ctx1, getTagsQuery, sql.Named("article_uuid", id))
   if err != nil {
@@ -887,10 +1008,8 @@ func (r *archiveRepository) GetByID(ctx context.Context, id string, isDraft bool
                   AND "hidden" IS FALSE
                   END;`
 
-  ctx, cancel = context.WithTimeout(ctx, 3*time.Second)
-  defer cancel()
-
-  row := r.db.QueryRowContext(ctx, getArticleByUUIDQuery, sql.Named("uuid", id), sql.Named("is_draft", isDraft))
+  ctx2, cancel2 := context.WithTimeout(ctx, 10*time.Second)
+  defer cancel2()
 
   article = new(model.Article)
 
@@ -905,7 +1024,9 @@ func (r *archiveRepository) GetByID(ctx context.Context, id string, isDraft bool
     nullableTopicUpdatedAt sql.Null[time.Time]
   )
 
-  err = row.Scan(
+  r.db.QueryRowContext(ctx2, getArticleByUUIDQuery,
+    sql.Named("uuid", id),
+    sql.Named("is_draft", isDraft)).Scan(
     &article.UUID,
     &article.Title,
     &article.Author,
@@ -1429,6 +1550,14 @@ func (r *archiveRepository) SetPinned(ctx context.Context, id string, pinned boo
 }
 
 func (r *archiveRepository) Share(ctx context.Context, id string) (link string, err error) {
+  defer func() {
+    if nil == err {
+      r.mu.Lock()
+      r.cleanOnce = sync.Once{}
+      r.mu.Unlock()
+    }
+  }()
+
   assertIsArticlePatchQuery := `
   SELECT count(*)
     FROM "article_patch"
@@ -1490,7 +1619,7 @@ func (r *archiveRepository) Share(ctx context.Context, id string) (link string, 
 
   if "" != link {
     now := time.Now()
-    if -1 == expiresAt.Compare(now) || 0 == expiresAt.Compare(now) {
+    if -1 == expiresAt.Compare(now) || 0 == expiresAt.Compare(now) { // link has expired
       removeObsoleteLinkQuery := `
       DELETE FROM "article_link"
             WHERE "article_uuid" = $1;`
@@ -1504,16 +1633,12 @@ func (r *archiveRepository) Share(ctx context.Context, id string) (link string, 
         return "", err
       }
 
-      p := problem.Problem{}
-      p.Status(http.StatusGone)
-      p.Title("Invalid shareable link.")
-      p.Detail("This shareable link is no longer valid. Try creating a new one.")
-      p.With("shareable_link", link)
-
-      return "", &p
+      slog.Info("shareable link expired, generating a new one",
+        slog.String("elapsed", now.Sub(expiresAt).String()),
+        slog.String("article_uuid", id))
+    } else {
+      return link, nil
     }
-
-    return link, nil
   }
 
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelReadCommitted})
@@ -1532,8 +1657,12 @@ func (r *archiveRepository) Share(ctx context.Context, id string) (link string, 
   data := fmt.Sprintf("%s at %s", id, time.Now().String())
   hash := sha1.Sum([]byte(data))
 
-  err = tx.QueryRowContext(ctx, makeShareableLinkQuery,
-    sql.Named("article_uuid", id), sql.Named("sharable_link", fmt.Sprintf("/archive/s/%x", hash))).
+  ctx2, cancel2 := context.WithTimeout(ctx, 5*time.Second)
+  defer cancel2()
+
+  err = tx.QueryRowContext(ctx2, makeShareableLinkQuery,
+    sql.Named("article_uuid", id),
+    sql.Named("sharable_link", fmt.Sprintf("/archive/s/%x", hash))).
     Scan(&link)
 
   if nil != err {
