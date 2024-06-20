@@ -3,7 +3,14 @@ package ui
 templ Footer() {
   <footer class="footer">
     <div class="footer-header">
-      @Logo()
+      <a href="/"
+         style="text-decoration: none; font-weight: normal"
+         hx-get="/"
+         hx-push-url="/"
+         hx-trigger="click"
+         hx-target="body">
+        @Logo()
+      </a>
     </div>
     <div class="footer-content">
       <p>

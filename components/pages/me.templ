@@ -13,46 +13,46 @@ templ Me(me *model.Me) {
 				<p class="name">{ me.FirstName } <span>{ me.LastName }</span></p>
 				<p class="job-title">{! templ.Raw(me.JobTitle) }</p>
 				<div class="summary-container">{! templ.Raw(me.Summary) }</div>
-				<div class="contact-icons">
-					if 0 < len(me.GitHubURL) && "about:blank" != me.GitHubURL {
-						<a href={ templ.URL(me.GitHubURL) } target="_blank">
-							<i class="fa-brands fa-github"></i>
-						</a>
-					}
+				<div class="contact-icons-container">
+					<p class="label">Find me on</p>
 
-					if 0 < len(me.LinkedInURL) && "about:blank" != me.LinkedInURL  {
+					<div class="contact-icons">
+						if 0 < len(me.LinkedInURL) && "about:blank" != me.LinkedInURL  {
 						<a href={ templ.URL(me.LinkedInURL) } target="_blank">
 							<i class="fa-brands fa-linkedin"></i>
 						</a>
-					}
+						}
 
-					if 0 < len(me.YouTubeURL) && "about:blank" != me.YouTubeURL {
+						if 0 < len(me.GitHubURL) && "about:blank" != me.GitHubURL {
+						<a href={ templ.URL(me.GitHubURL) } target="_blank">
+							<i class="fa-brands fa-github"></i>
+						</a>
+						}
+
+						if 0 < len(me.YouTubeURL) && "about:blank" != me.YouTubeURL {
 						<a href={ templ.URL(me.YouTubeURL) } target="_blank">
 							<i class="fa-brands fa-youtube"></i>
 						</a>
-					}
+						}
 
-					if 0 < len(me.TwitterURL) && "about:blank" != me.TwitterURL {
+						if 0 < len(me.TwitterURL) && "about:blank" != me.TwitterURL {
 						<a href={ templ.URL(me.TwitterURL) } target="_blank">
 							<i class="fa-brands fa-twitter"></i>
 						</a>
-					}
+						}
 
-					if 0 < len(me.InstagramURL) && "about:blank" != me.InstagramURL {
+						if 0 < len(me.InstagramURL) && "about:blank" != me.InstagramURL {
 						<a href={ templ.URL(me.InstagramURL) } target="_blank">
 							<i class="fa-brands fa-instagram"></i>
 						</a>
-					}
+						}
+					</div>
 				</div>
-				<p class="email">{ me.Email }</p>
 				<div class="buttons">
 					@ui.Button("Get in touch", true, "mailto:" + me.Email, nil)
 					@ui.Button("See résumé", false, me.ResumeURL, nil)
 				</div>
-				<p class="bottom-line">Feel free to reach out if you want to build something together, have a question, or just want to connect.</p>
-			</article>
-			<article class="photo-article">
-				<img alt="Profile picture." src={ me.PhotoURL }/>
+				<p class="bottom-line">Feel free to reach me out if you want to build something together, have any questions, or just want to connect.</p>
 			</article>
 		</section>
 	}

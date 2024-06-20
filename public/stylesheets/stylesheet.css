@@ -45,7 +45,6 @@ a:hover {
 .logo-text span {
   font-family: 'Source Serif 4', sans-serif;
   font-weight: 400;
-  font-style: italic;
 }
 
 .logo-motto {
@@ -65,6 +64,7 @@ a:hover {
   border: 1px solid black;
   text-decoration: none;
   font-weight: 700;
+  font-family: 'Raleway', sans-serif;
 }
 
 .btn:hover {
@@ -79,7 +79,7 @@ a:hover {
 /* Title header.  */
 
 .title-header {
-  margin-bottom: 1rem;
+  margin-bottom: 2rem;
 }
 
 .title-header-text {
@@ -97,7 +97,6 @@ a:hover {
   text-decoration: none;
 }
 
-
 .title-header .api-endpoint:hover {
   color: black;
 }
@@ -105,26 +104,33 @@ a:hover {
 /* Wrapper.  */
 
 .site-wrapper {
-  width: 80%;
+  width: 54%;
+  max-width: 54rem;
   min-height: 100%;
   margin: auto;
-  border-left: 1px solid black;
-  border-right: 1px solid black;
-  padding-left: 8%;
-  padding-right: 8%;
-  max-width: 1570px;
   display: block;
+}
+
+@media screen and (max-width: 1120px) {
+  .site-wrapper {
+    width: 70%;
+  }
+}
+
+@media screen and (max-width: 610px) {
+  .site-wrapper {
+    width: 75%;
+  }
 }
 
 @media screen and (max-width: 510px) {
   .site-wrapper {
-    padding-left: 6%;
-    padding-right: 6%;
+    width: 80%;
   }
 }
 
 .main {
-  min-height: 70%;
+  min-height: 76vh;
 }
 
 /* Header and navigation.  */
@@ -165,18 +171,18 @@ a:hover {
   display: none;
 }
 
-.navigation-closer  {
+.navigation-closer {
   cursor: pointer;
   color: black;
   display: none;
   opacity: 0;
 }
 
-.navigation-closer  {
+.navigation-closer {
   opacity: 1;
 }
 
-.navigation-closer:hover  {
+.navigation-closer:hover {
   text-decoration: underline;
 }
 
@@ -238,7 +244,7 @@ a:hover {
     padding-top: 3rem;
   }
 
-  .navigation-closer  {
+  .navigation-closer {
     display: block;
   }
 
@@ -312,9 +318,11 @@ a:hover {
 /* Footer.  */
 
 .footer {
-  padding-top: 2rem;
-  padding-bottom: 2rem;
-  text-align: center;
+  width: 100%;
+  opacity: .7;
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+  text-align: right;
 }
 
 .footer-content p {
@@ -331,11 +339,11 @@ a:hover {
 }
 
 .me .info-article {
-  width: 55%;
+  width: 100%;
 }
 
 .me .info-article .name {
-  font-size: clamp(2.5rem, 4vw, 4vw);
+  font-size: clamp(3.5rem, 5vw, 6vw);
   font-weight: 200;
 }
 
@@ -344,9 +352,9 @@ a:hover {
 }
 
 .me .info-article .job-title {
-  font-size: clamp(1.5rem, 1vw, 1vw);
+  font-size: clamp(1.5rem, 1.5vw, 3vw);
   font-weight: 600;
-  margin-top: 15px;
+  margin-top: 1rem;
 }
 
 .me .info-article .job-title span {
@@ -354,7 +362,7 @@ a:hover {
 }
 
 .me .info-article .summary-container {
-  padding-top: 33px;
+  padding-top: 2.2rem;
 }
 
 .me .info-article .summary-container p {
@@ -362,11 +370,21 @@ a:hover {
   font-size: clamp(16px, 1vw, 1vw);
 }
 
-.me .info-article .contact-icons {
-  width: 50%;
-  border-bottom: 1px solid black;
-  padding-bottom: 1rem;
-  padding-top: 30px;
+.me .info-article .summary-container p:not(:last-child) {
+  padding-bottom: 2rem;
+}
+
+.me .info-article .contact-icons-container {
+  display: flex;
+  align-items: center;
+  padding-top: 1.6rem;
+  padding-bottom: 1.6rem;
+}
+
+.me .info-article .contact-icons-container > p.label {
+  font-family: 'Source Serif 4', sans-serif;
+  font-size: clamp(16px, 1vw, 1vw);
+  padding-right: .6rem;
 }
 
 .me .info-article .contact-icons a {
@@ -387,26 +405,11 @@ a:hover {
   border: 1px solid black;
 }
 
-.me .info-article .email {
-  font-weight: bold;
-  padding-top: 1rem;
-  padding-bottom: 1rem;
-}
-
-.me .info-article .buttons {
-  margin-top: 1rem;
-  margin-bottom: 2rem;
-}
-
 .me .info-article .buttons * {
   margin-right: 1rem;
 }
 
 @media screen and (max-width: 510px) {
-  .me .info-article .contact-icons {
-    width: 100% !important;
-  }
-
   .me .info-article .buttons {
     display: flex;
     flex-wrap: wrap;
@@ -420,34 +423,13 @@ a:hover {
 }
 
 .me .info-article .bottom-line {
+  margin-top: 2rem;
   font-family: 'Source Serif 4', sans-serif;
-}
-
-.me .photo-article {
-  position: relative;
-  width: 45%;
-}
-
-.me .photo-article {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.me .photo-article img {
-  border-radius: 5px;
-  width: 85%;
-  height: auto;
-  box-shadow: 3rem 3rem 0 0 rgba(0, 0, 0, 0.3);
 }
 
 @media screen and (max-width: 1300px) {
   .me .info-article {
     padding-right: 2rem;
-  }
-
-  .me .photo-article img {
-    width: 100%;
   }
 }
 
@@ -481,38 +463,6 @@ a:hover {
   .me .info-article {
     width: 100%;
   }
-
-  .me .photo-article {
-    margin-top: 2rem;
-    margin-bottom: 2rem;
-    width: 100%;
-  }
-
-  .me .photo-article img {
-    width: 85%;
-  }
-}
-
-@media screen and (max-width: 720px) {
-  .me .photo-article {
-    margin-bottom: 0;
-  }
-
-  .me .photo-article {
-  }
-
-  .me .photo-article img {
-    width: 100%;
-    margin-bottom: 0;
-    box-shadow: 2rem 2rem 0 0 rgba(0, 0, 0, 0.3);
-  }
-}
-
-@media screen and (max-width: 610px) {
-  .me .photo-article img {
-    width: 100%;
-    box-shadow: none;
-  }
 }
 
 /* Experience page.  */
@@ -524,14 +474,16 @@ a:hover {
 
 .experience-list-tile .line {
   position: absolute;
+  top: 8px;
   background-color: black;
   width: 1px;
   height: 100%;
 }
 
 .experience-list-tile .dates-container {
-  min-width: 260px;
+  min-width: 240px;
   text-align: left;
+  padding-top: 5px;
   padding-left: 3rem;
 }
 
@@ -541,26 +493,26 @@ a:hover {
 
 .experience-list-tile .spot {
   position: absolute;
+  left: -7px;
+  top: 8px;
   background-color: black;
   width: 14px;
   height: 14px;
-  left: -7px;
   border-radius: 50%;
-}
-
-.experience-list-tile:last-child .dates-container {
-  height: 13px;
 }
 
 .experience-list-tile .content-container {
   min-height: 200px;
+}
+
+.experience-list-tile:not(:last-child) .content-container {
   padding-bottom: 2rem;
 }
 
 .experience-list-tile .content-container .job-title {
   font-size: 25px;
   font-weight: 700;
-  margin-bottom: .5rem;
+  margin-bottom: .2rem;
 }
 
 .experience-list-tile .content-container .company-and-location {
@@ -568,7 +520,7 @@ a:hover {
   margin-bottom: 1rem;
 }
 
-.experience-list-tile .content-container .summary  p:not(:last-child),
+.experience-list-tile .content-container .summary p:not(:last-child),
 .experience-list-tile .content-container .summary h1:not(:last-child),
 .experience-list-tile .content-container .summary h2:not(:last-child),
 .experience-list-tile .content-container .summary h3:not(:last-child),
@@ -594,14 +546,11 @@ a:hover {
 
   .experience-list-tile .dates-container {
     padding-left: 30px;
+    margin-bottom: .5rem;
   }
 
   .experience-list-tile .content-container {
     padding-left: 30px;
-  }
-
-  .experience-list-tile .content-container .info-article .job-title {
-    padding-top: 1rem;
   }
 }
 
@@ -624,7 +573,7 @@ a:hover {
   width: calc(100% - 170px - .5rem);
   font-size: 25px;
   font-weight: 800;
-  /*margin-bottom: 1.5rem;*/
+  margin-bottom: .8rem;
 }
 
 .project-tile .content-container .language,
@@ -1025,7 +974,7 @@ a:hover {
   width: 100%;
   padding-top: 1.5rem;
   padding-left: 25%;
-  padding-right: 15%;
+  /*padding-right: 0%;*/
   position: relative;
 }
 
@@ -1203,9 +1152,9 @@ a:hover {
 
 .project-detail .content-section .content figcaption .caption {
   padding-right: 16px;
-  width: 38.6%;
+  width: 33.5%;
   position: absolute;
-  left: -38.6%;
+  left: -33.5%;
   bottom: 0;
 }
 
