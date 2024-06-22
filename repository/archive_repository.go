@@ -624,7 +624,7 @@ func (r *archiveRepository) Publications(ctx context.Context) (publications []*t
    WHERE "draft" IS FALSE
      AND "published_at" IS NOT NULL
      AND "hidden" IS FALSE
-     GROUP BY "month"
+     GROUP BY "month", "year"
      ORDER BY "year" DESC, "month" DESC;`
 
   ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
