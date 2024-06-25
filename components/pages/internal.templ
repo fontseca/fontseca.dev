@@ -1,0 +1,17 @@
+package pages
+
+import (
+  "fontseca.dev/components/layout"
+  "fontseca.dev/components/ui"
+)
+
+templ Internal() {
+  @layout.Layout("internal problem", -1) {
+    <section class="internal">
+      @ui.TitleHeader("blank", "")
+      <section class="internal-content">
+        <p>An internal error has occurred. Please contact me for assistance at <a href="mailto:fontseca.dev@outlook.com">fontseca.dev@outlook.com</a>.</p>
+      </section>
+    </section>
+  }
+}
