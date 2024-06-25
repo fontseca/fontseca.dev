@@ -524,12 +524,19 @@ func main() {
     meService,
     experienceService,
     projectsService,
+    articlesService,
+    topicsService,
+    tagsService,
   )
 
   engine.GET("/", web.RenderMe)
   engine.GET("/experience", web.RenderExperience)
   engine.GET("/work", web.RenderProjects)
   engine.GET("/work/:project_slug", web.RenderProjectDetails)
+  engine.GET("/archive", web.RenderArchive)
+  engine.GET("/archive/:topic", web.RenderArchive)
+  engine.GET("/archive/:topic/:year/:month", web.RenderArchive)
+  engine.GET("/archive/tag/:tag", web.RenderArchive)
 
   engine.NoRoute(func(c *gin.Context) {
     var p problem.Problem
