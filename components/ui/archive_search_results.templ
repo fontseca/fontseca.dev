@@ -1,0 +1,29 @@
+package ui
+
+import (
+  "fontseca.dev/transfer"
+  "time"
+)
+
+templ SearchResults(articles []*transfer.Article) {
+  if 0 == len(articles) {
+    <p>No articles found.</p>
+  } else {
+    <ul id="articles-list" class="articles-list">
+      for _, article := range articles {
+        if nil != article {
+          <li class={ "article-tile", templ.KV("pinned", article.IsPinned) }>
+            <a href={ templ.SafeURL(article.URL) }
+               hx-get={ article.URL }
+               hx-push-url={ article.URL }
+               hx-trigger="click"
+               hx-target="body">{ article.Title }</a>
+            <time datetime={ article.PublishedAt.Format(time.RFC3339) }>
+              { article.PublishedAt.Format("Jan 02, 2006") }
+            </time>
+          </li>
+        }
+      }
+    </ul>
+  }
+}
