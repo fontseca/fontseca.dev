@@ -417,7 +417,7 @@ a:hover {
 
 .me .info-article .contact-icons-container > p.label {
   font-family: 'Source Serif 4', sans-serif;
-  font-size: clamp(16px, 1vw, 1vw);
+  font-size: 17px;
   padding-right: .6rem;
 }
 
