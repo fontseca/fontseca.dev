@@ -1,0 +1,115 @@
+package pages
+
+import (
+  "fontseca.dev/transfer"
+  "fontseca.dev/model"
+  "fontseca.dev/components/layout"
+  "fontseca.dev/components/ui"
+  "strconv"
+  "fmt"
+)
+
+templ Archive(articles []*transfer.Article, publications []*transfer.Publication, topics []*model.Topic, tags []*model.Tag, search string, publication *transfer.Publication, topic *model.Topic) {
+  @layout.Layout("archive", 3) {
+    <section class="archive">
+      @ui.TitleHeader("archive", "/archive.articles.list")
+      <section class="archive-content">
+        <div class="archive-content-main">
+          <section class="topic-and-search">
+            <h3>
+              <span class="selected-topic" id="selected-topic">
+                if nil != topic {
+                  { topic.Name }
+                }
+              </span>
+              <span id="selected-date">
+                if nil != publication && 0 != int(publication.Month) && 0 != publication.Year {
+                  { publication.Month.String() } { strconv.Itoa(publication.Year) }
+                } else {
+                  { "Any date" }
+                }
+              </span>
+            </h3>
+            <label>
+              <input id="searchbar" class="searchbar"
+                     type="search"
+                     name="search"
+                     value={ search }
+                     placeholder="Search articles..."
+                     oninput="searchArticles(this)"
+                     hx-get=""
+                     hx-trigger="input changed delay:500ms, search"
+                     hx-target="#article-results"
+                     hx-indicator=".articles-search-loader" />
+              <span class="htmx-indicator articles-search-loader"></span>
+            </label>
+          </section>
+          <section class="article-results" id="article-results">
+            @ui.SearchResults(articles)
+          </section>
+        </div>
+        <aside class="archive-content-aside">
+          <section class="topics">
+            <header>
+              <h3>Topics</h3>
+            </header>
+            <ul id="topics-list" class="topics-list">
+              for _, t := range topics {
+                if nil != t {
+                  <li class={ "topic", templ.KV("selected", nil != topic && topic.ID == t.ID) }>
+                    <a href={ templ.SafeURL(fmt.Sprintf("/archive/%s", t.ID)) }
+                       onclick="setArchiveTopic(this)"
+                       hx-get={ fmt.Sprintf("/archive/%s", t.ID) }
+                       hx-push-url="true"
+                       hx-trigger="click"
+                       hx-target="#article-results"
+                    >{ t.Name }</a>
+                  </li>
+                }
+              }
+            </ul>
+          </section>
+          <section class="publications">
+            <header>
+              <h3>Publications</h3>
+            </header>
+            <ul id="publications-list" class="publications-list">
+              for _, p := range publications {
+                if nil != p {
+                  <li class={ "publication", templ.KV("selected", publication.Month == p.Month && publication.Year == p.Year ) }>
+                    <a href={ templ.SafeURL(fmt.Sprintf("/archive/%s/%d/%d", topic.ID, p.Year, p.Month)) }
+                       onclick="setArchivePublicationDate(this)"
+                       hx-get={ fmt.Sprintf("/archive/%s/%d/%d", topic.ID, p.Year, p.Month) }
+                       hx-trigger="click"
+                       hx-boost="true"
+                       hx-target="#article-results">{ p.Month.String() } { strconv.Itoa(p.Year) }</a>
+                  </li>
+                }
+              }
+            </ul>
+          </section>
+          <section class="tags">
+            <header>
+              <h3>Tags</h3>
+            </header>
+            <div class="tags-list">
+              for _, t := range tags {
+                if nil != t {
+                  <span class="tag">
+                    <a href={ templ.SafeURL(fmt.Sprintf("/archive/tag/%s", t.ID)) }
+                       hx-get={ fmt.Sprintf("/archive/tag/%s", t.ID) }
+                       hx-trigger="click"
+                       hx-boost="true"
+                       hx-target="#article-results">
+                      { t.Name }
+                    </a>
+                  </span>
+                }
+              }
+            </div>
+          </section>
+        </aside>
+      </section>
+    </section>
+  }
+}
