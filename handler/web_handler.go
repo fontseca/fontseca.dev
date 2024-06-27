@@ -1,9 +1,11 @@
 package handler
 
 import (
+  "context"
   "fontseca.dev/components/pages"
   "fontseca.dev/components/ui"
   "fontseca.dev/model"
+  "fontseca.dev/repository"
   "fontseca.dev/service"
   "fontseca.dev/transfer"
   "github.com/gin-gonic/gin"
@@ -160,4 +162,27 @@ func (h *WebHandler) RenderArchive(c *gin.Context) {
     filter.Publication,
     selectedTopic,
   ).Render(c, c.Writer)
+}
+
+func (h *WebHandler) RenderArticle(c *gin.Context) {
+  topic := c.Param("topic")
+  year, _ := strconv.Atoi(c.Param("year"))
+  month, _ := strconv.Atoi(c.Param("month"))
+  slug := c.Param("slug")
+
+  cc := context.WithValue(c.Request.Context(), repository.VisitorKey, c.RemoteIP())
+  c.Request = c.Request.Clone(cc)
+
+  r := &transfer.ArticleRequest{
+    Topic: topic,
+    Publication: &transfer.Publication{
+      Month: time.Month(month),
+      Year:  year,
+    },
+    Slug: slug,
+  }
+
+  article, _ := h.articles.GetOne(c.Request.Context(), r)
+
+  pages.Article(article).Render(c, c.Writer)
 }

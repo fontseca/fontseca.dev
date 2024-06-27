@@ -18,11 +18,7 @@ templ ProjectDetails(project *model.Project) {
         <article class="info-article">
           <div class="info-container">
             <header>
-              <a href="/work"
-                 hx-get="/work"
-                 hx-push-url="/work"
-                 hx-trigger="click"
-                 hx-target="body">
+              <a href="/work">
                 <i class="fa fa-long-arrow-left" style="padding-right: .5rem"></i>Go back to work
               </a>
               <h1 class="name">
@@ -103,7 +99,7 @@ templ ProjectDetails(project *model.Project) {
             </div>
           </div>
         </article>
-        <section class="content-section content-receiver-container">
+        <section class="post-content-section post-content-receiver-container">
           <header class="post-header">
             <button type="button" onclick="copyLinkToClipboard()">
               <i class="fa fa-paperclip"></i>Copy link

@@ -1,0 +1,57 @@
+package pages
+
+import(
+  "fontseca.dev/components/layout"
+  "fontseca.dev/model"
+  "strconv"
+)
+
+templ Article(article *model.Article) {
+  if nil != article {
+    @layout.Layout(article.Title, 3) {
+      <section class="article-post">
+        <section class="info-section">
+          <header>
+            <a href="/archive">
+              <i class="fa fa-long-arrow-left" style="padding-right: .5rem"></i>Go back to archive
+            </a>
+            <h1 class="title">{ article.Title }</h1>
+          </header>
+          <div class="metadata">
+            <p>
+              <span style="font-weight: 800;">{ "@" + article.Author }</span>
+              <span style="font-weight: 500;">{ article.Topic.Name }</span>
+              <span style="font-weight: 500;"><time>{ article.PublishedAt.Format("January 02, 2006") }</time></span>
+            </p>
+          </div>
+        </section>
+        <section class="post-content-section post-content-receiver-container">
+          <header class="post-header">
+            <button type="button" onclick="copyLinkToClipboard()">
+              <i class="fa fa-paperclip"></i>Copy link
+            </button>
+            <p><i class="fa-regular fa-clock"></i>{ strconv.Itoa(article.ReadTime) } min</p>
+          </header>
+          <article class={ "content", templ.KV("add-border", 0 < len(article.Tags)) }>
+            {! templ.Raw(md2html(article.Content)) }
+          </article>
+          if 0 < len(article.Tags) {
+            <article class="tags-container">
+              <header>
+                <h3>Tags</h3>
+              </header>
+
+              <div class="tags-list">
+                for _, t := range article.Tags {
+                  if nil != t {
+                    <span class="tag"> { t.Name } </span>
+                  }
+                }
+              </div>
+            </article>
+          }
+        </section>
+      </section>
+    }
+  }
+}

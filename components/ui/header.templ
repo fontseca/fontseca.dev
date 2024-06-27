@@ -17,43 +17,19 @@ templ Header(selectedMenuIndex int) {
 			</div>
 			<ul class="navigation-list">
 				<li class="navigation-list-item">
-					<a href="/"
-						 class={ templ.KV("selected", 0 == selectedMenuIndex) }
-					   hx-get="/"
-					   hx-push-url="/"
-					   hx-trigger="click"
-					   hx-target="body">me</a>
+					<a href="/" class={ templ.KV("selected", 0 == selectedMenuIndex) }>me</a>
 				</li>
 				<li class="navigation-list-item">
-					<a href="/experience"
-						 class={ templ.KV("selected", 1 == selectedMenuIndex) }
-					   hx-get="/experience"
-					   hx-push-url="/experience"
-					   hx-trigger="click"
-					   hx-target="body">experience</a>
+					<a href="/experience" class={ templ.KV("selected", 1 == selectedMenuIndex) }>experience</a>
 				</li>
 				<li class="navigation-list-item">
-					<a href="/work"
-						 class={ templ.KV("selected", 2 == selectedMenuIndex) }
-					   hx-get="/work"
-					   hx-push-url="/work"
-					   hx-trigger="click"
-					   hx-target="body">work</a>
+					<a href="/work" class={ templ.KV("selected", 2 == selectedMenuIndex) }>work</a>
 				</li>
 				<li class="navigation-list-item">
-					<a href="/archive"
-						 class={ templ.KV("selected", 3 == selectedMenuIndex) }
-					   hx-get="/archive"
-					   hx-push-url="/archive"
-					   hx-trigger="click"
-					   hx-target="body">archive</a>
+					<a href="/archive" class={ templ.KV("selected", 3 == selectedMenuIndex) }>archive</a>
 				</li>
 				<li class="navigation-list-item">
-					<a href="/playground"
-						 hx-get="/playground"
-						 hx-push-url="/playground"
-						 hx-trigger="click"
-						 hx-target="body">playground</a>
+					<a href="/playground">playground</a>
 				</li>
 			</ul>
 		</nav>

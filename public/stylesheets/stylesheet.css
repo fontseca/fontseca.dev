@@ -1009,7 +1009,9 @@ a:hover {
   }
 }
 
-.project-detail .content-section {
+/* Post styles.  */
+
+.post-content-section {
   width: 100%;
   padding-top: 1.5rem;
   padding-left: 25%;
@@ -1017,25 +1019,25 @@ a:hover {
 }
 
 @media screen and (max-width: 1600px) {
-  .project-detail .content-section {
+  .post-content-section {
     padding-right: 0;
   }
 }
 
-.project-detail .content-section .post-header {
+.post-content-section .post-header {
   display: flex;
   position: absolute;
   left: 0;
   flex-direction: column;
 }
 
-.project-detail .content-section .post-header p {
+.post-content-section .post-header p {
   margin: 0 !important;
   display: flex;
   align-items: center;
 }
 
-.project-detail .content-section .post-header button {
+.post-content-section .post-header button {
   border: none;
   outline: none;
   cursor: pointer;
@@ -1049,70 +1051,70 @@ a:hover {
   margin-bottom: .3rem;
 }
 
-.project-detail .content-section .post-header button i,
-.project-detail .content-section .post-header p i {
+.post-content-section .post-header button i,
+.post-content-section .post-header p i {
   padding-right: .5rem;
 }
 
-.project-detail .content-section .post-header p {
+.post-content-section .post-header p {
   margin-top: .3rem;
   font-weight: 700;
 }
 
-.project-detail .content-section .post-header button:hover {
+.post-content-section .post-header button:hover {
   text-decoration: underline;
 }
 
 @media screen and (max-width: 1120px) {
-  .project-detail .content-section .post-header {
+  .post-content-section .post-header {
     position: initial;
     padding-bottom: .5rem;
     flex-direction: row;
   }
 
-  .project-detail .content-section .post-header button {
+  .post-content-section .post-header button {
     margin-bottom: 0;
   }
 
-  .project-detail .content-section .post-header p:not(:first-child):before {
+  .post-content-section .post-header p:not(:first-child):before {
     content: "|";
     padding-right: .8rem;
     padding-left: .8rem;
   }
 }
 
-.project-detail .content-section .content * {
+.post-content-section .content * {
   font-family: 'Source Serif 4', sans-serif;
 }
 
-.project-detail .content-section .content p,
-.project-detail .content-section .content h1,
-.project-detail .content-section .content h2,
-.project-detail .content-section .content h3,
-.project-detail .content-section .content h4,
-.project-detail .content-section .content h5,
-.project-detail .content-section .content h6,
-.project-detail .content-section .content li {
+.post-content-section .content p,
+.post-content-section .content h1,
+.post-content-section .content h2,
+.post-content-section .content h3,
+.post-content-section .content h4,
+.post-content-section .content h5,
+.post-content-section .content h6,
+.post-content-section .content li {
   padding-bottom: 1rem;
 }
 
-.project-detail .content-section .content p,
-.project-detail .content-section .content li {
+.post-content-section .content p,
+.post-content-section .content li {
   font-size: 17px;
 }
 
-.project-detail .content-section .content ul,
-.project-detail .content-section .content ol {
+.post-content-section .content ul,
+.post-content-section .content ol {
   padding-left: 3rem;
 }
 
-.project-detail .content-section .content blockquote {
+.post-content-section .content blockquote {
   padding-left: 3rem;
   padding-bottom: 1rem;
   margin: 0;
 }
 
-.project-detail .content-section .content .snippet {
+.post-content-section .content .snippet {
   width: 100%;
   margin-bottom: 1rem;
   background-color: #f5f5f5;
@@ -1121,7 +1123,7 @@ a:hover {
   color: #202224;
 }
 
-.project-detail .content-section .content .snippet .options {
+.post-content-section .content .snippet .options {
   width: 100%;
   display: flex;
   column-gap: 1rem;
@@ -1130,13 +1132,13 @@ a:hover {
   padding: .5rem 1.5rem;
 }
 
-.project-detail .content-section .content .snippet .options div p {
+.post-content-section .content .snippet .options div p {
   padding: 0 !important;
   font-weight: 600;
   font-family: monospace !important;
 }
 
-.project-detail .content-section .content .snippet pre {
+.post-content-section .content .snippet pre {
   padding: .5rem 1.5rem;
 
   word-wrap: break-word;
@@ -1146,47 +1148,47 @@ a:hover {
   overflow-x: auto;
 }
 
-.project-detail .content-section .content .snippet pre code {
+.post-content-section .content .snippet pre code {
   font-family: monospace !important;
   font-size: 14px !important;
 }
 
-.project-detail .content-section .content blockquote p::before {
+.post-content-section .content blockquote p::before {
   content: '\201C';
 }
 
-.project-detail .content-section .content blockquote p::after {
+.post-content-section .content blockquote p::after {
   content: '\201D';
 }
 
-.project-detail .content-section .content figure {
+.post-content-section .content figure {
   margin-bottom: 1rem;
 }
 
-.project-detail .content-section .content .video {
+.post-content-section .content .video {
   width: 100%;
 }
 
-.project-detail .content-section .content video {
+.post-content-section .content video {
   border-radius: 5px;
   width: 100%;
   height: auto;
 }
 
-.project-detail .content-section .content figure img {
+.post-content-section .content figure img {
   width: 100%;
   height: auto;
   border-radius: 5px;
 }
 
-.project-detail .content-section .content figcaption {
+.post-content-section .content figcaption {
   font: italic smaller sans-serif;
   text-align: left;
   padding: 0;
   position: relative;
 }
 
-.project-detail .content-section .content figcaption .caption {
+.post-content-section .content figcaption .caption {
   padding-right: 16px;
   width: 33.5%;
   position: absolute;
@@ -1194,29 +1196,29 @@ a:hover {
   bottom: 0;
 }
 
-.project-detail .content-section .content figcaption .caption p {
+.post-content-section .content figcaption .caption p {
   font-size: 16px !important;
 }
 
-.project-detail .content-section .content figcaption p {
+.post-content-section .content figcaption p {
   padding: 0 !important;
 }
 
 @media screen and (max-width: 1120px) {
-  .project-detail .content-section .content figure {
+  .post-content-section .content figure {
     margin-bottom: 0;
   }
 
-  .project-detail .content-section .content figure img {
+  .post-content-section .content figure img {
     width: 100%;
     margin: auto;
   }
 
-  .project-detail .content-section {
+  .post-content-section {
     padding-left: 0;
   }
 
-  .project-detail .content-section .content figcaption .caption {
+  .post-content-section .content figcaption .caption {
     position: initial;
     width: 100%;
     text-align: center;
@@ -1395,4 +1397,50 @@ a:hover {
 
 .archive-content-aside li.selected a {
   text-decoration: underline;
+}
+
+/* Article page.  */
+
+.article-post .info-section {
+  padding-bottom: 1rem;
+  border-bottom: 1px solid black;
+}
+
+.article-post .info-section header .title {
+  font-size: clamp(2rem, 4vw, 3vw);
+  font-weight: 900;
+  padding-top: .5rem;
+  margin-bottom: .5rem;
+  line-height: calc(clamp(2rem, 4vw, 3vw) - 0rem);
+}
+
+.article-post .info-section .metadata span:not(:last-child):after {
+  content: "|";
+  margin-right: .3rem;
+  margin-left: .6rem;
+  font-weight: normal;
+}
+
+.article-post .post-content-section .content.add-border {
+  border-bottom: 1px solid black;
+}
+
+.article-post .post-content-section .tags-container {
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+}
+
+.article-post .post-content-section .tags-container header {
+  margin-bottom: .5rem;
+}
+
+.article-post .post-content-section .tags-list {
+  display: flex;
+  row-gap: .5rem;
+  column-gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.article-post .post-content-section .tags-list .tag {
+  font-weight: normal;
 }
