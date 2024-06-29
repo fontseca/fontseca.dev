@@ -524,6 +524,7 @@ func main() {
     meService,
     experienceService,
     projectsService,
+    draftsService,
     articlesService,
     topicsService,
     tagsService,
@@ -538,15 +539,9 @@ func main() {
   engine.GET("/archive/:topic/:year/:month", web.RenderArchive)
   engine.GET("/archive/tag/:tag", web.RenderArchive)
   engine.GET("/archive/:topic/:year/:month/:slug", web.RenderArticle)
+  engine.GET("/archive/sharing/:hash", web.RenderArticle)
 
-  engine.NoRoute(func(c *gin.Context) {
-    var p problem.Problem
-    p.Status(http.StatusNotFound)
-    p.Title("Target not found.")
-    p.Detail("Could not find the requested target resource. Possible causes: invalid URL, this resource no longer exists, or a temporary server issue.")
-    p.Instance(c.Request.URL.String())
-    p.Emit(c.Writer)
-  })
+  engine.NoRoute(web.NotFound)
 
   engine.HandleMethodNotAllowed = true
   var routes = engine.Routes()

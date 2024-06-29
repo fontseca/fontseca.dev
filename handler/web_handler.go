@@ -2,6 +2,8 @@ package handler
 
 import (
   "context"
+  "database/sql"
+  "errors"
   "fontseca.dev/components/pages"
   "fontseca.dev/components/ui"
   "fontseca.dev/model"
@@ -20,6 +22,7 @@ type WebHandler struct {
   meService         service.MeService
   experienceService service.ExperienceService
   projectsService   service.ProjectsService
+  drafts            service.DraftsService
   articles          service.ArticlesService
   topics            service.TopicsService
   tags              service.TagsService
@@ -29,6 +32,7 @@ func NewWebHandler(
   meService service.MeService,
   experienceService service.ExperienceService,
   projectsService service.ProjectsService,
+  drafts service.DraftsService,
   articles service.ArticlesService,
   topics service.TopicsService,
   tags service.TagsService,
@@ -37,25 +41,21 @@ func NewWebHandler(
     meService:         meService,
     experienceService: experienceService,
     projectsService:   projectsService,
+    drafts:            drafts,
     articles:          articles,
     topics:            topics,
     tags:              tags,
   }
 }
 
-func (h *WebHandler) internalOnError(err error, c *gin.Context) bool {
-  if nil != err {
-    contentType := c.Request.Header.Get("Content-Type")
+func (h *WebHandler) NotFound(c *gin.Context) {
+  c.Status(http.StatusNotFound)
+  pages.NotFound().Render(c, c.Writer)
+}
 
-    if "" == contentType || strings.Contains(contentType, "text/html") {
-      c.Writer.Header().Set("Content-Type", "text/html; charset=UTF-8")
-      pages.Internal().Render(c, c.Writer)
-    }
-
-    return true
-  }
-
-  return false
+func (h *WebHandler) internal(c *gin.Context) {
+  c.Status(http.StatusInternalServerError)
+  pages.Internal().Render(c, c.Writer)
 }
 
 func (h *WebHandler) RenderMe(c *gin.Context) {
@@ -115,19 +115,22 @@ func (h *WebHandler) RenderArchive(c *gin.Context) {
 
   articles, err := h.articles.Get(c, filter)
 
-  if h.internalOnError(err, c) {
+  if nil != err {
+    h.internal(c)
     return
   }
 
   publications, err := h.articles.Publications(c)
 
-  if h.internalOnError(err, c) {
+  if nil != err {
+    h.internal(c)
     return
   }
 
   topics, err := h.topics.Get(c)
 
-  if h.internalOnError(err, c) {
+  if nil != err {
+    h.internal(c)
     return
   }
 
@@ -145,11 +148,16 @@ func (h *WebHandler) RenderArchive(c *gin.Context) {
 
   if -1 != i {
     selectedTopic = topics[i]
+  } else {
+    if "" != topic {
+      selectedTopic.Name = "?"
+    }
   }
 
   tags, err := h.tags.Get(c)
 
-  if h.internalOnError(err, c) {
+  if nil != err {
+    h.internal(c)
     return
   }
 
@@ -165,13 +173,38 @@ func (h *WebHandler) RenderArchive(c *gin.Context) {
 }
 
 func (h *WebHandler) RenderArticle(c *gin.Context) {
+  cc := context.WithValue(c.Request.Context(), repository.VisitorKey, c.RemoteIP())
+  c.Request = c.Request.Clone(cc)
+
+  if _, checksum := c.Params.Get("hash"); checksum {
+    shareableLink := c.Request.URL.Path
+
+    if '/' != shareableLink[0] {
+      shareableLink = "/" + shareableLink
+    }
+
+    draft, err := h.drafts.GetByLink(c.Request.Context(), shareableLink)
+
+    if nil != err {
+      switch {
+      default:
+        pages.Internal().Render(c, c.Writer)
+        return
+      case strings.Contains(err.Error(), "has expired") ||
+        strings.Contains(err.Error(), "might have been either removed or blocked."):
+        h.NotFound(c)
+        return
+      }
+    }
+
+    pages.Article(draft).Render(c, c.Writer)
+    return
+  }
+
   topic := c.Param("topic")
   year, _ := strconv.Atoi(c.Param("year"))
   month, _ := strconv.Atoi(c.Param("month"))
   slug := c.Param("slug")
-
-  cc := context.WithValue(c.Request.Context(), repository.VisitorKey, c.RemoteIP())
-  c.Request = c.Request.Clone(cc)
 
   r := &transfer.ArticleRequest{
     Topic: topic,
@@ -182,7 +215,17 @@ func (h *WebHandler) RenderArticle(c *gin.Context) {
     Slug: slug,
   }
 
-  article, _ := h.articles.GetOne(c.Request.Context(), r)
+  article, err := h.articles.GetOne(c.Request.Context(), r)
+
+  if nil != err {
+    if errors.Is(err, sql.ErrNoRows) {
+      h.NotFound(c)
+      return
+    } else {
+      h.internal(c)
+    }
+    return
+  }
 
   pages.Article(article).Render(c, c.Writer)
 }
