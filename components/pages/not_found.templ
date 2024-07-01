@@ -1,0 +1,23 @@
+package pages
+
+import (
+  "fontseca.dev/components/layout"
+  "fontseca.dev/components/ui"
+)
+
+templ NotFound(text ...string) {
+  @layout.Layout("not found", -1) {
+    <section class="not-found">
+      @ui.TitleHeader("not-found", "")
+      <section class="not-found-content">
+        if 0 < len(text) && "" != text[0] {
+        <p>{ text[0] }</p>
+        } else {
+        <p>
+          Could not find the requested target resource. Possible causes: invalid URL, this resource no longer exists, or a temporary server issue.
+        </p>
+        }
+      </section>
+    </section>
+  }
+}
