@@ -2,12 +2,7 @@ package ui
 
 templ Header(selectedMenuIndex int) {
 	<header class="header">
-		<a href="/"
-			 style="text-decoration: none; font-weight: normal"
-			 hx-get="/"
-			 hx-push-url="/"
-			 hx-trigger="click"
-			 hx-target="body">
+		<a href="/" style="text-decoration: none; font-weight: normal">
 			@Logo()
 		</a>
 		<nav class="navigation" id="navigation">
