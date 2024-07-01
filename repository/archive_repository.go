@@ -2,7 +2,7 @@ package repository
 
 import (
   "context"
-  "crypto/sha1"
+  "crypto/sha256"
   "database/sql"
   "errors"
   "fmt"
@@ -774,7 +774,7 @@ func (r *archiveRepository) Get(ctx context.Context, filter *transfer.ArticleFil
       article.Topic = nil
     } else {
       // The topic URL has the form: '.../archive/:topic'.
-      topicURL, err := url.JoinPath(URLBase, "archive", "topic")
+      topicURL, err := url.JoinPath(URLBase, "archive", topic)
 
       if nil == err {
         article.Topic = &struct {
@@ -863,7 +863,10 @@ func (r *archiveRepository) GetOne(ctx context.Context, request *transfer.Articl
   ).Scan(&id)
 
   if nil != err {
-    slog.Error(err.Error())
+    if !errors.Is(err, sql.ErrNoRows) {
+      slog.Error(err.Error())
+    }
+
     return nil, err
   }
 
@@ -929,8 +932,6 @@ func (r *archiveRepository) GetByLink(ctx context.Context, link string) (article
 
     return nil, p
   }
-
-  slog.Info("retrieving shared draft", slog.String("link", link))
 
   go r.incrementViews(ctx, id)
 
@@ -1024,7 +1025,7 @@ func (r *archiveRepository) GetByID(ctx context.Context, id string, isDraft bool
     nullableTopicUpdatedAt sql.Null[time.Time]
   )
 
-  r.db.QueryRowContext(ctx2, getArticleByUUIDQuery,
+  err = r.db.QueryRowContext(ctx2, getArticleByUUIDQuery,
     sql.Named("uuid", id),
     sql.Named("is_draft", isDraft)).Scan(
     &article.UUID,
@@ -1655,14 +1656,14 @@ func (r *archiveRepository) Share(ctx context.Context, id string) (link string, 
     RETURNING "sharable_link";`
 
   data := fmt.Sprintf("%s at %s", id, time.Now().String())
-  hash := sha1.Sum([]byte(data))
+  hash := sha256.Sum256([]byte(data))
 
   ctx2, cancel2 := context.WithTimeout(ctx, 5*time.Second)
   defer cancel2()
 
   err = tx.QueryRowContext(ctx2, makeShareableLinkQuery,
     sql.Named("article_uuid", id),
-    sql.Named("sharable_link", fmt.Sprintf("/archive/s/%x", hash))).
+    sql.Named("sharable_link", fmt.Sprintf("/archive/sharing/%x", hash))).
     Scan(&link)
 
   if nil != err {
