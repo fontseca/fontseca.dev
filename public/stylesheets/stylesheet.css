@@ -5,13 +5,34 @@
   font-family: "Raleway", sans-serif;
 }
 
+@media (prefers-color-scheme: light) {
+  body {
+    background-image: url("/public/images/bg-light.webp");
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background-image: url("/public/images/bg-dark.webp");
+    background-color: black;
+    filter: invert(95%) hue-rotate(180deg);
+  }
+
+  img, video, iframe {
+    filter: invert(95%) hue-rotate(180deg);
+  }
+
+  .navigation-menu-bars img {
+    filter: invert(0);
+  }
+}
+
 html {
   min-height: 100%;
   scroll-behavior: smooth;
 }
 
 body {
-  background-image: url("/public/images/white-theme-bg.png");
   background-size: 80%;
   background-attachment: fixed;
   min-height: 100%;
@@ -174,10 +195,6 @@ a:hover {
   justify-content: space-between;
 }
 
-.header *, #backdrop {
-  transition: all 300ms;
-}
-
 .navigation-menu-bars {
   display: none;
   cursor: pointer;
@@ -262,6 +279,10 @@ a:hover {
 }
 
 @media screen and (max-width: 1120px) {
+  .header .navigation, #backdrop {
+    transition: all 300ms;
+  }
+
   .navigation {
     display: block;
     overflow: hidden;
