@@ -20,8 +20,22 @@ templ Article(article *model.Article) {
           <div class="metadata">
             <p>
               <span style="font-weight: 800;">{ "@" + article.Author }</span>
-              <span style="font-weight: 500;">{ article.Topic.Name }</span>
-              <span style="font-weight: 500;"><time>{ article.PublishedAt.Format("January 02, 2006") }</time></span>
+              <span style="font-weight: 500;">
+                if nil != article.Topic {
+                  { article.Topic.Name }
+                } else {
+                  { "No topic" }
+                }
+              </span>
+              <span style="font-weight: 500;">
+                <time>
+                  if nil != article.Topic {
+                    { article.PublishedAt.Format("January 02, 2006") }
+                  } else {
+                    { "Draft" }
+                  }
+                </time>
+              </span>
             </p>
           </div>
         </section>
