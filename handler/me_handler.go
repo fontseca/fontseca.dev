@@ -132,13 +132,3 @@ func (h *MeHandler) Update(c *gin.Context) {
     c.Redirect(http.StatusSeeOther, "/me.info")
   }
 }
-
-func (h *MeHandler) Authenticate(c *gin.Context) {
-  // TODO: Implement.
-  panic("Authenticate: not implemented")
-}
-
-func (h *MeHandler) Deauthenticate(c *gin.Context) {
-  // TODO: Implement.
-  panic("Deauthenticate: not implemented")
-}

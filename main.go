@@ -333,6 +333,8 @@ func main() {
   var engine = gin.New()
 
   engine.Use(gin.Recovery())
+  engine.Use(func(c *gin.Context) {
+  })
 
   var formatter = func(param gin.LogFormatterParams) string {
     if param.Latency > time.Minute {
@@ -398,8 +400,6 @@ func main() {
   engine.POST("/me.setResume", me.SetResume)
   engine.POST("/me.setHireable", me.SetHireable)
   engine.POST("/me.set", me.Update)
-  engine.POST("/me.authenticate", me.Authenticate)
-  engine.POST("/me.deauthenticate", me.Deauthenticate)
 
   var (
     experienceRepository = repository.NewExperienceRepository(db)
