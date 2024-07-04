@@ -12,8 +12,7 @@ import (
   "github.com/gin-gonic/gin"
   "github.com/gin-gonic/gin/binding"
   "github.com/go-playground/validator/v10"
-  "github.com/google/uuid"
-  "github.com/mattn/go-sqlite3"
+  _ "github.com/lib/pq"
   "io"
   "log"
   "log/slog"
@@ -27,83 +26,16 @@ import (
   "time"
 )
 
-// table contains information about a relation in the database.
-type table struct {
-  name       string
-  definition string
-}
-
-// exists checks if the table t.name is already created in the transaction tx.
-func (t *table) exists(ctx context.Context, tx *sql.Tx) bool {
-  if nil == tx {
-    return false
-  }
-  var query = `
-  SELECT count (1)
-    FROM "sqlite_master"
-   WHERE "type" = 'table'
-     AND "name" = $1;`
-  ctx, cancel := context.WithTimeout(ctx, time.Second)
-  defer cancel()
-  var result = tx.QueryRowContext(ctx, query, t.name)
-  var err = result.Err()
-  if nil != err {
-    err = fmt.Errorf("checking existence of table %q: %v", t.name, err)
-    if rollbackErr := tx.Rollback(); nil != rollbackErr {
-      log.Fatalf("unable to rollback: %v: %v", err, rollbackErr)
-    }
-    log.Fatal(err)
-  }
-  var n int
-  err = result.Scan(&n)
-  if nil != err {
-    log.Fatal(err)
-  }
-  return n >= 1
-}
-
-// create attempts to create the table t in the transaction tx.
-func (t *table) create(ctx context.Context, tx *sql.Tx) {
-  if nil == tx {
-    return
-  }
-  ctx, cancel := context.WithTimeout(ctx, time.Second)
-  defer cancel()
-  if _, err := tx.ExecContext(ctx, t.definition); nil != err {
-    err = fmt.Errorf("creating table %q: %v", t.name, err)
-    if rollbackErr := tx.Rollback(); nil != rollbackErr {
-      log.Fatalf("unable to rollback: %v: %v", err, rollbackErr)
-    }
-    log.Fatal(err)
-  }
-}
-
 func main() {
   log.SetFlags(log.LstdFlags | log.Lshortfile)
 
-  sql.Register("sqlite3_custom", &sqlite3.SQLiteDriver{
-    ConnectHook: func(conn *sqlite3.SQLiteConn) error {
-      if err := conn.RegisterFunc(
-        "uuid_generate_v4",
-        func() string { return uuid.New().String() },
-        true,
-      ); nil != err {
-        return err
-      }
+  var db, err = sql.Open("postgres", fmt.Sprintf("user=%s password=%s host=%s port=%s dbname=%s connect_timeout=5 sslmode=require",
+    mustLookupEnv("PG_USER"),
+    mustLookupEnv("PG_PASSWORD"),
+    mustLookupEnv("PG_HOST"),
+    mustLookupEnv("PG_PORT"),
+    mustLookupEnv("PG_DATABASE")))
 
-      if err := conn.RegisterFunc(
-        "uuid_nil",
-        func() string { return uuid.Nil.String() },
-        true,
-      ); nil != err {
-        return err
-      }
-
-      return nil
-    },
-  })
-
-  var db, err = sql.Open("sqlite3_custom", "./db.sqlite")
   if nil != err {
     log.Fatal(err)
   }
@@ -121,194 +53,6 @@ func main() {
   }(db)
 
   if err = db.Ping(); nil != err {
-    log.Fatal(err)
-  }
-
-  var tables = []table{
-    {
-      name: "me",
-      definition: `
-      CREATE TABLE "me"
-      (
-        "username"      VARCHAR(64) UNIQUE NOT NULL DEFAULT 'fontseca.dev',
-        "first_name"    VARCHAR(6) NOT NULL DEFAULT 'Jeremy',
-        "last_name"     VARCHAR(7) NOT NULL DEFAULT 'Fonseca',
-        "summary"       VARCHAR(1024) NOT NULL,
-        "job_title"     VARCHAR(64) NOT NULL DEFAULT 'Back-End Software Developer',
-        "email"         VARCHAR(254) NOT NULL,
-        "photo_url"     VARCHAR(2048) NOT NULL DEFAULT 'about:blank',
-        "resume_url"    VARCHAR(2048) NOT NULL DEFAULT 'about:blank',
-        "coding_since"  INT NOT NULL DEFAULT 2017,
-        "company"       VARCHAR(64),
-        "location"      VARCHAR(64),
-        "hireable"      BOOLEAN NOT NULL DEFAULT TRUE,
-        "github_url"    VARCHAR(2048) NOT NULL DEFAULT 'https://github.com/fontseca',
-        "linkedin_url"  VARCHAR(2048) NOT NULL DEFAULT 'about:blank',
-        "youtube_url"   VARCHAR(2048) NOT NULL DEFAULT 'about:blank',
-        "twitter_url"   VARCHAR(2048) NOT NULL DEFAULT 'about:blank',
-        "instagram_url" VARCHAR(2048) NOT NULL DEFAULT 'about:blank',
-        "created_at"    TIMESTAMP NOT NULL DEFAULT current_timestamp,
-        "updated_at"    TIMESTAMP NOT NULL DEFAULT current_timestamp,
-        CHECK ("coding_since" = 2017)
-      );`,
-    },
-    {
-      name: "experience",
-      definition: `
-      CREATE TABLE "experience"
-      (
-        "uuid"       VARCHAR(36) NOT NULL PRIMARY KEY DEFAULT (uuid_generate_v4 ()),
-        "starts"     INT NOT NULL,
-        "ends"       INT NULL,
-        "job_title"  VARCHAR(64) NOT NULL DEFAULT 'Back-End Software Developer',
-        "company"    VARCHAR(64) NOT NULL,
-        "country"    VARCHAR(64),
-        "summary"    TEXT NOT NULL,
-        "active"     BOOLEAN DEFAULT FALSE,
-        "hidden"     BOOLEAN DEFAULT FALSE,
-        "created_at" TIMESTAMP NOT NULL DEFAULT current_timestamp,
-        "updated_at" TIMESTAMP NOT NULL DEFAULT current_timestamp,
-        CHECK ("starts" > 2017),
-        CHECK ("ends" > 2017 OR "ends" IS NULL)
-      );`,
-    },
-    {
-      name: "project",
-      definition: `
-      CREATE TABLE "project"
-      (
-        "uuid"             VARCHAR(36) NOT NULL PRIMARY KEY DEFAULT (uuid_generate_v4 ()),
-        "name"             VARCHAR(64) NOT NULL,
-        "slug"             VARCHAR(2024) NOT NULL,
-        "homepage"         VARCHAR(2048) NOT NULL ON CONFLICT REPLACE DEFAULT 'about:blank',
-        "language"         VARCHAR(64) NULL,
-        "summary"          VARCHAR(1024) NOT NULL ON CONFLICT REPLACE DEFAULT 'No summary.',
-        "read_time"        INT NOT NULL ON CONFLICT REPLACE DEFAULT 0,
-        "content"          TEXT NOT NULL ON CONFLICT REPLACE DEFAULT 'No content.',
-        "estimated_time"   INT DEFAULT NULL,
-        "first_image_url"  VARCHAR(2048) NOT NULL ON CONFLICT REPLACE DEFAULT 'about:blank',
-        "second_image_url" VARCHAR(2048) NOT NULL ON CONFLICT REPLACE DEFAULT 'about:blank',
-        "github_url"       VARCHAR(2048) NOT NULL ON CONFLICT REPLACE DEFAULT 'about:blank',
-        "collection_url"   VARCHAR(2048) NOT NULL ON CONFLICT REPLACE DEFAULT 'about:blank',
-        "playground_url"   VARCHAR(2048) NOT NULL ON CONFLICT REPLACE DEFAULT 'about:blank',
-        "playable"         BOOLEAN NOT NULL DEFAULT FALSE,
-        "archived"         BOOLEAN NOT NULL DEFAULT FALSE,
-        "finished"         BOOLEAN DEFAULT FALSE,
-        "created_at"       TIMESTAMP NOT NULL DEFAULT current_timestamp,
-        "updated_at"       TIMESTAMP NOT NULL DEFAULT current_timestamp
-      );`,
-    },
-    {
-      name: "technology_tag",
-      definition: `
-      CREATE TABLE "technology_tag"
-      (
-        "uuid"        VARCHAR(36) NOT NULL PRIMARY KEY DEFAULT (uuid_generate_v4 ()),
-        "name"        VARCHAR(64) NOT NULL,
-        "created_at"  TIMESTAMP NOT NULL DEFAULT current_timestamp,
-        "updated_at"  TIMESTAMP NOT NULL DEFAULT current_timestamp
-      );`,
-    },
-    {
-      name: "project_technology_tag",
-      definition: `
-      CREATE TABLE "project_technology_tag"
-      (
-        "project_uuid"        VARCHAR(36) NOT NULL REFERENCES "project" ("uuid"),
-        "technology_tag_uuid" VARCHAR(36) NOT NULL REFERENCES "technology_tag" ("uuid")
-      );`,
-    },
-    {
-      name: "topic",
-      definition: `
-      CREATE TABLE "topic"
-      (
-        "id"         VARCHAR(32) PRIMARY KEY,
-        "name"       VARCHAR(32) NOT NULL,
-        "created_at" TIMESTAMP NOT NULL DEFAULT current_timestamp,
-        "updated_at" TIMESTAMP NOT NULL DEFAULT current_timestamp
-      );`,
-    },
-    {
-      name: "article",
-      definition: `
-      CREATE TABLE "article"
-      (
-        "uuid"         VARCHAR(36) NOT NULL PRIMARY KEY DEFAULT (uuid_generate_v4 ()),
-        "title"        VARCHAR(256) NOT NULL,
-        "author"       VARCHAR(64) NOT NULL REFERENCES "me" ("username"),
-        "slug"         VARCHAR(512) NOT NULL,
-        "read_time"    INT NOT NULL ON CONFLICT REPLACE DEFAULT 0,
-        "views"        INTEGER NOT NULL ON CONFLICT REPLACE DEFAULT 0,
-        "content"      TEXT NOT NULL ON CONFLICT REPLACE DEFAULT 'No content.',
-        "draft"        BOOLEAN DEFAULT TRUE,
-        "pinned"       BOOLEAN DEFAULT FALSE,
-        "hidden"       BOOLEAN DEFAULT FALSE,
-        "topic"        VARCHAR(32) REFERENCES "topic" ("id")
-        "drafted_at"   TIMESTAMP NOT NULL DEFAULT current_timestamp,
-        "published_at" TIMESTAMP DEFAULT NULL,
-        "updated_at"   TIMESTAMP NOT NULL DEFAULT current_timestamp
-        "modified_at"  TIMESTAMP DEFAULT NULL,
-      );`,
-    },
-    {
-      name: "article_patch",
-      definition: `
-      CREATE TABLE "article_patch"
-      (
-        "article_uuid" VARCHAR(36) UNIQUE PRIMARY KEY NOT NULL REFERENCES "article" ("uuid"),
-        "title"        VARCHAR(256),
-        "topic"        VARCHAR(32) REFERENCES "topic" ("id"),
-        "slug"         VARCHAR(512),
-        "read_time"    INT DEFAULT 0,
-        "content"      TEXT
-      );`,
-    },
-    {
-      name: "article_link",
-      definition: `
-      CREATE TABLE "article_link"
-      (
-        "article_uuid"  VARCHAR(36) UNIQUE PRIMARY KEY NOT NULL REFERENCES "article" ("uuid"),
-        "sharable_link" VARCHAR(248),
-        "expires_at"    TIMESTAMP NOT NULL DEFAULT (datetime(current_timestamp, '+7 day'))
-      );`,
-    },
-    {
-      name: "tag",
-      definition: `
-      CREATE TABLE "tag"
-      (
-        "id"         VARCHAR(32) NOT NULL PRIMARY KEY,
-        "name"       VARCHAR(32) NOT NULL,
-        "created_at" TIMESTAMP NOT NULL DEFAULT current_timestamp,
-        "updated_at" TIMESTAMP NOT NULL DEFAULT current_timestamp
-      );`,
-    },
-    {
-      name: "article_tag",
-      definition: `
-      CREATE TABLE "article_tag"
-      (
-        "article_uuid" VARCHAR(36) NOT NULL REFERENCES "article" ("uuid"),
-        "tag_id"     VARCHAR(32) NOT NULL REFERENCES "tag" ("id")
-      );`,
-    },
-  }
-
-  var ctx = context.Background()
-  tx, err := db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
-  if nil != err {
-    log.Fatal(err)
-  }
-
-  for _, t := range tables {
-    if !t.exists(ctx, tx) {
-      t.create(ctx, tx)
-    }
-  }
-
-  if err = tx.Commit(); nil != err {
     log.Fatal(err)
   }
 
@@ -610,4 +354,14 @@ func main() {
       fmt.Fprintf(os.Stderr, "could not shutdown server: %v", err)
     }
   }
+}
+
+func mustLookupEnv(key string) string {
+  v, ok := os.LookupEnv(key)
+
+  if !ok {
+    log.Fatalf("could not load environment variable '%s'", key)
+  }
+
+  return v
 }
