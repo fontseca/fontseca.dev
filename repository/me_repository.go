@@ -37,7 +37,7 @@ func (r *meRepositoryImpl) registered(ctx context.Context) bool {
   ctx, cancel := context.WithTimeout(ctx, time.Second)
   defer cancel()
   var err = r.db.
-    QueryRowContext(ctx, `SELECT count (1) FROM "me";`).
+    QueryRowContext(ctx, `SELECT count (1) FROM "me"."me";`).
     Scan(&exists)
   if nil != err {
     slog.Error(err.Error())
@@ -50,29 +50,57 @@ func (r *meRepositoryImpl) Register(ctx context.Context) {
   if r.registered(ctx) {
     return
   }
-  var query = `
-  INSERT INTO "me" ("summary",
-                    "email",
-                    "company",
-                    "location")
-            VALUES ('No summary provided.',
-                    'email@example.com',
-                    'None',
-                    'Unknown');`
+
+  registerMeQuery := `
+  INSERT INTO "me"."me" ("summary",
+                         "email",
+                         "company",
+                         "location",
+                         "job_title")
+                 VALUES ('Empty.',
+                         'nobody@unknown.com',
+                         'Unknown',
+                         'Unknown',
+                         'Unknown');`
+
   ctx, cancel := context.WithTimeout(ctx, time.Second)
   defer cancel()
-  _, err := r.db.ExecContext(ctx, query)
+
+  _, err := r.db.ExecContext(ctx, registerMeQuery)
+
   if nil != err {
     slog.Error(err.Error())
   }
 }
 
 func (r *meRepositoryImpl) Get(ctx context.Context) (me *model.Me, err error) {
+  getMeQuery := `
+  SELECT "username",
+         "first_name",
+         "last_name",
+         "summary",
+         "job_title",
+         "email",
+         "photo_url",
+         "resume_url",
+         "coding_since",
+         "company",
+         "location",
+         "hireable",
+         "github_url",
+         "linkedin_url",
+         "youtube_url",
+         "twitter_url",
+         "instagram_url",
+         "created_at",
+         "updated_at"
+    FROM "me"."me";`
+
   ctx, cancel := context.WithTimeout(ctx, time.Second)
   defer cancel()
-  var row = r.db.QueryRowContext(ctx, `SELECT * FROM "me";`)
+
   me = new(model.Me)
-  err = row.Scan(
+  err = r.db.QueryRowContext(ctx, getMeQuery).Scan(
     &me.Username,
     &me.FirstName,
     &me.LastName,
@@ -92,10 +120,12 @@ func (r *meRepositoryImpl) Get(ctx context.Context) (me *model.Me, err error) {
     &me.InstagramURL,
     &me.CreatedAt,
     &me.UpdatedAt)
+
   if nil != err {
     slog.Error(err.Error())
     return me, err
   }
+
   return me, nil
 }
 
@@ -119,62 +149,74 @@ func (r *meRepositoryImpl) updatable(current *model.Me, update *transfer.MeUpdat
 
 func (r *meRepositoryImpl) Update(ctx context.Context, update *transfer.MeUpdate) (ok bool, err error) {
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+
   if nil != err {
     slog.Error(err.Error())
     return false, err
   }
+
   defer tx.Rollback()
+
   current, err := r.Get(ctx)
+
   if nil != err {
     return false, err
   }
+
   if updatable := r.updatable(current, update); !updatable {
     return false, nil
   }
-  var query = `
-    UPDATE "me"
-       SET "summary" = coalesce (nullif (@new_summary, ''), @current_summary),
-           "job_title" = coalesce (nullif (@new_job_title, ''), @current_job_title),
-           "email" = coalesce (nullif (@new_email, ''), @current_email),
-           "photo_url" = coalesce (nullif (@new_photo_url, ''), @current_photo_url),
-           "resume_url" = coalesce (nullif (@new_resume_url, ''), @current_resume_url),
-           "company" = coalesce (nullif (@new_company, ''), @current_company),
-           "location" = coalesce (nullif (@new_location, ''), @current_location),
-           "hireable" = @new_hireable,
-           "github_url" = coalesce (nullif (@new_github_url, ''), @current_github_url),
-           "linkedin_url" = coalesce (nullif (@new_linkedin_url, ''), @current_linkedin_url),
-           "youtube_url" = coalesce (nullif (@new_youtube_url, ''), @current_youtube_url),
-           "twitter_url" = coalesce (nullif (@new_twitter_url, ''), @current_twitter_url),
-           "instagram_url" = coalesce (nullif (@new_instagram_url, ''), @current_instagram_url),
+
+  updateMeQuery := `
+    UPDATE "me"."me"
+       SET "summary" = coalesce (nullif ($1, ''), $2),
+           "job_title" = coalesce (nullif ($3, ''), $4),
+           "email" = coalesce (nullif ($5, ''), $6),
+           "photo_url" = coalesce (nullif ($7, ''), $8),
+           "resume_url" = coalesce (nullif ($9, ''), $10),
+           "company" = coalesce (nullif ($11, ''), $12),
+           "location" = coalesce (nullif ($13, ''), $14),
+           "hireable" = $15,
+           "github_url" = coalesce (nullif ($16, ''), $17),
+           "linkedin_url" = coalesce (nullif ($18, ''), $19),
+           "youtube_url" = coalesce (nullif ($20, ''), $21),
+           "twitter_url" = coalesce (nullif ($22, ''), $23),
+           "instagram_url" = coalesce (nullif ($24, ''), $25),
            "updated_at" = current_timestamp
-     WHERE "username" = "fontseca.dev";`
-  ctx, cancel := context.WithTimeout(ctx, time.Second)
+     WHERE "username" = 'fontseca.dev';`
+
+  ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
   defer cancel()
-  result, err := tx.ExecContext(ctx, query,
-    sql.Named("new_summary", update.Summary), sql.Named("current_summary", current.Summary),
-    sql.Named("new_job_title", update.JobTitle), sql.Named("current_job_title", current.JobTitle),
-    sql.Named("new_email", update.Email), sql.Named("current_email", current.Email),
-    sql.Named("new_photo_url", update.PhotoURL), sql.Named("current_photo_url", current.PhotoURL),
-    sql.Named("new_resume_url", update.ResumeURL), sql.Named("current_resume_url", current.ResumeURL),
-    sql.Named("new_company", update.Company), sql.Named("current_company", current.Company),
-    sql.Named("new_location", update.Location), sql.Named("current_location", current.Location),
-    sql.Named("new_hireable", update.Hireable),
-    sql.Named("new_github_url", update.GitHubURL), sql.Named("current_github_url", current.GitHubURL),
-    sql.Named("new_linkedin_url", update.LinkedInURL), sql.Named("current_linkedin_url", current.LinkedInURL),
-    sql.Named("new_youtube_url", update.YouTubeURL), sql.Named("current_youtube_url", current.YouTubeURL),
-    sql.Named("new_twitter_url", update.TwitterURL), sql.Named("current_twitter_url", current.TwitterURL),
-    sql.Named("new_instagram_url", update.InstagramURL), sql.Named("current_instagram_url", current.InstagramURL))
+
+  result, err := tx.ExecContext(ctx, updateMeQuery,
+    update.Summary, current.Summary,
+    update.JobTitle, current.JobTitle,
+    update.Email, current.Email,
+    update.PhotoURL, current.PhotoURL,
+    update.ResumeURL, current.ResumeURL,
+    update.Company, current.Company,
+    update.Location, current.Location,
+    update.Hireable,
+    update.GitHubURL, current.GitHubURL,
+    update.LinkedInURL, current.LinkedInURL,
+    update.YouTubeURL, current.YouTubeURL,
+    update.TwitterURL, current.TwitterURL,
+    update.InstagramURL, current.InstagramURL)
+
   if nil != err {
     slog.Error(err.Error())
     return false, err
   }
+
   var affected, _ = result.RowsAffected()
   if 1 != affected {
     return false, nil
   }
+
   if err = tx.Commit(); nil != err {
     slog.Error(err.Error())
     return false, err
   }
+
   return true, nil
 }
