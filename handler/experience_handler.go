@@ -47,7 +47,7 @@ func (h *ExperienceHandler) GetHidden(c *gin.Context) {
 }
 
 func (h *ExperienceHandler) GetByID(c *gin.Context) {
-  var id = c.Query("id")
+  var id = c.Query("experience_uuid")
   var e, err = h.s.GetByID(c, id)
   if nil != err {
     var p *problem.Problem
@@ -87,9 +87,9 @@ func (h *ExperienceHandler) Add(c *gin.Context) {
 func (h *ExperienceHandler) Set(c *gin.Context) {
   var update transfer.ExperienceUpdate
 
-  var id, success = c.GetPostForm("id")
+  var id, success = c.GetPostForm("experience_uuid")
   if !success {
-    problem.NewMissingParameter("id").Emit(c.Writer)
+    problem.NewMissingParameter("experience_uuid").Emit(c.Writer)
     return
   }
 
@@ -109,14 +109,14 @@ func (h *ExperienceHandler) Set(c *gin.Context) {
   if updated {
     c.Status(http.StatusNoContent)
   } else {
-    c.Redirect(http.StatusSeeOther, "/experience.info?id="+id)
+    c.Redirect(http.StatusSeeOther, "/experience.info?experience_uuid="+id)
   }
 }
 
 func (h *ExperienceHandler) Hide(c *gin.Context) {
-  id, success := c.GetPostForm("id")
+  id, success := c.GetPostForm("experience_uuid")
   if !success {
-    problem.NewMissingParameter("id").Emit(c.Writer)
+    problem.NewMissingParameter("experience_uuid").Emit(c.Writer)
     return
   }
 
@@ -128,14 +128,14 @@ func (h *ExperienceHandler) Hide(c *gin.Context) {
   if updated {
     c.Status(http.StatusNoContent)
   } else {
-    c.Redirect(http.StatusSeeOther, "/experience.info?id="+id)
+    c.Redirect(http.StatusSeeOther, "/experience.info?experience_uuid="+id)
   }
 }
 
 func (h *ExperienceHandler) Show(c *gin.Context) {
-  id, success := c.GetPostForm("id")
+  id, success := c.GetPostForm("experience_uuid")
   if !success {
-    problem.NewMissingParameter("id").Emit(c.Writer)
+    problem.NewMissingParameter("experience_uuid").Emit(c.Writer)
     return
   }
 
@@ -147,14 +147,14 @@ func (h *ExperienceHandler) Show(c *gin.Context) {
   if updated {
     c.Status(http.StatusNoContent)
   } else {
-    c.Redirect(http.StatusSeeOther, "/experience.info?id="+id)
+    c.Redirect(http.StatusSeeOther, "/experience.info?experience_uuid="+id)
   }
 }
 
 func (h *ExperienceHandler) Quit(c *gin.Context) {
-  id, success := c.GetPostForm("id")
+  id, success := c.GetPostForm("experience_uuid")
   if !success {
-    problem.NewMissingParameter("id").Emit(c.Writer)
+    problem.NewMissingParameter("experience_uuid").Emit(c.Writer)
     return
   }
 
@@ -170,14 +170,14 @@ func (h *ExperienceHandler) Quit(c *gin.Context) {
   if updated {
     c.Status(http.StatusNoContent)
   } else {
-    c.Redirect(http.StatusSeeOther, "/experience.info?id="+id)
+    c.Redirect(http.StatusSeeOther, "/experience.info?experience_uuid="+id)
   }
 }
 
 func (h *ExperienceHandler) Remove(c *gin.Context) {
-  var id, success = c.GetPostForm("id")
+  var id, success = c.GetPostForm("experience_uuid")
   if !success {
-    problem.NewMissingParameter("id").Emit(c.Writer)
+    problem.NewMissingParameter("experience_uuid").Emit(c.Writer)
     return
   }
 

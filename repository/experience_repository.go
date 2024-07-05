@@ -4,9 +4,11 @@ import (
   "context"
   "database/sql"
   "errors"
+  "fmt"
   "fontseca.dev/model"
   "fontseca.dev/problem"
   "fontseca.dev/transfer"
+  "github.com/lib/pq"
   "log/slog"
   "time"
 )
@@ -40,25 +42,33 @@ func NewExperienceRepository(db *sql.DB) ExperienceRepository {
 }
 
 func (r *experienceRepository) Get(ctx context.Context, hidden bool) (experience []*model.Experience, err error) {
-  var query string
-  if hidden {
-    query = `SELECT *
-               FROM "experience"
-              WHERE "hidden" IS TRUE
-           ORDER BY "starts" DESC;`
-  } else {
-    query = `SELECT *
-               FROM "experience"
-           ORDER BY "starts" DESC;`
-  }
+  getMyExperienceQuery := `
+  SELECT "uuid",
+         "starts",
+         "ends",
+         "job_title",
+         "company",
+         "country",
+         "summary",
+         "active",
+         "hidden",
+         "created_at",
+         "updated_at"
+    FROM "me"."experience"
+   WHERE "hidden" = $1
+ORDER BY "starts" DESC;`
+
   ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
   defer cancel()
-  rows, err := r.db.QueryContext(ctx, query)
+
+  rows, err := r.db.QueryContext(ctx, getMyExperienceQuery, hidden)
+
   if nil != err {
     slog.Error(err.Error())
     return nil, err
   }
-  s := make([]*model.Experience, 0)
+
+  experience = make([]*model.Experience, 0)
   for rows.Next() {
     e := new(model.Experience)
     err = rows.Scan(
@@ -73,24 +83,44 @@ func (r *experienceRepository) Get(ctx context.Context, hidden bool) (experience
       &e.Hidden,
       &e.CreatedAt,
       &e.UpdatedAt)
+
     if nil != err {
       slog.Error(err.Error())
       return nil, err
     }
-    s = append(s, e)
+
+    experience = append(experience, e)
   }
-  return s, nil
+
+  return experience, nil
 }
 
-func (r *experienceRepository) GetByID(ctx context.Context, id string) (experience *model.Experience, err error) {
-  query := `SELECT *
-              FROM "experience"
-             WHERE "uuid" = @uuid;`
+func (r *experienceRepository) doGetByID(ctx context.Context, id string, strict bool) (experience *model.Experience, err error) {
+  getExperienceByIDQuery := `
+  SELECT "uuid",
+         "starts",
+         "ends",
+         "job_title",
+         "company",
+         "country",
+         "summary",
+         "active",
+         "hidden",
+         "created_at",
+         "updated_at"
+    FROM "me"."experience"
+   WHERE "uuid" = $1`
+
+  if strict {
+    getExperienceByIDQuery += `
+    AND hidden IS FALSE;`
+  }
+
   ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
   defer cancel()
-  row := r.db.QueryRowContext(ctx, query, sql.Named("uuid", id))
+
   experience = new(model.Experience)
-  err = row.Scan(
+  err = r.db.QueryRowContext(ctx, getExperienceByIDQuery, id).Scan(
     &experience.UUID,
     &experience.Starts,
     &experience.Ends,
@@ -102,60 +132,70 @@ func (r *experienceRepository) GetByID(ctx context.Context, id string) (experien
     &experience.Hidden,
     &experience.CreatedAt,
     &experience.UpdatedAt)
+
   if nil != err {
     if errors.Is(err, sql.ErrNoRows) {
       err = problem.NewNotFound(id, "experience")
     } else {
       slog.Error(err.Error())
     }
+
     return nil, err
   }
+
   return experience, nil
+}
+
+func (r *experienceRepository) GetByID(ctx context.Context, id string) (experience *model.Experience, err error) {
+  return r.doGetByID(ctx, id, true)
 }
 
 func (r *experienceRepository) Save(ctx context.Context, creation *transfer.ExperienceCreation) (saved bool, err error) {
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+
   if nil != err {
     slog.Error(err.Error())
     return false, err
   }
+
   defer tx.Rollback()
-  query := `
-  INSERT INTO "experience" ("starts",
-                            "ends",
-                            "job_title",
-                            "company",
-                            "country",
-                            "summary",
-                            "active")
-                    VALUES (@starts,
-                            nullif (@ends, 0),
-                            @job_title,
-                            @company,
-                            @country,
-                            @summary,
-                            TRUE);`
-  ctx, cancel := context.WithTimeout(ctx, time.Second)
+
+  saveExperienceQuery := `
+  INSERT INTO "me"."experience" ("starts",
+                                 "ends",
+                                 "job_title",
+                                 "company",
+                                 "country",
+                                 "summary",
+                                 "active")
+                         VALUES ($1, nullif ($2, 0), $3, $4, $5, $6, TRUE);`
+
+  ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
   defer cancel()
-  result, err := tx.ExecContext(ctx, query,
-    sql.Named("starts", creation.Starts),
-    sql.Named("ends", creation.Ends),
-    sql.Named("job_title", creation.JobTitle),
-    sql.Named("company", creation.Company),
-    sql.Named("country", creation.Country),
-    sql.Named("summary", creation.Summary))
+
+  result, err := tx.ExecContext(ctx, saveExperienceQuery,
+    creation.Starts,
+    creation.Ends,
+    creation.JobTitle,
+    creation.Company,
+    creation.Country,
+    creation.Summary)
+
   if nil != err {
     slog.Error(err.Error())
     return false, err
   }
+
   affected, _ := result.RowsAffected()
   if 1 != affected {
     return false, nil
   }
+
   if err = tx.Commit(); nil != err {
     slog.Error(err.Error())
     return false, nil
   }
+
   return true, nil
 }
 
@@ -175,80 +215,109 @@ func (r *experienceRepository) updatable(current *model.Experience, update *tran
 
 func (r *experienceRepository) Update(ctx context.Context, id string, update *transfer.ExperienceUpdate) (updated bool, err error) {
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+
   if nil != err {
     slog.Error(err.Error())
     return false, err
   }
-  current, err := r.GetByID(ctx, id)
+
+  current, err := r.doGetByID(ctx, id, false)
+
   if nil != err {
     return false, err
   }
+
   if updatable := r.updatable(current, update); !updatable {
     return false, nil
   }
-  query := `
-  UPDATE "experience"
-     SET "starts" = CASE WHEN @starts = @current_starts OR 0 = @starts THEN @current_starts ELSE @starts END,
-         "ends" = CASE WHEN @ends = @current_ends OR 0 = @ends THEN @current_ends ELSE @ends END,
-         "job_title" = coalesce (nullif (@job_title, ''), @current_job_title),
-         "company" = coalesce (nullif (@company, ''), @current_company),
-         "country" = coalesce (nullif (@country, ''), @current_country),
-         "summary" = coalesce (nullif (@summary, ''), @current_summary),
-         "active" = @active,
-         "hidden" = @hidden,
+
+  updateExperienceQuery := `
+  UPDATE "me"."experience"
+     SET "starts" = CASE WHEN $2::INTEGER = $3::INTEGER OR 0 = $2::INTEGER THEN $3::INTEGER ELSE $2::INTEGER END,
+         "ends" = CASE WHEN $4::INTEGER = $5::INTEGER OR 0 = $4::INTEGER THEN $5::INTEGER ELSE $4::INTEGER END,
+         "job_title" = coalesce (nullif ($6, ''), $7),
+         "company" = coalesce (nullif ($8, ''), $9),
+         "country" = coalesce (nullif ($10, ''), $11),
+         "summary" = coalesce (nullif ($12, ''), $13),
+         "active" = $14,
+         "hidden" = $15,
          "updated_at" = current_timestamp
-   WHERE "uuid" = @uuid;`
-  ctx, cancel := context.WithTimeout(ctx, time.Second)
+   WHERE "uuid" = $1;`
+
+  ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
   defer cancel()
-  result, err := tx.ExecContext(ctx, query,
-    sql.Named("uuid", id),
-    sql.Named("starts", update.Starts), sql.Named("current_starts", current.Starts),
-    sql.Named("ends", update.Ends), sql.Named("current_ends", current.Ends),
-    sql.Named("job_title", update.JobTitle), sql.Named("current_job_title", current.JobTitle),
-    sql.Named("company", update.Company), sql.Named("current_company", current.Company),
-    sql.Named("country", update.Country), sql.Named("current_country", current.Country),
-    sql.Named("summary", update.Summary), sql.Named("current_summary", current.Summary),
-    sql.Named("active", update.Active),
-    sql.Named("hidden", update.Hidden))
+
+  result, err := tx.ExecContext(ctx, updateExperienceQuery,
+    id,
+    update.Starts, current.Starts,
+    update.Ends, current.Ends,
+    update.JobTitle, current.JobTitle,
+    update.Company, current.Company,
+    update.Country, current.Country,
+    update.Summary, current.Summary,
+    update.Active,
+    update.Hidden)
+
   if nil != err {
+    er := &pq.Error{}
+
+    if errors.As(err, &er) {
+      fmt.Printf("%#v\n", er)
+      return
+    }
+
     slog.Error(err.Error())
     return false, err
   }
+
   affected, _ := result.RowsAffected()
+
   if 1 != affected {
     return false, nil
   }
+
   if err = tx.Commit(); nil != err {
     slog.Error(err.Error())
     return false, err
   }
+
   return true, nil
 }
 
 func (r *experienceRepository) Remove(ctx context.Context, id string) error {
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+
   if nil != err {
     slog.Error(err.Error())
     return err
   }
+
   defer tx.Rollback()
-  query := `
-  DELETE FROM "experience"
-        WHERE "uuid" = @uuid;`
-  ctx, cancel := context.WithTimeout(ctx, time.Second)
+
+  removeExperienceQuery := `
+  DELETE FROM "me"."experience"
+        WHERE "uuid" = $1;`
+
+  ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
   defer cancel()
-  result, err := tx.ExecContext(ctx, query, sql.Named("uuid", id))
+
+  result, err := tx.ExecContext(ctx, removeExperienceQuery, id)
+
   if nil != err {
     slog.Error(err.Error())
     return err
   }
+
   affected, _ := result.RowsAffected()
+
   if 1 != affected {
     return problem.NewNotFound(id, "experience")
   }
+
   if err = tx.Commit(); nil != err {
     slog.Error(err.Error())
     return err
   }
+
   return nil
 }
