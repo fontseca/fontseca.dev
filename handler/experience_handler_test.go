@@ -85,7 +85,7 @@ func TestExperienceHandler_GetByID(t *testing.T) {
     engine.GET(target, NewExperienceHandler(s).GetByID)
     var request = httptest.NewRequest(method, target, nil)
     var query = url.Values{}
-    query.Add("id", id)
+    query.Add("experience_uuid", id)
     request.URL.RawQuery = query.Encode()
     var recorder = httptest.NewRecorder()
     engine.ServeHTTP(recorder, request)
@@ -181,7 +181,7 @@ func TestExperienceHandler_Set(t *testing.T) {
   request.PostForm.Add("country", "Country")
   request.PostForm.Add("summary", "Summary")
 
-  t.Run("missing 'id' parameter", func(t *testing.T) {
+  t.Run("missing 'experience_uuid' parameter", func(t *testing.T) {
     var s = mocks.NewExperienceService()
     s.AssertNotCalled(t, routine)
     var engine = gin.Default()
@@ -189,10 +189,10 @@ func TestExperienceHandler_Set(t *testing.T) {
     var recorder = httptest.NewRecorder()
     engine.ServeHTTP(recorder, request)
     assert.Equal(t, http.StatusBadRequest, recorder.Code)
-    assert.Contains(t, recorder.Body.String(), "The 'id' parameter is required but was not found in the request form data.")
+    assert.Contains(t, recorder.Body.String(), "The 'experience_uuid' parameter is required but was not found in the request form data.")
   })
 
-  request.PostForm.Add("id", id)
+  request.PostForm.Add("experience_uuid", id)
 
   t.Run("success", func(t *testing.T) {
     var s = mocks.NewExperienceService()
@@ -251,7 +251,7 @@ func TestExperienceHandler_Hide(t *testing.T) {
   var id = uuid.New().String()
   var request = httptest.NewRequest(method, target, nil)
 
-  t.Run("missing 'id' parameter", func(t *testing.T) {
+  t.Run("missing 'experience_uuid' parameter", func(t *testing.T) {
     var s = mocks.NewExperienceService()
     s.AssertNotCalled(t, routine)
     var engine = gin.Default()
@@ -259,11 +259,11 @@ func TestExperienceHandler_Hide(t *testing.T) {
     var recorder = httptest.NewRecorder()
     engine.ServeHTTP(recorder, request)
     assert.Equal(t, http.StatusBadRequest, recorder.Code)
-    assert.Contains(t, recorder.Body.String(), "The 'id' parameter is required but was not found in the request form data.")
+    assert.Contains(t, recorder.Body.String(), "The 'experience_uuid' parameter is required but was not found in the request form data.")
   })
 
   _ = request.ParseForm()
-  request.PostForm.Add("id", id)
+  request.PostForm.Add("experience_uuid", id)
   var update = &transfer.ExperienceUpdate{Hidden: true}
 
   t.Run("success", func(t *testing.T) {
@@ -323,7 +323,7 @@ func TestExperienceHandler_Show(t *testing.T) {
   var id = uuid.New().String()
   var request = httptest.NewRequest(method, target, nil)
 
-  t.Run("missing 'id' parameter", func(t *testing.T) {
+  t.Run("missing 'experience_uuid' parameter", func(t *testing.T) {
     var s = mocks.NewExperienceService()
     s.AssertNotCalled(t, routine)
     var engine = gin.Default()
@@ -331,11 +331,11 @@ func TestExperienceHandler_Show(t *testing.T) {
     var recorder = httptest.NewRecorder()
     engine.ServeHTTP(recorder, request)
     assert.Equal(t, http.StatusBadRequest, recorder.Code)
-    assert.Contains(t, recorder.Body.String(), "The 'id' parameter is required but was not found in the request form data.")
+    assert.Contains(t, recorder.Body.String(), "The 'experience_uuid' parameter is required but was not found in the request form data.")
   })
 
   _ = request.ParseForm()
-  request.PostForm.Add("id", id)
+  request.PostForm.Add("experience_uuid", id)
   var update = &transfer.ExperienceUpdate{Hidden: false}
 
   t.Run("success", func(t *testing.T) {
@@ -395,7 +395,7 @@ func TestExperienceHandler_Quit(t *testing.T) {
   var id = uuid.New().String()
   var request = httptest.NewRequest(method, target, nil)
 
-  t.Run("missing 'id' parameter", func(t *testing.T) {
+  t.Run("missing 'experience_uuid' parameter", func(t *testing.T) {
     var s = mocks.NewExperienceService()
     s.AssertNotCalled(t, routine)
     var engine = gin.Default()
@@ -403,11 +403,11 @@ func TestExperienceHandler_Quit(t *testing.T) {
     var recorder = httptest.NewRecorder()
     engine.ServeHTTP(recorder, request)
     assert.Equal(t, http.StatusBadRequest, recorder.Code)
-    assert.Contains(t, recorder.Body.String(), "The 'id' parameter is required but was not found in the request form data.")
+    assert.Contains(t, recorder.Body.String(), "The 'experience_uuid' parameter is required but was not found in the request form data.")
   })
 
   _ = request.ParseForm()
-  request.PostForm.Add("id", id)
+  request.PostForm.Add("experience_uuid", id)
   var update = &transfer.ExperienceUpdate{Active: false, Ends: time.Now().Year()}
 
   t.Run("success", func(t *testing.T) {
@@ -467,7 +467,7 @@ func TestExperienceHandler_Remove(t *testing.T) {
   var id = uuid.New().String()
   var request = httptest.NewRequest(method, target, nil)
 
-  t.Run("missing 'id' parameter", func(t *testing.T) {
+  t.Run("missing 'experience_uuid' parameter", func(t *testing.T) {
     var s = mocks.NewExperienceService()
     s.AssertNotCalled(t, routine)
     var engine = gin.Default()
@@ -475,11 +475,11 @@ func TestExperienceHandler_Remove(t *testing.T) {
     var recorder = httptest.NewRecorder()
     engine.ServeHTTP(recorder, request)
     assert.Equal(t, http.StatusBadRequest, recorder.Code)
-    assert.Contains(t, recorder.Body.String(), "The 'id' parameter is required but was not found in the request form data.")
+    assert.Contains(t, recorder.Body.String(), "The 'experience_uuid' parameter is required but was not found in the request form data.")
   })
 
   _ = request.ParseForm()
-  request.PostForm.Add("id", id)
+  request.PostForm.Add("experience_uuid", id)
 
   t.Run("success", func(t *testing.T) {
     var s = mocks.NewExperienceService()
