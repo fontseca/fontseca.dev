@@ -35,7 +35,7 @@ func (h *ProjectsHandler) GetArchived(c *gin.Context) {
 }
 
 func (h *ProjectsHandler) GetByID(c *gin.Context) {
-  var id = c.Query("id")
+  var id = c.Query("project_uuid")
   var project, err = h.s.GetByID(c, id)
   if check(err, c.Writer) {
     return
@@ -59,9 +59,9 @@ func (h *ProjectsHandler) Add(c *gin.Context) {
 }
 
 func (h *ProjectsHandler) Set(c *gin.Context) {
-  var id, success = c.GetPostForm("id")
+  var id, success = c.GetPostForm("project_uuid")
   if !success {
-    problem.NewMissingParameter("id").Emit(c.Writer)
+    problem.NewMissingParameter("project_uuid").Emit(c.Writer)
     return
   }
   var update transfer.ProjectUpdate
@@ -83,9 +83,9 @@ func (h *ProjectsHandler) Set(c *gin.Context) {
 }
 
 func (h *ProjectsHandler) Archive(c *gin.Context) {
-  var id, success = c.GetPostForm("id")
+  var id, success = c.GetPostForm("project_uuid")
   if !success {
-    problem.NewMissingParameter("id").Emit(c.Writer)
+    problem.NewMissingParameter("project_uuid").Emit(c.Writer)
     return
   }
   _, err := h.s.Update(c, id, &transfer.ProjectUpdate{Archived: true})
@@ -96,9 +96,9 @@ func (h *ProjectsHandler) Archive(c *gin.Context) {
 }
 
 func (h *ProjectsHandler) Unarchive(c *gin.Context) {
-  var id, success = c.GetPostForm("id")
+  var id, success = c.GetPostForm("project_uuid")
   if !success {
-    problem.NewMissingParameter("id").Emit(c.Writer)
+    problem.NewMissingParameter("project_uuid").Emit(c.Writer)
     return
   }
   var unarchived, err = h.s.Unarchive(c, id)
@@ -113,9 +113,9 @@ func (h *ProjectsHandler) Unarchive(c *gin.Context) {
 }
 
 func (h *ProjectsHandler) Finish(c *gin.Context) {
-  var id, success = c.GetPostForm("id")
+  var id, success = c.GetPostForm("project_uuid")
   if !success {
-    problem.NewMissingParameter("id").Emit(c.Writer)
+    problem.NewMissingParameter("project_uuid").Emit(c.Writer)
     return
   }
   var updated, err = h.s.Update(c, id, &transfer.ProjectUpdate{Finished: true})
@@ -130,9 +130,9 @@ func (h *ProjectsHandler) Finish(c *gin.Context) {
 }
 
 func (h *ProjectsHandler) Unfinish(c *gin.Context) {
-  var id, success = c.GetPostForm("id")
+  var id, success = c.GetPostForm("project_uuid")
   if !success {
-    problem.NewMissingParameter("id").Emit(c.Writer)
+    problem.NewMissingParameter("project_uuid").Emit(c.Writer)
     return
   }
   var updated, err = h.s.Update(c, id, &transfer.ProjectUpdate{Finished: false})
@@ -147,9 +147,9 @@ func (h *ProjectsHandler) Unfinish(c *gin.Context) {
 }
 
 func (h *ProjectsHandler) getIDAndURLParameters(c *gin.Context) (id string, url string, ok bool) {
-  id, success := c.GetPostForm("id")
+  id, success := c.GetPostForm("project_uuid")
   if !success {
-    problem.NewMissingParameter("id").Emit(c.Writer)
+    problem.NewMissingParameter("project_uuid").Emit(c.Writer)
     return "", "", false
   }
   url, success = c.GetPostForm("url")
@@ -213,9 +213,9 @@ func (h *ProjectsHandler) SetCollectionURL(c *gin.Context) {
 }
 
 func (h *ProjectsHandler) Remove(c *gin.Context) {
-  var id, success = c.GetPostForm("id")
+  var id, success = c.GetPostForm("project_uuid")
   if !success {
-    problem.NewMissingParameter("id").Emit(c.Writer)
+    problem.NewMissingParameter("project_uuid").Emit(c.Writer)
     return
   }
   err := h.s.Remove(c, id)
@@ -226,9 +226,9 @@ func (h *ProjectsHandler) Remove(c *gin.Context) {
 }
 
 func (h *ProjectsHandler) AddTechnologyTag(c *gin.Context) {
-  var projectID, success = c.GetPostForm("id")
+  var projectID, success = c.GetPostForm("project_uuid")
   if !success {
-    problem.NewMissingParameter("id").Emit(c.Writer)
+    problem.NewMissingParameter("project_uuid").Emit(c.Writer)
     return
   }
   technologyTagID, success := c.GetPostForm("technology_id")
@@ -248,9 +248,9 @@ func (h *ProjectsHandler) AddTechnologyTag(c *gin.Context) {
 }
 
 func (h *ProjectsHandler) RemoveTechnologyTag(c *gin.Context) {
-  var projectID, success = c.GetPostForm("id")
+  var projectID, success = c.GetPostForm("project_uuid")
   if !success {
-    problem.NewMissingParameter("id").Emit(c.Writer)
+    problem.NewMissingParameter("project_uuid").Emit(c.Writer)
     return
   }
   technologyTagID, success := c.GetPostForm("technology_id")

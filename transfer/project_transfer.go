@@ -9,7 +9,6 @@ type ProjectCreation struct {
   Summary        string `json:"summary"`
   ReadTime       int
   Content        string `json:"content"`
-  EstimatedTime  int    `json:"estimated_time"`
   FirstImageURL  string `json:"first_image_url"`
   SecondImageURL string `json:"second_image_url"`
   GitHubURL      string `json:"github_url"`
@@ -25,7 +24,6 @@ type ProjectUpdate struct {
   Summary        string `json:"summary"`
   ReadTime       int
   Content        string `json:"content"`
-  EstimatedTime  int    `json:"estimated_time"`
   FirstImageURL  string
   SecondImageURL string
   GitHubURL      string

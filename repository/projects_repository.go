@@ -59,7 +59,7 @@ func NewProjectsRepository(db *sql.DB) ProjectsRepository {
 }
 
 func (r *projectsRepository) Get(ctx context.Context, archived bool) (projects []*model.Project, err error) {
-  var query = `
+  var getProjectsQuery = `
      SELECT p."uuid",
             p."name",
             p."slug",
@@ -68,7 +68,6 @@ func (r *projectsRepository) Get(ctx context.Context, archived bool) (projects [
             p."summary",
             p."read_time",
             p."content",
-            p."estimated_time",
             p."first_image_url",
             p."second_image_url",
             p."github_url",
@@ -79,18 +78,18 @@ func (r *projectsRepository) Get(ctx context.Context, archived bool) (projects [
             p."finished",
             p."created_at",
             p."updated_at",
-            group_concat (tt."name")
-       FROM "project" p
-  LEFT JOIN "project_technology_tag" ptt
+            concat (tt."name")
+       FROM "projects"."project" p
+  LEFT JOIN "projects"."project_tag" ptt
          ON ptt."project_uuid" = p."uuid"
-  LEFT JOIN "technology_tag" tt
+  LEFT JOIN "projects"."tag" tt
          ON tt."uuid" = ptt."technology_tag_uuid"
-      WHERE p."archived" IS @archived
-   GROUP BY p."uuid"
+      WHERE p."archived" = $1
+   GROUP BY p."uuid", tt."name"
    ORDER BY p."created_at" DESC;`
   ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
   defer cancel()
-  rows, err := r.db.QueryContext(ctx, query, sql.Named("archived", archived))
+  rows, err := r.db.QueryContext(ctx, getProjectsQuery, archived)
   if nil != err {
     slog.Error(err.Error())
     return nil, err
@@ -111,7 +110,6 @@ func (r *projectsRepository) Get(ctx context.Context, archived bool) (projects [
       &project.Summary,
       &project.ReadTime,
       &project.Content,
-      &project.EstimatedTime,
       &project.FirstImageURL,
       &project.SecondImageURL,
       &project.GitHubURL,
@@ -136,7 +134,7 @@ func (r *projectsRepository) Get(ctx context.Context, archived bool) (projects [
 }
 
 func (r *projectsRepository) doGetByID(ctx context.Context, id string, ignoreArchived bool) (project *model.Project, err error) {
-  var query = `
+  var getProjectByIDQuery = `
      SELECT p."uuid",
             p."name",
             p."slug",
@@ -145,7 +143,6 @@ func (r *projectsRepository) doGetByID(ctx context.Context, id string, ignoreArc
             p."summary",
             p."read_time",
             p."content",
-            p."estimated_time",
             p."first_image_url",
             p."second_image_url",
             p."github_url",
@@ -156,56 +153,57 @@ func (r *projectsRepository) doGetByID(ctx context.Context, id string, ignoreArc
             p."finished",
             p."created_at",
             p."updated_at",
-            group_concat (tt."name")
-       FROM "project" p
-  LEFT JOIN "project_technology_tag" ptt
+            concat (tt."name")
+       FROM "projects"."project" p
+  LEFT JOIN "projects"."project_tag" ptt
          ON ptt."project_uuid" = p."uuid"
-  LEFT JOIN "technology_tag" tt
+  LEFT JOIN "projects"."tag" tt
          ON tt."uuid" = ptt."technology_tag_uuid"
-      WHERE p."archived" IS @archived
-        AND p."uuid" = @project_uuid
-   GROUP BY p."uuid";`
-  ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+      WHERE p."uuid" = $1
+        AND p."archived" = $2
+   GROUP BY p."uuid", tt."name";`
+
+  ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
   defer cancel()
-  var result = r.db.QueryRowContext(ctx, query, sql.Named("project_uuid", id), sql.Named("archived", ignoreArchived))
-  if nil != err {
-    slog.Error(err.Error())
-    return nil, err
-  }
+
   project = new(model.Project)
   var tags *string
-  err = result.Scan(
-    &project.UUID,
-    &project.Name,
-    &project.Slug,
-    &project.Homepage,
-    &project.Language,
-    &project.Summary,
-    &project.ReadTime,
-    &project.Content,
-    &project.EstimatedTime,
-    &project.FirstImageURL,
-    &project.SecondImageURL,
-    &project.GitHubURL,
-    &project.CollectionURL,
-    &project.PlaygroundURL,
-    &project.Playable,
-    &project.Archived,
-    &project.Finished,
-    &project.CreatedAt,
-    &project.UpdatedAt,
-    &tags)
+  err = r.db.QueryRowContext(ctx, getProjectByIDQuery, id, ignoreArchived).
+    Scan(
+      &project.UUID,
+      &project.Name,
+      &project.Slug,
+      &project.Homepage,
+      &project.Language,
+      &project.Summary,
+      &project.ReadTime,
+      &project.Content,
+      &project.FirstImageURL,
+      &project.SecondImageURL,
+      &project.GitHubURL,
+      &project.CollectionURL,
+      &project.PlaygroundURL,
+      &project.Playable,
+      &project.Archived,
+      &project.Finished,
+      &project.CreatedAt,
+      &project.UpdatedAt,
+      &tags)
+
   if nil != err {
     if errors.Is(err, sql.ErrNoRows) {
       err = problem.NewNotFound(id, "project")
     } else {
       slog.Error(err.Error())
     }
+
     return nil, err
   }
+
   if nil != tags && "" != *tags {
     project.TechnologyTags = strings.Split(*tags, ",")
   }
+
   return project, nil
 }
 
@@ -214,7 +212,7 @@ func (r *projectsRepository) GetByID(ctx context.Context, id string) (project *m
 }
 
 func (r *projectsRepository) GetBySlug(ctx context.Context, slug string) (project *model.Project, err error) {
-  var query = `
+  var getProjectBySlugQuery = `
      SELECT p."uuid",
             p."name",
             p."slug",
@@ -223,7 +221,6 @@ func (r *projectsRepository) GetBySlug(ctx context.Context, slug string) (projec
             p."summary",
             p."read_time",
             p."content",
-            p."estimated_time",
             p."first_image_url",
             p."second_image_url",
             p."github_url",
@@ -234,26 +231,21 @@ func (r *projectsRepository) GetBySlug(ctx context.Context, slug string) (projec
             p."finished",
             p."created_at",
             p."updated_at",
-            group_concat (tt."name")
-       FROM "project" p
-  LEFT JOIN "project_technology_tag" ptt
+            concat (tt."name")
+       FROM "projects"."project" p
+  LEFT JOIN "projects"."project_tag" ptt
          ON ptt."project_uuid" = p."uuid"
-  LEFT JOIN "technology_tag" tt
+  LEFT JOIN "projects"."tag" tt
          ON tt."uuid" = ptt."technology_tag_uuid"
       WHERE p."archived" IS FALSE
-        AND p."slug" = @slug
-   GROUP BY p."uuid"
+        AND p."slug" = $1
+   GROUP BY p."uuid", tt."name"
       LIMIT 1;`
   ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
   defer cancel()
-  var result = r.db.QueryRowContext(ctx, query, sql.Named("slug", slug))
-  if nil != err {
-    slog.Error(err.Error())
-    return nil, err
-  }
   project = new(model.Project)
   var tags *string
-  err = result.Scan(
+  err = r.db.QueryRowContext(ctx, getProjectBySlugQuery, slug).Scan(
     &project.UUID,
     &project.Name,
     &project.Slug,
@@ -262,7 +254,6 @@ func (r *projectsRepository) GetBySlug(ctx context.Context, slug string) (projec
     &project.Summary,
     &project.ReadTime,
     &project.Content,
-    &project.EstimatedTime,
     &project.FirstImageURL,
     &project.SecondImageURL,
     &project.GitHubURL,
@@ -295,47 +286,45 @@ func (r *projectsRepository) Add(ctx context.Context, creation *transfer.Project
     return uuid.Nil.String(), err
   }
   defer tx.Rollback()
-  var query = `
-  INSERT INTO "project" ("name",
+  var addProjectQuery = `
+  INSERT INTO "projects"."project"
+                        ("name",
                          "slug",
                          "homepage",
                          "language",
                          "summary",
                          "read_time",
                          "content",
-                         "estimated_time",
                          "first_image_url",
                          "second_image_url",
                          "github_url",
                          "collection_url")
-                 VALUES (@name,
-                         @slug,
-                         nullif (@homepage, ''),
-                         nullif (@language, ''),
-                         nullif (@summary, ''),
-                         nullif (@read_time, 0),
-                         nullif (@content, ''),
-                         nullif (@estimated_time, 0),
-                         nullif (@first_image_url, ''),
-                         nullif (@second_image_url, ''),
-                         nullif (@github_url, ''),
-                         nullif (@collection_url, ''))
+                 VALUES ($1,
+                         $2,
+                         coalesce (nullif ($3, ''), 'about:blank'),
+                         nullif ($4, ''),
+                         coalesce (nullif ($5, ''), 'no summary'),
+                         coalesce (nullif ($6, 0), 0),
+                         coalesce (nullif ($7, ''), 'no content'),
+                         coalesce (nullif ($8, ''), 'about:blank'),
+                         coalesce (nullif ($9, ''), 'about:blank'),
+                         coalesce (nullif ($10, ''), 'about:blank'),
+                         coalesce (nullif ($11, ''), 'about:blank'))
               RETURNING "uuid";`
-  ctx, cancel := context.WithTimeout(ctx, time.Second)
+  ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
   defer cancel()
-  var row = tx.QueryRowContext(ctx, query,
-    sql.Named("name", creation.Name),
-    sql.Named("slug", creation.Slug),
-    sql.Named("homepage", creation.Homepage),
-    sql.Named("language", creation.Language),
-    sql.Named("summary", creation.Summary),
-    sql.Named("content", creation.Content),
-    sql.Named("read_time", creation.ReadTime),
-    sql.Named("estimated_time", creation.EstimatedTime),
-    sql.Named("first_image_url", creation.FirstImageURL),
-    sql.Named("second_image_url", creation.SecondImageURL),
-    sql.Named("github_url", creation.GitHubURL),
-    sql.Named("collection_url", creation.CollectionURL))
+  var row = tx.QueryRowContext(ctx, addProjectQuery,
+    creation.Name,
+    creation.Slug,
+    creation.Homepage,
+    creation.Language,
+    creation.Summary,
+    creation.ReadTime,
+    creation.Content,
+    creation.FirstImageURL,
+    creation.SecondImageURL,
+    creation.GitHubURL,
+    creation.CollectionURL)
   err = row.Scan(&id)
   if nil != err {
     slog.Error(err.Error())
@@ -351,11 +340,11 @@ func (r *projectsRepository) Add(ctx context.Context, creation *transfer.Project
 func (r *projectsRepository) Exists(ctx context.Context, id string) (err error) {
   var query = `
   SELECT count (1)
-    FROM "project"
-   WHERE "uuid" = @uuid;`
+    FROM projects."project"
+   WHERE "uuid" = $1;`
   ctx, cancel := context.WithTimeout(ctx, time.Second)
   defer cancel()
-  var row = r.db.QueryRowContext(ctx, query, sql.Named("uuid", id))
+  var row = r.db.QueryRowContext(ctx, query, id)
   var exists bool
   err = row.Scan(&exists)
   if nil != err {
@@ -376,7 +365,6 @@ func (r *projectsRepository) nothingToUpdate(current *model.Project, update *tra
     ("" == update.Summary || update.Summary == current.Summary) &&
     (0 == update.ReadTime || update.ReadTime == current.ReadTime) &&
     ("" == update.Content || update.Content == current.Content) &&
-    (0 == update.EstimatedTime || nil != current.EstimatedTime && update.EstimatedTime == *current.EstimatedTime) &&
     ("" == update.FirstImageURL || update.FirstImageURL == current.FirstImageURL) &&
     ("" == update.SecondImageURL || update.SecondImageURL == current.SecondImageURL) &&
     ("" == update.GitHubURL || update.GitHubURL == current.GitHubURL) &&
@@ -400,34 +388,28 @@ func (r *projectsRepository) doUpdate(ctx context.Context, id string, update *tr
   if r.nothingToUpdate(current, update) {
     return false, nil
   }
-  var query = `
-  UPDATE "project"
-     SET "name" = coalesce (nullif (@name, ''), @current_name),
-         "slug" = coalesce (nullif (@slug, ''), @current_slug),
-         "homepage" = coalesce (nullif (@homepage, ''), @current_homepage),
-         "language" = coalesce (nullif (@language, ''), @current_language),
-         "summary" = coalesce (nullif (@summary, ''), @current_summary),
-         "read_time" = CASE WHEN @read_time = @current_read_time
-                              OR 0 = @read_time
-                            THEN @current_read_time
-                            ELSE @read_time
+  var updateProjectQuery = `
+  UPDATE "projects"."project"
+     SET "name" = coalesce (nullif ($1, ''), $2),
+         "slug" = coalesce (nullif ($3, ''), $4),
+         "homepage" = coalesce (nullif ($5, ''), $6),
+         "language" = coalesce (nullif ($7, ''), $8),
+         "summary" = coalesce (nullif ($9, ''), $10),
+         "read_time" = CASE WHEN $11::INTEGER = $12::INTEGER OR 0 = $11::INTEGER
+                            THEN $12::INTEGER
+                            ELSE $11::INTEGER
                             END,
-         "content" = coalesce (nullif (@content, ''), @current_content),
-         "estimated_time" = CASE WHEN @estimated_time = @current_estimated_time
-                                   OR 0 = @estimated_time
-                                 THEN @current_estimated_time
-                                 ELSE @estimated_time
-                                  END,
-         "first_image_url" = coalesce (nullif (@first_image_url, ''), @current_first_image_url),
-         "second_image_url" = coalesce (nullif (@second_image_url, ''), @current_second_image_url),
-         "github_url" = coalesce (nullif (@github_url, ''), @current_github_url),
-         "collection_url" = coalesce (nullif (@collection_url, ''), @current_collection_url),
-         "playground_url" = coalesce (nullif (@playground_url, ''), @current_playground_url),
-         "playable" = @playable,
-         "archived" = @archived,
-         "finished" = @finished,
+         "content" = coalesce (nullif ($13, ''), $14),
+         "first_image_url" = coalesce (nullif ($15, ''), $16),
+         "second_image_url" = coalesce (nullif ($17, ''), $18),
+         "github_url" = coalesce (nullif ($19, ''), $20),
+         "collection_url" = coalesce (nullif ($21, ''), $22),
+         "playground_url" = coalesce (nullif ($23, ''), $24),
+         "playable" = $25,
+         "archived" = $26,
+         "finished" = $27,
          "updated_at" = current_timestamp
-   WHERE "uuid" = @uuid;`
+   WHERE "uuid" = $28;`
   var playable = current.Playable
   if "" != update.PlaygroundURL {
     var wantsToDefaultPlaygroundURL = "about:blank" == update.PlaygroundURL
@@ -440,23 +422,23 @@ func (r *projectsRepository) doUpdate(ctx context.Context, id string, update *tr
   }
   ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
   defer cancel()
-  result, err := tx.ExecContext(ctx, query, sql.Named("uuid", id),
-    sql.Named("name", update.Name), sql.Named("current_name", current.Name),
-    sql.Named("slug", update.Slug), sql.Named("current_slug", current.Slug),
-    sql.Named("homepage", update.Homepage), sql.Named("current_homepage", current.Homepage),
-    sql.Named("language", update.Language), sql.Named("current_language", current.Language),
-    sql.Named("summary", update.Summary), sql.Named("current_summary", current.Summary),
-    sql.Named("read_time", update.ReadTime), sql.Named("current_read_time", current.ReadTime),
-    sql.Named("content", update.Content), sql.Named("current_content", current.Content),
-    sql.Named("estimated_time", update.EstimatedTime), sql.Named("current_estimated_time", current.EstimatedTime),
-    sql.Named("first_image_url", update.FirstImageURL), sql.Named("current_first_image_url", current.FirstImageURL),
-    sql.Named("second_image_url", update.SecondImageURL), sql.Named("current_second_image_url", current.SecondImageURL),
-    sql.Named("github_url", update.GitHubURL), sql.Named("current_github_url", current.GitHubURL),
-    sql.Named("collection_url", update.CollectionURL), sql.Named("current_collection_url", current.CollectionURL),
-    sql.Named("playground_url", update.PlaygroundURL), sql.Named("current_playground_url", current.PlaygroundURL),
-    sql.Named("playable", playable),
-    sql.Named("archived", update.Archived),
-    sql.Named("finished", update.Finished))
+  result, err := tx.ExecContext(ctx, updateProjectQuery,
+    update.Name, current.Name,
+    update.Slug, current.Slug,
+    update.Homepage, current.Homepage,
+    update.Language, current.Language,
+    update.Summary, current.Summary,
+    update.ReadTime, current.ReadTime,
+    update.Content, current.Content,
+    update.FirstImageURL, current.FirstImageURL,
+    update.SecondImageURL, current.SecondImageURL,
+    update.GitHubURL, current.GitHubURL,
+    update.CollectionURL, current.CollectionURL,
+    update.PlaygroundURL, current.PlaygroundURL,
+    playable,
+    update.Archived,
+    update.Finished,
+    id)
   if nil != err {
     slog.Error(err.Error())
     return false, err
@@ -491,11 +473,11 @@ func (r *projectsRepository) Remove(ctx context.Context, id string) (err error) 
   // Remove technology tags associated with the project to remove.
 
   var query = `
-  DELETE FROM "project_technology_tag"
-        WHERE "project_uuid" = @project_uuid`
+  DELETE FROM "projects"."project_tag"
+        WHERE "project_uuid" = $1;`
   ctx, cancel := context.WithTimeout(ctx, time.Second)
   defer cancel()
-  _, err = tx.ExecContext(ctx, query, sql.Named("project_uuid", id))
+  _, err = tx.ExecContext(ctx, query, id)
   if nil != err {
     slog.Error(err.Error())
     return err
@@ -504,12 +486,12 @@ func (r *projectsRepository) Remove(ctx context.Context, id string) (err error) 
   // Remove the actual project.
 
   query = `
-  DELETE FROM "project"
-        WHERE "uuid" = @uuid;`
+  DELETE FROM "projects"."project"
+        WHERE "uuid" = $1;`
   ctx, cancel = context.WithTimeout(ctx, time.Second)
   defer cancel()
 
-  result, err := tx.ExecContext(ctx, query, sql.Named("uuid", id))
+  result, err := tx.ExecContext(ctx, query, id)
   if nil != err {
     slog.Error(err.Error())
     return err
@@ -529,14 +511,12 @@ func (r *projectsRepository) Remove(ctx context.Context, id string) (err error) 
 }
 
 func (r *projectsRepository) ContainsTechnologyTag(ctx context.Context, projectID, technologyTagID string) (success bool, err error) {
-  var query = `
+  var hasTechTagQuery = `
   SELECT count (1)
-    FROM "project_technology_tag" ptt
-   WHERE ptt."project_uuid" = @project_uuid
-     AND ptt."technology_tag_uuid" = @technology_tag_uuid;`
-  var result = r.db.QueryRowContext(ctx, query,
-    sql.Named("project_uuid", projectID), sql.Named("technology_tag_uuid", technologyTagID))
-  err = result.Scan(&success)
+    FROM projects.project_tag ptt
+   WHERE ptt."project_uuid" = $1
+     AND ptt."technology_tag_uuid" = $2;`
+  err = r.db.QueryRowContext(ctx, hasTechTagQuery, projectID, technologyTagID).Scan(&success)
   if nil != err {
     slog.Error(err.Error())
     return false, err
@@ -551,16 +531,15 @@ func (r *projectsRepository) AddTechnologyTag(ctx context.Context, projectID, te
     return false, err
   }
   defer tx.Rollback()
-  var query = `
-  INSERT INTO "project_technology_tag" ("project_uuid",
+  var addTechTagQuery = `
+  INSERT INTO "projects"."project_tag" ("project_uuid",
                                         "technology_tag_uuid")
-                                VALUES (@project_uuid,
-                                        @technology_tag_uuid);`
+                                VALUES ($1,
+                                        $2);`
   ctx, cancel := context.WithTimeout(ctx, time.Second)
   defer cancel()
-  result, err := tx.ExecContext(ctx, query,
-    sql.Named("project_uuid", projectID),
-    sql.Named("technology_tag_uuid", technologyTagID))
+
+  result, err := tx.ExecContext(ctx, addTechTagQuery, projectID, technologyTagID)
   if nil != err {
     slog.Error(err.Error())
     return false, err
@@ -582,14 +561,13 @@ func (r *projectsRepository) RemoveTechnologyTag(ctx context.Context, projectID,
     return false, err
   }
   defer tx.Rollback()
-  var query = `
-  DELETE FROM "project_technology_tag"
-        WHERE "project_uuid" = @project_uuid
-          AND "technology_tag_uuid" = @technology_tag_uuid;`
+  var removeTechTagQuery = `
+  DELETE FROM "projects"."project_tag"
+        WHERE "project_uuid" = $1
+          AND "technology_tag_uuid" = $2;`
   ctx, cancel := context.WithTimeout(ctx, time.Second)
   defer cancel()
-  result, err := tx.ExecContext(ctx, query,
-    sql.Named("project_uuid", projectID), sql.Named("technology_tag_uuid", technologyTagID))
+  result, err := tx.ExecContext(ctx, removeTechTagQuery, projectID, technologyTagID)
   if nil != err {
     slog.Error(err.Error())
     return false, err

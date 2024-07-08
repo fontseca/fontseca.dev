@@ -39,13 +39,13 @@ func NewTechnologyTagRepository(db *sql.DB) TechnologyTagRepository {
 }
 
 func (r *technologyTagRepository) Get(ctx context.Context) (technologies []*model.TechnologyTag, err error) {
-  var query = `
+  var getTagsQuery = `
   SELECT *
-    FROM "technology_tag"
-ORDER BY "technology_tag"."created_at" DESC;`
-  ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+    FROM "projects"."tag"
+ORDER BY "created_at" DESC;`
+  ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
   defer cancel()
-  rows, err := r.db.QueryContext(ctx, query)
+  rows, err := r.db.QueryContext(ctx, getTagsQuery)
   if nil != err {
     slog.Error(err.Error())
     return nil, err
@@ -70,13 +70,12 @@ func (r *technologyTagRepository) Add(ctx context.Context, creation *transfer.Te
     return uuid.Nil.String(), err
   }
   defer tx.Rollback()
-  var query = `
-  INSERT INTO "technology_tag" ("name")
-                        VALUES (@name)
+  var addTagQuery = `
+  INSERT INTO "projects"."tag" ("name") VALUES ($1)
     RETURNING "uuid";`
-  ctx, cancel := context.WithTimeout(ctx, time.Second)
+  ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
   defer cancel()
-  var result = tx.QueryRowContext(ctx, query, sql.Named("name", creation.Name))
+  var result = tx.QueryRowContext(ctx, addTagQuery, creation.Name)
   err = result.Scan(&id)
   if nil != err {
     slog.Error(err.Error())
@@ -90,13 +89,13 @@ func (r *technologyTagRepository) Add(ctx context.Context, creation *transfer.Te
 }
 
 func (r *technologyTagRepository) Exists(ctx context.Context, id string) (err error) {
-  var query = `
+  var existsTagQuery = `
   SELECT count (1)
-    FROM "technology_tag"
-   WHERE "uuid" = @uuid;`
-  ctx, cancel := context.WithTimeout(ctx, time.Second)
+    FROM "projects"."tag"
+   WHERE "uuid" = $1;`
+  ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
   defer cancel()
-  var row = r.db.QueryRowContext(ctx, query, sql.Named("uuid", id))
+  var row = r.db.QueryRowContext(ctx, existsTagQuery, id)
   var count int
   err = row.Scan(&count)
   if nil != err {
@@ -116,13 +115,13 @@ func (r *technologyTagRepository) Update(ctx context.Context, id string, update 
     return false, err
   }
   defer tx.Rollback()
-  var query = `
+  var updateTagQuery = `
   SELECT "name"
-    FROM "technology_tag"
-   WHERE "uuid" = @uuid;`
-  ctx, cancel := context.WithTimeout(ctx, time.Second)
+    FROM "projects"."tag"
+   WHERE "uuid" = $1;`
+  ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
   defer cancel()
-  var row = tx.QueryRowContext(ctx, query, sql.Named("uuid", id))
+  var row = tx.QueryRowContext(ctx, updateTagQuery, id)
   var currentName string
   err = row.Scan(&currentName)
   if nil != err {
@@ -132,16 +131,14 @@ func (r *technologyTagRepository) Update(ctx context.Context, id string, update 
   if update.Name == currentName {
     return false, nil
   }
-  query = `
-  UPDATE "technology_tag"
-     SET "name" = @name,
+  updateTagQuery = `
+  UPDATE "projects"."tag"
+     SET "name" = $2,
          "updated_at" = current_timestamp
-   WHERE "uuid" = @uuid;`
-  ctx, cancel = context.WithTimeout(ctx, time.Second)
+   WHERE "uuid" = $1;`
+  ctx, cancel = context.WithTimeout(ctx, 5*time.Second)
   defer cancel()
-  result, err := tx.ExecContext(ctx, query,
-    sql.Named("uuid", id),
-    sql.Named("name", update.Name))
+  result, err := tx.ExecContext(ctx, updateTagQuery, id, update.Name)
   if nil != err {
     slog.Error(err.Error())
     return false, err
@@ -164,12 +161,12 @@ func (r *technologyTagRepository) Remove(ctx context.Context, id string) (err er
     return err
   }
   defer tx.Rollback()
-  var query = `
-  DELETE FROM "technology_tag"
-        WHERE "uuid" = @uuid;`
-  ctx, cancel := context.WithTimeout(ctx, time.Second)
+  var removeTagQuery = `
+  DELETE FROM "projects"."tag"
+        WHERE "uuid" = $1;`
+  ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
   defer cancel()
-  result, err := tx.ExecContext(ctx, query, sql.Named("uuid", id))
+  result, err := tx.ExecContext(ctx, removeTagQuery, id)
   if nil != err {
     slog.Error(err.Error())
     return err

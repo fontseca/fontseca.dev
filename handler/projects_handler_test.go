@@ -62,7 +62,6 @@ func TestProjectsHandler_GetByID(t *testing.T) {
 
   t.Run("success", func(t *testing.T) {
     var language = "Go"
-    var estimatedTime = 1
     var project = &model.Project{
       UUID:           uuid.New(),
       Name:           "Name",
@@ -70,7 +69,6 @@ func TestProjectsHandler_GetByID(t *testing.T) {
       Language:       &language,
       Summary:        "Summary.",
       Content:        "Content.",
-      EstimatedTime:  &estimatedTime,
       FirstImageURL:  "https://FirstImageURL.com",
       SecondImageURL: "https://SecondImageURL.com",
       GitHubURL:      "https://GitHubURL.com",
@@ -90,7 +88,7 @@ func TestProjectsHandler_GetByID(t *testing.T) {
     engine.GET(target, NewProjectsHandler(s).GetByID)
     var request = httptest.NewRequest(method, target, nil)
     var query = url.Values{}
-    query.Add("id", id)
+    query.Add("project_uuid", id)
     request.URL.RawQuery = query.Encode()
     var recorder = httptest.NewRecorder()
     engine.ServeHTTP(recorder, request)
@@ -110,7 +108,6 @@ func TestProjectsHandler_Add(t *testing.T) {
     Language:       "Go",
     Summary:        "Summary.",
     Content:        "Content.",
-    EstimatedTime:  1,
     FirstImageURL:  "https://FirstImageURL.com",
     SecondImageURL: "https://SecondImageURL.com",
     GitHubURL:      "https://GitHubURL.com",
@@ -172,12 +169,11 @@ func TestProjectsHandler_Set(t *testing.T) {
   const method = http.MethodPost
   const target = "/me.projects.set"
   var update = &transfer.ProjectUpdate{
-    Name:          "Name",
-    Homepage:      "https://Homepage.com",
-    Language:      "Go",
-    Summary:       "Summary.",
-    Content:       "Content.",
-    EstimatedTime: 1,
+    Name:     "Name",
+    Homepage: "https://Homepage.com",
+    Language: "Go",
+    Summary:  "Summary.",
+    Content:  "Content.",
   }
   var request = httptest.NewRequest(method, target, nil)
   _ = request.ParseForm()
@@ -188,7 +184,7 @@ func TestProjectsHandler_Set(t *testing.T) {
   request.PostForm.Add("content", update.Content)
   request.PostForm.Add("estimated_time", "1")
 
-  t.Run("missing 'id' parameter", func(t *testing.T) {
+  t.Run("missing 'project_uuid' parameter", func(t *testing.T) {
     var s = mocks.NewProjectsService()
     s.AssertNotCalled(t, routine)
     var engine = gin.Default()
@@ -196,11 +192,11 @@ func TestProjectsHandler_Set(t *testing.T) {
     var recorder = httptest.NewRecorder()
     engine.ServeHTTP(recorder, request)
     assert.Equal(t, http.StatusBadRequest, recorder.Code)
-    assert.Contains(t, recorder.Body.String(), "The 'id' parameter is required but was not found in the request form data.")
+    assert.Contains(t, recorder.Body.String(), "The 'project_uuid' parameter is required but was not found in the request form data.")
   })
 
   var id = uuid.New().String()
-  request.PostForm.Add("id", id)
+  request.PostForm.Add("project_uuid", id)
 
   t.Run("success", func(t *testing.T) {
     var s = mocks.NewProjectsService()
@@ -259,7 +255,7 @@ func TestProjectsHandler_Archive(t *testing.T) {
   var request = httptest.NewRequest(method, target, nil)
   _ = request.ParseForm()
 
-  t.Run("missing 'id' parameter", func(t *testing.T) {
+  t.Run("missing 'project_uuid' parameter", func(t *testing.T) {
     var s = mocks.NewProjectsService()
     s.AssertNotCalled(t, routine)
     var engine = gin.Default()
@@ -267,11 +263,11 @@ func TestProjectsHandler_Archive(t *testing.T) {
     var recorder = httptest.NewRecorder()
     engine.ServeHTTP(recorder, request)
     assert.Equal(t, http.StatusBadRequest, recorder.Code)
-    assert.Contains(t, recorder.Body.String(), "The 'id' parameter is required but was not found in the request form data.")
+    assert.Contains(t, recorder.Body.String(), "The 'project_uuid' parameter is required but was not found in the request form data.")
   })
 
   var id = uuid.New().String()
-  request.PostForm.Add("id", id)
+  request.PostForm.Add("project_uuid", id)
 
   t.Run("success", func(t *testing.T) {
     var s = mocks.NewProjectsService()
@@ -318,7 +314,7 @@ func TestProjectsHandler_Unarchive(t *testing.T) {
   var request = httptest.NewRequest(method, target, nil)
   _ = request.ParseForm()
 
-  t.Run("missing 'id' parameter", func(t *testing.T) {
+  t.Run("missing 'project_uuid' parameter", func(t *testing.T) {
     var s = mocks.NewProjectsService()
     s.AssertNotCalled(t, routine)
     var engine = gin.Default()
@@ -326,11 +322,11 @@ func TestProjectsHandler_Unarchive(t *testing.T) {
     var recorder = httptest.NewRecorder()
     engine.ServeHTTP(recorder, request)
     assert.Equal(t, http.StatusBadRequest, recorder.Code)
-    assert.Contains(t, recorder.Body.String(), "The 'id' parameter is required but was not found in the request form data.")
+    assert.Contains(t, recorder.Body.String(), "The 'project_uuid' parameter is required but was not found in the request form data.")
   })
 
   var id = uuid.New().String()
-  request.PostForm.Add("id", id)
+  request.PostForm.Add("project_uuid", id)
 
   t.Run("success", func(t *testing.T) {
     var s = mocks.NewProjectsService()
@@ -389,7 +385,7 @@ func TestProjectsHandler_Finish(t *testing.T) {
   var request = httptest.NewRequest(method, target, nil)
   _ = request.ParseForm()
 
-  t.Run("missing 'id' parameter", func(t *testing.T) {
+  t.Run("missing 'project_uuid' parameter", func(t *testing.T) {
     var s = mocks.NewProjectsService()
     s.AssertNotCalled(t, routine)
     var engine = gin.Default()
@@ -397,11 +393,11 @@ func TestProjectsHandler_Finish(t *testing.T) {
     var recorder = httptest.NewRecorder()
     engine.ServeHTTP(recorder, request)
     assert.Equal(t, http.StatusBadRequest, recorder.Code)
-    assert.Contains(t, recorder.Body.String(), "The 'id' parameter is required but was not found in the request form data.")
+    assert.Contains(t, recorder.Body.String(), "The 'project_uuid' parameter is required but was not found in the request form data.")
   })
 
   var id = uuid.New().String()
-  request.PostForm.Add("id", id)
+  request.PostForm.Add("project_uuid", id)
 
   t.Run("success", func(t *testing.T) {
     var s = mocks.NewProjectsService()
@@ -449,7 +445,7 @@ func TestProjectsHandler_Unfinish(t *testing.T) {
   var request = httptest.NewRequest(method, target, nil)
   _ = request.ParseForm()
 
-  t.Run("missing 'id' parameter", func(t *testing.T) {
+  t.Run("missing 'project_uuid' parameter", func(t *testing.T) {
     var s = mocks.NewProjectsService()
     s.AssertNotCalled(t, routine)
     var engine = gin.Default()
@@ -457,11 +453,11 @@ func TestProjectsHandler_Unfinish(t *testing.T) {
     var recorder = httptest.NewRecorder()
     engine.ServeHTTP(recorder, request)
     assert.Equal(t, http.StatusBadRequest, recorder.Code)
-    assert.Contains(t, recorder.Body.String(), "The 'id' parameter is required but was not found in the request form data.")
+    assert.Contains(t, recorder.Body.String(), "The 'project_uuid' parameter is required but was not found in the request form data.")
   })
 
   var id = uuid.New().String()
-  request.PostForm.Add("id", id)
+  request.PostForm.Add("project_uuid", id)
 
   t.Run("success", func(t *testing.T) {
     var s = mocks.NewProjectsService()
@@ -520,7 +516,7 @@ func TestProjectsHandler_SetPlaygroundURL(t *testing.T) {
   var request = httptest.NewRequest(method, target, nil)
   _ = request.ParseForm()
 
-  t.Run("missing 'id' parameter", func(t *testing.T) {
+  t.Run("missing 'project_uuid' parameter", func(t *testing.T) {
     var s = mocks.NewProjectsService()
     s.AssertNotCalled(t, routine)
     var engine = gin.Default()
@@ -528,11 +524,11 @@ func TestProjectsHandler_SetPlaygroundURL(t *testing.T) {
     var recorder = httptest.NewRecorder()
     engine.ServeHTTP(recorder, request)
     assert.Equal(t, http.StatusBadRequest, recorder.Code)
-    assert.Contains(t, recorder.Body.String(), "The 'id' parameter is required but was not found in the request form data.")
+    assert.Contains(t, recorder.Body.String(), "The 'project_uuid' parameter is required but was not found in the request form data.")
   })
 
   var id = uuid.New().String()
-  request.PostForm.Add("id", id)
+  request.PostForm.Add("project_uuid", id)
   request.PostForm.Add("url", update.PlaygroundURL)
 
   t.Run("success", func(t *testing.T) {
@@ -592,7 +588,7 @@ func TestProjectsHandler_SetFirstImageURL(t *testing.T) {
   var request = httptest.NewRequest(method, target, nil)
   _ = request.ParseForm()
 
-  t.Run("missing 'id' parameter", func(t *testing.T) {
+  t.Run("missing 'project_uuid' parameter", func(t *testing.T) {
     var s = mocks.NewProjectsService()
     s.AssertNotCalled(t, routine)
     var engine = gin.Default()
@@ -600,11 +596,11 @@ func TestProjectsHandler_SetFirstImageURL(t *testing.T) {
     var recorder = httptest.NewRecorder()
     engine.ServeHTTP(recorder, request)
     assert.Equal(t, http.StatusBadRequest, recorder.Code)
-    assert.Contains(t, recorder.Body.String(), "The 'id' parameter is required but was not found in the request form data.")
+    assert.Contains(t, recorder.Body.String(), "The 'project_uuid' parameter is required but was not found in the request form data.")
   })
 
   var id = uuid.New().String()
-  request.PostForm.Add("id", id)
+  request.PostForm.Add("project_uuid", id)
   request.PostForm.Add("url", update.FirstImageURL)
 
   t.Run("success", func(t *testing.T) {
@@ -664,7 +660,7 @@ func TestProjectsHandler_SetSecondImageURL(t *testing.T) {
   var request = httptest.NewRequest(method, target, nil)
   _ = request.ParseForm()
 
-  t.Run("missing 'id' parameter", func(t *testing.T) {
+  t.Run("missing 'project_uuid' parameter", func(t *testing.T) {
     var s = mocks.NewProjectsService()
     s.AssertNotCalled(t, routine)
     var engine = gin.Default()
@@ -672,11 +668,11 @@ func TestProjectsHandler_SetSecondImageURL(t *testing.T) {
     var recorder = httptest.NewRecorder()
     engine.ServeHTTP(recorder, request)
     assert.Equal(t, http.StatusBadRequest, recorder.Code)
-    assert.Contains(t, recorder.Body.String(), "The 'id' parameter is required but was not found in the request form data.")
+    assert.Contains(t, recorder.Body.String(), "The 'project_uuid' parameter is required but was not found in the request form data.")
   })
 
   var id = uuid.New().String()
-  request.PostForm.Add("id", id)
+  request.PostForm.Add("project_uuid", id)
   request.PostForm.Add("url", update.SecondImageURL)
 
   t.Run("success", func(t *testing.T) {
@@ -736,7 +732,7 @@ func TestProjectsHandler_SetGitHubURL(t *testing.T) {
   var request = httptest.NewRequest(method, target, nil)
   _ = request.ParseForm()
 
-  t.Run("missing 'id' parameter", func(t *testing.T) {
+  t.Run("missing 'project_uuid' parameter", func(t *testing.T) {
     var s = mocks.NewProjectsService()
     s.AssertNotCalled(t, routine)
     var engine = gin.Default()
@@ -744,11 +740,11 @@ func TestProjectsHandler_SetGitHubURL(t *testing.T) {
     var recorder = httptest.NewRecorder()
     engine.ServeHTTP(recorder, request)
     assert.Equal(t, http.StatusBadRequest, recorder.Code)
-    assert.Contains(t, recorder.Body.String(), "The 'id' parameter is required but was not found in the request form data.")
+    assert.Contains(t, recorder.Body.String(), "The 'project_uuid' parameter is required but was not found in the request form data.")
   })
 
   var id = uuid.New().String()
-  request.PostForm.Add("id", id)
+  request.PostForm.Add("project_uuid", id)
   request.PostForm.Add("url", update.GitHubURL)
 
   t.Run("success", func(t *testing.T) {
@@ -808,7 +804,7 @@ func TestProjectsHandler_SetCollectionURL(t *testing.T) {
   var request = httptest.NewRequest(method, target, nil)
   _ = request.ParseForm()
 
-  t.Run("missing 'id' parameter", func(t *testing.T) {
+  t.Run("missing 'project_uuid' parameter", func(t *testing.T) {
     var s = mocks.NewProjectsService()
     s.AssertNotCalled(t, routine)
     var engine = gin.Default()
@@ -816,11 +812,11 @@ func TestProjectsHandler_SetCollectionURL(t *testing.T) {
     var recorder = httptest.NewRecorder()
     engine.ServeHTTP(recorder, request)
     assert.Equal(t, http.StatusBadRequest, recorder.Code)
-    assert.Contains(t, recorder.Body.String(), "The 'id' parameter is required but was not found in the request form data.")
+    assert.Contains(t, recorder.Body.String(), "The 'project_uuid' parameter is required but was not found in the request form data.")
   })
 
   var id = uuid.New().String()
-  request.PostForm.Add("id", id)
+  request.PostForm.Add("project_uuid", id)
   request.PostForm.Add("url", update.CollectionURL)
 
   t.Run("success", func(t *testing.T) {
@@ -879,7 +875,7 @@ func TestProjectsHandler_Remove(t *testing.T) {
   var request = httptest.NewRequest(method, target, nil)
   _ = request.ParseForm()
 
-  t.Run("missing 'id' parameter", func(t *testing.T) {
+  t.Run("missing 'project_uuid' parameter", func(t *testing.T) {
     var s = mocks.NewProjectsService()
     s.AssertNotCalled(t, routine)
     var engine = gin.Default()
@@ -887,11 +883,11 @@ func TestProjectsHandler_Remove(t *testing.T) {
     var recorder = httptest.NewRecorder()
     engine.ServeHTTP(recorder, request)
     assert.Equal(t, http.StatusBadRequest, recorder.Code)
-    assert.Contains(t, recorder.Body.String(), "The 'id' parameter is required but was not found in the request form data.")
+    assert.Contains(t, recorder.Body.String(), "The 'project_uuid' parameter is required but was not found in the request form data.")
   })
 
   var id = uuid.New().String()
-  request.PostForm.Add("id", id)
+  request.PostForm.Add("project_uuid", id)
 
   t.Run("success", func(t *testing.T) {
     var s = mocks.NewProjectsService()
@@ -938,7 +934,7 @@ func TestProjectsHandler_AddTechnologyTag(t *testing.T) {
   var request = httptest.NewRequest(method, target, nil)
   _ = request.ParseForm()
 
-  t.Run("missing 'id' parameter", func(t *testing.T) {
+  t.Run("missing 'project_uuid' parameter", func(t *testing.T) {
     var s = mocks.NewProjectsService()
     s.AssertNotCalled(t, routine)
     var engine = gin.Default()
@@ -946,11 +942,11 @@ func TestProjectsHandler_AddTechnologyTag(t *testing.T) {
     var recorder = httptest.NewRecorder()
     engine.ServeHTTP(recorder, request)
     assert.Equal(t, http.StatusBadRequest, recorder.Code)
-    assert.Contains(t, recorder.Body.String(), "The 'id' parameter is required but was not found in the request form data.")
+    assert.Contains(t, recorder.Body.String(), "The 'project_uuid' parameter is required but was not found in the request form data.")
   })
 
   var id = uuid.New().String()
-  request.PostForm.Add("id", id)
+  request.PostForm.Add("project_uuid", id)
 
   t.Run("missing 'technology_id' parameter", func(t *testing.T) {
     var s = mocks.NewProjectsService()
@@ -1011,7 +1007,7 @@ func TestProjectsHandler_RemoveTechnologyTag(t *testing.T) {
   var request = httptest.NewRequest(method, target, nil)
   _ = request.ParseForm()
 
-  t.Run("missing 'id' parameter", func(t *testing.T) {
+  t.Run("missing 'project_uuid' parameter", func(t *testing.T) {
     var s = mocks.NewProjectsService()
     s.AssertNotCalled(t, routine)
     var engine = gin.Default()
@@ -1019,11 +1015,11 @@ func TestProjectsHandler_RemoveTechnologyTag(t *testing.T) {
     var recorder = httptest.NewRecorder()
     engine.ServeHTTP(recorder, request)
     assert.Equal(t, http.StatusBadRequest, recorder.Code)
-    assert.Contains(t, recorder.Body.String(), "The 'id' parameter is required but was not found in the request form data.")
+    assert.Contains(t, recorder.Body.String(), "The 'project_uuid' parameter is required but was not found in the request form data.")
   })
 
   var id = uuid.New().String()
-  request.PostForm.Add("id", id)
+  request.PostForm.Add("project_uuid", id)
 
   t.Run("missing 'technology_id' parameter", func(t *testing.T) {
     var s = mocks.NewProjectsService()
