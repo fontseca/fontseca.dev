@@ -44,15 +44,15 @@ func (r *tagsRepository) Add(ctx context.Context, creation *transfer.TagCreation
   defer tx.Rollback()
 
   addTagQuery := `
-  INSERT INTO "tag" ("id", "name")
-               VALUES (@id, @name);`
+  INSERT INTO "archive"."tag" ("id", "name")
+               VALUES ($1, $2);`
 
   ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
   defer cancel()
 
   result, err := tx.ExecContext(ctx, addTagQuery,
-    sql.Named("id", creation.ID),
-    sql.Named("name", creation.Name),
+    creation.ID,
+    creation.Name,
   )
 
   if nil != err {
@@ -83,7 +83,7 @@ func (r *tagsRepository) Get(ctx context.Context) (tags []*model.Tag, err error)
          "name",
          "created_at",
          "updated_at"
-    FROM "tag"
+    FROM "archive"."tag"
 ORDER BY lower("name");`
 
   ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
@@ -130,16 +130,16 @@ func (r *tagsRepository) Update(ctx context.Context, id string, update *transfer
   defer tx.Rollback()
 
   updateArticleTagQuery := `
-  UPDATE "article_tag"
-     SET "tag_id" = @new_tag_id
-   WHERE "tag_id" = @tag_id;`
+  UPDATE "archive"."article_tag"
+     SET "tag_id" = $2
+   WHERE "tag_id" = $1;`
 
   ctx1, cancel := context.WithTimeout(ctx, 5*time.Second)
   defer cancel()
 
   result, err := tx.ExecContext(ctx1, updateArticleTagQuery,
-    sql.Named("tag_id", id),
-    sql.Named("new_tag_id", update.ID),
+    id,
+    update.ID,
   )
 
   if nil != err {
@@ -148,19 +148,19 @@ func (r *tagsRepository) Update(ctx context.Context, id string, update *transfer
   }
 
   updateTagQuery := `
-  UPDATE "tag"
-     SET "id" = @new_tag_id,
-         "name" = @name,
+  UPDATE "archive"."tag"
+     SET "id" = $2,
+         "name" = $3,
          "updated_at" = current_timestamp
-   WHERE "id" = @id;`
+   WHERE "id" = $1;`
 
   ctx, cancel = context.WithTimeout(ctx, 3*time.Second)
   defer cancel()
 
   result, err = tx.ExecContext(ctx, updateTagQuery,
-    sql.Named("id", id),
-    sql.Named("new_tag_id", update.ID),
-    sql.Named("name", update.Name),
+    id,
+    update.ID,
+    update.Name,
   )
 
   if nil != err {
@@ -190,7 +190,7 @@ func (r *tagsRepository) Remove(ctx context.Context, id string) error {
   defer tx.Rollback()
 
   removeTagQuery := `
-  DELETE FROM "tag"
+  DELETE FROM "archive"."tag"
         WHERE "id" = $1;`
 
   ctx1, cancel := context.WithTimeout(ctx, 3*time.Second)
@@ -208,7 +208,7 @@ func (r *tagsRepository) Remove(ctx context.Context, id string) error {
   }
 
   removeFromAttachedArticlesQuery := `
-  DELETE FROM "article_tag"
+  DELETE FROM "archive"."article_tag"
         WHERE "tag_id" = $1;`
 
   ctx1, cancel = context.WithTimeout(ctx, 5*time.Second)

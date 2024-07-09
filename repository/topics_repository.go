@@ -41,7 +41,12 @@ func (r *topicsRepository) Add(ctx context.Context, creation *transfer.TopicCrea
     slog.String("name", creation.Name))
 
   exists := false
-  r.db.QueryRowContext(ctx, `SELECT count (1) FROM "topic" WHERE "id" = $1;`, creation.ID).Scan(&exists)
+  err := r.db.QueryRowContext(ctx, `SELECT count (1) FROM "archive"."topic" WHERE "id" = $1;`, creation.ID).Scan(&exists)
+
+  if nil != err {
+    slog.Error(err.Error())
+    return err
+  }
 
   if exists {
     p := &problem.Problem{}
@@ -61,16 +66,13 @@ func (r *topicsRepository) Add(ctx context.Context, creation *transfer.TopicCrea
   defer tx.Rollback()
 
   addTopicQuery := `
-  INSERT INTO "topic" ("id", "name")
-               VALUES (@id, @name);`
+  INSERT INTO "archive"."topic" ("id", "name")
+               VALUES ($1, $2);`
 
   ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
   defer cancel()
 
-  result, err := tx.ExecContext(ctx, addTopicQuery,
-    sql.Named("id", creation.ID),
-    sql.Named("name", creation.Name),
-  )
+  result, err := tx.ExecContext(ctx, addTopicQuery, creation.ID, creation.Name)
 
   if nil != err {
     slog.Error(err.Error())
@@ -100,7 +102,7 @@ func (r *topicsRepository) Get(ctx context.Context) (topics []*model.Topic, err 
          "name",
          "created_at",
          "updated_at"
-    FROM "topic"
+    FROM "archive"."topic"
 ORDER BY lower("name");`
 
   ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
@@ -147,17 +149,14 @@ func (r *topicsRepository) Update(ctx context.Context, id string, update *transf
   defer tx.Rollback()
 
   updateArticleTopicQuery := `
-  UPDATE "article"
-     SET "topic" = @new_topic_id
-   WHERE "topic" = @topic_id;`
+  UPDATE "archive"."article"
+     SET "topic" = $2
+   WHERE "topic" = $1;`
 
   ctx1, cancel := context.WithTimeout(ctx, 7*time.Second)
   defer cancel()
 
-  result, err := tx.ExecContext(ctx1, updateArticleTopicQuery,
-    sql.Named("topic_id", id),
-    sql.Named("new_topic_id", update.ID),
-  )
+  result, err := tx.ExecContext(ctx1, updateArticleTopicQuery, id, update.ID)
 
   if nil != err {
     slog.Error(err.Error())
@@ -165,19 +164,19 @@ func (r *topicsRepository) Update(ctx context.Context, id string, update *transf
   }
 
   updateTopicQuery := `
-  UPDATE "topic"
-     SET "id" = @new_topic_id,
-         "name" = @name,
+  UPDATE "archive"."topic"
+     SET "id" = $2,
+         "name" = $3,
          "updated_at" = current_timestamp
-   WHERE "id" = @id;`
+   WHERE "id" = $1;`
 
   ctx, cancel = context.WithTimeout(ctx, 3*time.Second)
   defer cancel()
 
   result, err = tx.ExecContext(ctx, updateTopicQuery,
-    sql.Named("id", id),
-    sql.Named("new_topic_id", update.ID),
-    sql.Named("name", update.Name),
+    id,
+    update.ID,
+    update.Name,
   )
 
   if nil != err {
@@ -209,7 +208,7 @@ func (r *topicsRepository) Remove(ctx context.Context, id string) error {
   defer tx.Rollback()
 
   removeTopicQuery := `
-  DELETE FROM "topic"
+  DELETE FROM "archive"."topic"
         WHERE "id" = $1;`
 
   ctx1, cancel := context.WithTimeout(ctx, 3*time.Second)
@@ -227,7 +226,7 @@ func (r *topicsRepository) Remove(ctx context.Context, id string) error {
   }
 
   removeFromAttachedArticlesQuery := `
-  UPDATE "article"
+  UPDATE "archive"."article"
      SET "topic" = NULL
    WHERE "topic" = $1;`
 
