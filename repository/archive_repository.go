@@ -245,16 +245,16 @@ func (r *archiveRepository) writeViewsCache(ctx context.Context) {
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
 
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return
   }
 
   defer tx.Rollback()
 
   writeViewsQuery := `
-  UPDATE "article"
-     SET "views" = "views" + @views
-   WHERE "uuid" = @uuid;`
+  UPDATE "archive"."article"
+     SET "views" = "views" + $2::INTEGER
+   WHERE "uuid" = $1;`
 
   writers := sync.WaitGroup{}
   ctx, cancel := context.WithTimeout(ctx, time.Minute)
@@ -273,11 +273,11 @@ func (r *archiveRepository) writeViewsCache(ctx context.Context) {
         slog.String("article_uuid", article))
 
       _, err := tx.ExecContext(ctx, writeViewsQuery,
-        sql.Named("uuid", article),
-        sql.Named("views", metadata.views))
+        article,
+        metadata.views)
 
       if nil != err {
-        slog.Error(err.Error(), slog.String("article_uuid", article))
+        slog.Error(getErrMsg(err), slog.String("article_uuid", article))
       }
     }()
   }
@@ -291,7 +291,7 @@ func (r *archiveRepository) writeViewsCache(ctx context.Context) {
   }
 
   if err := tx.Commit(); nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
   }
 }
 
@@ -361,7 +361,7 @@ func (r *archiveRepository) cleanBrokenLinks() {
 
     checkThereAreBrokenLinksQuery := `
     SELECT count (*)
-      FROM "article_link"
+      FROM "archive"."article_link"
      WHERE "expires_at" <= current_timestamp;`
 
     nbroken := 0
@@ -369,7 +369,7 @@ func (r *archiveRepository) cleanBrokenLinks() {
     err := r.db.QueryRowContext(ctx, checkThereAreBrokenLinksQuery).Scan(&nbroken)
 
     if nil != err {
-      slog.Error(err.Error())
+      slog.Error(getErrMsg(err))
     }
 
     if 0 == nbroken {
@@ -388,7 +388,7 @@ func (r *archiveRepository) cleanBrokenLinks() {
     tx, err := r.db.BeginTx(context.Background(), &sql.TxOptions{Isolation: sql.LevelSerializable})
 
     if nil != err {
-      slog.Error(err.Error())
+      slog.Error(getErrMsg(err))
 
       anew()
       if done() {
@@ -401,7 +401,7 @@ func (r *archiveRepository) cleanBrokenLinks() {
     defer tx.Rollback()
 
     removeBrokenLinksQuery := `
-    DELETE FROM "article_link"
+    DELETE FROM "archive"."article_link"
           WHERE "expires_at" <= current_timestamp;`
 
     ctx, cancel = context.WithTimeout(context.Background(), 30*time.Second)
@@ -410,7 +410,7 @@ func (r *archiveRepository) cleanBrokenLinks() {
     _, err = tx.ExecContext(ctx, removeBrokenLinksQuery)
 
     if nil != err {
-      slog.Error(err.Error())
+      slog.Error(getErrMsg(err))
 
       anew()
       if done() {
@@ -421,7 +421,7 @@ func (r *archiveRepository) cleanBrokenLinks() {
     }
 
     if err = tx.Commit(); nil != err {
-      slog.Error(err.Error())
+      slog.Error(getErrMsg(err))
     }
   })
 }
@@ -431,34 +431,34 @@ func (r *archiveRepository) Draft(ctx context.Context, creation *transfer.Articl
 
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return uuid.Nil.String(), err
   }
 
   defer tx.Rollback()
 
   draftArticleQuery := `
-  INSERT INTO "article" ("title", "author", "slug", "read_time", "content")
-                 VALUES (@title, 'fontseca.dev', @slug, @read_time, @content)
+  INSERT INTO "archive"."article" ("title", "author", "slug", "read_time", "content")
+                 VALUES ($1, 'fontseca.dev', $2, $3, $4)
               RETURNING "uuid";`
 
   ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
   defer cancel()
 
   result := tx.QueryRowContext(ctx, draftArticleQuery,
-    sql.Named("title", creation.Title),
-    sql.Named("slug", creation.Slug),
-    sql.Named("read_time", creation.ReadTime),
-    sql.Named("content", creation.Content),
+    creation.Title,
+    creation.Slug,
+    creation.ReadTime,
+    creation.Content,
   )
 
   if err = result.Scan(&id); nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return uuid.Nil.String(), err
   }
 
   if err = tx.Commit(); nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return uuid.Nil.String(), err
   }
 
@@ -469,13 +469,13 @@ func (r *archiveRepository) Publish(ctx context.Context, id string) error {
   isArticleDraftQuery := `
   SELECT "draft" IS TRUE
      AND "published_at" IS NULL
-    FROM "article"
-   WHERE "uuid" = @uuid;`
+    FROM "archive"."article"
+   WHERE "uuid" = $1;`
 
   ctx1, cancel := context.WithTimeout(ctx, time.Second)
   defer cancel()
 
-  row := r.db.QueryRowContext(ctx1, isArticleDraftQuery, sql.Named("uuid", id))
+  row := r.db.QueryRowContext(ctx1, isArticleDraftQuery, id)
 
   var isArticleDraft bool
 
@@ -484,7 +484,7 @@ func (r *archiveRepository) Publish(ctx context.Context, id string) error {
     if errors.Is(err, sql.ErrNoRows) {
       err = problem.NewNotFound(id, "draft")
     } else {
-      slog.Error(err.Error())
+      slog.Error(getErrMsg(err))
     }
 
     return err
@@ -504,7 +504,7 @@ func (r *archiveRepository) Publish(ctx context.Context, id string) error {
 
   hasTopicQuery := `
   SELECT count (1)
-    FROM "article"
+    FROM "archive"."article"
    WHERE "uuid" = $1
      AND "draft" IS TRUE
      AND "published_at" IS NULL
@@ -514,7 +514,7 @@ func (r *archiveRepository) Publish(ctx context.Context, id string) error {
   err = r.db.QueryRowContext(ctx, hasTopicQuery, id).Scan(&hasTopic)
 
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
 
@@ -529,26 +529,26 @@ func (r *archiveRepository) Publish(ctx context.Context, id string) error {
 
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
 
   defer tx.Rollback()
 
   publishArticleDraftQuery := `
-  UPDATE "article"
+  UPDATE "archive"."article"
      SET "draft" = FALSE,
          "published_at" = current_timestamp
-   WHERE "uuid" = @uuid;`
+   WHERE "uuid" = $1;`
 
   slog.Info("publishing draft", slog.String("uuid", id))
 
   ctx, cancel = context.WithTimeout(ctx, 2*time.Second)
   defer cancel()
 
-  result, err := tx.ExecContext(ctx, publishArticleDraftQuery, sql.Named("uuid", id))
+  result, err := tx.ExecContext(ctx, publishArticleDraftQuery, id)
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
 
@@ -557,7 +557,7 @@ func (r *archiveRepository) Publish(ctx context.Context, id string) error {
   }
 
   if err = tx.Commit(); nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
 
@@ -572,26 +572,26 @@ func (r *archiveRepository) SetSlug(ctx context.Context, id, slug string) error 
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
 
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
 
   defer tx.Rollback()
 
   setSlugQuery := `
-  UPDATE "article"
-     SET "slug" = @slug
-   WHERE "uuid" = @uuid
+  UPDATE "archive"."article"
+     SET "slug" = $2
+   WHERE "uuid" = $1
      AND "draft" IS FALSE
      AND "published_at" IS NOT NULL;`
 
   ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
   defer cancel()
 
-  result, err := tx.ExecContext(ctx, setSlugQuery, sql.Named("uuid", id), sql.Named("slug", slug))
+  result, err := tx.ExecContext(ctx, setSlugQuery, id, slug)
 
   if nil != err && !errors.Is(sql.ErrNoRows, err) {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
 
@@ -600,7 +600,7 @@ func (r *archiveRepository) SetSlug(ctx context.Context, id, slug string) error 
   }
 
   if err := tx.Commit(); nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
 
@@ -618,9 +618,9 @@ func (r *archiveRepository) Publications(ctx context.Context) (publications []*t
   }
 
   getPublicationsQuery := `
-  SELECT cast(strftime('%m', "published_at") AS INTEGER) AS "month",
-         cast(strftime('%Y', "published_at") AS INTEGER) AS "year"
-    FROM "article"
+  SELECT extract(MONTH FROM "published_at")::INTEGER AS "month",
+         extract(YEAR FROM "published_at")::INTEGER AS "year"
+    FROM "archive"."article"
    WHERE "draft" IS FALSE
      AND "published_at" IS NOT NULL
      AND "hidden" IS FALSE
@@ -633,7 +633,7 @@ func (r *archiveRepository) Publications(ctx context.Context) (publications []*t
   result, err := r.db.QueryContext(ctx, getPublicationsQuery)
 
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return nil, err
   }
 
@@ -650,7 +650,7 @@ func (r *archiveRepository) Publications(ctx context.Context) (publications []*t
     )
 
     if nil != err {
-      slog.Error(err.Error())
+      slog.Error(getErrMsg(err))
       return nil, err
     }
 
@@ -671,20 +671,20 @@ func (r *archiveRepository) Get(ctx context.Context, filter *transfer.ArticleFil
          "topic",
          "pinned",
          "published_at"
-    FROM "article"
-   WHERE "draft" IS @drafts_only
-     AND CASE WHEN @drafts_only
+    FROM "archive"."article"
+   WHERE "draft" = $1
+     AND CASE WHEN $1 = TRUE
               THEN "published_at" IS NULL
               ELSE "published_at" IS NOT NULL
-               AND "hidden" IS @hidden
-               AND CASE WHEN @publication_year <> 0 AND @publication_month <> 0 
+               AND "hidden" = $2
+               AND CASE WHEN $6 <> 0 AND $7 <> 0 
                    THEN
-                        CAST(strftime('%Y', "published_at") AS INTEGER) = @publication_year AND
-                        CAST(strftime('%m', "published_at") AS INTEGER) = @publication_month
+                        extract(YEAR FROM "published_at")::INTEGER = $6 AND
+                        extract(MONTH FROM "published_at")::INTEGER = $7
                     ELSE TRUE END
-               AND CASE WHEN @topic <> ""
+               AND CASE WHEN $5 <> ''
                    THEN
-                        "topic" = @topic
+                        "topic" = $5
                    ELSE TRUE END
                END`)
 
@@ -700,8 +700,8 @@ func (r *archiveRepository) Get(ctx context.Context, filter *transfer.ArticleFil
 
   query.WriteString(`
   ORDER BY "pinned" DESC, "published_at" DESC
-  LIMIT @rpp
-  OFFSET @rpp * (@page - 1);`)
+  LIMIT $4
+  OFFSET $4 * ($3 - 1);`)
 
   var (
     year  = 0
@@ -717,17 +717,17 @@ func (r *archiveRepository) Get(ctx context.Context, filter *transfer.ArticleFil
   defer cancel()
 
   result, err := r.db.QueryContext(ctx, query.String(),
-    sql.Named("drafts_only", draftsOnly),
-    sql.Named("hidden", hidden),
-    sql.Named("page", filter.Page),
-    sql.Named("rpp", filter.RPP),
-    sql.Named("topic", filter.Topic),
-    sql.Named("publication_year", year),
-    sql.Named("publication_month", month),
+    draftsOnly,
+    hidden,
+    filter.Page,
+    filter.RPP,
+    filter.Topic,
+    year,
+    month,
   )
 
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return nil, err
   }
 
@@ -831,14 +831,14 @@ func (r *archiveRepository) Get(ctx context.Context, filter *transfer.ArticleFil
 func (r *archiveRepository) GetOne(ctx context.Context, request *transfer.ArticleRequest) (article *model.Article, err error) {
   requestArticleUUIDQuery := `
   SELECT "uuid"
-    FROM "article"
+    FROM "archive"."article"
    WHERE "draft" IS FALSE
      AND "published_at" IS NOT NULL
      AND "hidden" IS FALSE
-     AND "topic" = @topic
-     AND cast(strftime('%Y', "published_at") AS INTEGER) = @year
-     AND cast(strftime('%m', "published_at") AS INTEGER) = @month
-     AND "slug" = @slug;`
+     AND "topic" = $1
+     AND extract(YEAR FROM "published_at")::INTEGER = $2
+     AND extract(MONTH FROM "published_at")::INTEGER = $3
+     AND "slug" = $4;`
 
   var (
     year  = 0
@@ -852,19 +852,19 @@ func (r *archiveRepository) GetOne(ctx context.Context, request *transfer.Articl
 
   var id string
 
-  ctx1, cancel1 := context.WithTimeout(ctx, 10*time.Second)
+  ctx1, cancel1 := context.WithTimeout(ctx, 5*time.Second)
   defer cancel1()
 
   err = r.db.QueryRowContext(ctx1, requestArticleUUIDQuery,
-    sql.Named("topic", request.Topic),
-    sql.Named("year", year),
-    sql.Named("month", month),
-    sql.Named("slug", request.Slug),
+    request.Topic,
+    year,
+    month,
+    request.Slug,
   ).Scan(&id)
 
   if nil != err {
     if !errors.Is(err, sql.ErrNoRows) {
-      slog.Error(err.Error())
+      slog.Error(getErrMsg(err))
     }
 
     return nil, err
@@ -883,8 +883,8 @@ func (r *archiveRepository) GetByLink(ctx context.Context, link string) (article
   getByLinkQuery := `
   SELECT "article_uuid",
          "expires_at"
-    FROM "article_link"
-   WHERE "sharable_link" = $1;`
+    FROM "archive"."article_link"
+   WHERE "shareable_link" = $1;`
 
   var (
     id           string
@@ -907,7 +907,7 @@ func (r *archiveRepository) GetByLink(ctx context.Context, link string) (article
       p.With("shareable_link", link)
       err = p
     } else {
-      slog.Error(err.Error())
+      slog.Error(getErrMsg(err))
     }
 
     return nil, err
@@ -944,17 +944,17 @@ func (r *archiveRepository) GetByID(ctx context.Context, id string, isDraft bool
             t."name",
             t.created_at,
             t.updated_at
-       FROM "article_tag" at
-  LEFT JOIN "tag" t
+       FROM "archive"."article_tag" at
+  LEFT JOIN "archive"."tag" t
          ON at."tag_id" = t."id"
-      WHERE "article_uuid" = @article_uuid;`
+      WHERE "article_uuid" = $1;`
 
-  ctx1, cancel1 := context.WithTimeout(ctx, 10*time.Second)
+  ctx1, cancel1 := context.WithTimeout(ctx, 5*time.Second)
   defer cancel1()
 
-  result, err := r.db.QueryContext(ctx1, getTagsQuery, sql.Named("article_uuid", id))
+  result, err := r.db.QueryContext(ctx1, getTagsQuery, id)
   if err != nil {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return nil, err
   }
 
@@ -973,7 +973,7 @@ func (r *archiveRepository) GetByID(ctx context.Context, id string, isDraft bool
     )
 
     if nil != err {
-      slog.Error(err.Error())
+      slog.Error(getErrMsg(err))
       return nil, err
     }
 
@@ -998,18 +998,18 @@ func (r *archiveRepository) GetByID(ctx context.Context, id string, isDraft bool
             t."name",
             t."created_at",
             t."updated_at"
-       FROM "article" a
-  LEFT JOIN "topic" t
+       FROM "archive"."article" a
+  LEFT JOIN "archive"."topic" t
          ON t."id" = a."topic" 
-      WHERE "uuid" = @uuid
-        AND "draft" IS @is_draft
-        AND CASE WHEN @is_draft
+      WHERE "uuid" = $1
+        AND "draft" = $2
+        AND CASE WHEN $2 = TRUE
                  THEN "published_at" IS NULL
                  ELSE "published_at" IS NOT NULL
                   AND "hidden" IS FALSE
                   END;`
 
-  ctx2, cancel2 := context.WithTimeout(ctx, 10*time.Second)
+  ctx2, cancel2 := context.WithTimeout(ctx, 5*time.Second)
   defer cancel2()
 
   article = new(model.Article)
@@ -1025,9 +1025,7 @@ func (r *archiveRepository) GetByID(ctx context.Context, id string, isDraft bool
     nullableTopicUpdatedAt sql.Null[time.Time]
   )
 
-  err = r.db.QueryRowContext(ctx2, getArticleByUUIDQuery,
-    sql.Named("uuid", id),
-    sql.Named("is_draft", isDraft)).Scan(
+  err = r.db.QueryRowContext(ctx2, getArticleByUUIDQuery, id, isDraft).Scan(
     &article.UUID,
     &article.Title,
     &article.Author,
@@ -1081,7 +1079,7 @@ func (r *archiveRepository) GetByID(ctx context.Context, id string, isDraft bool
 
       err = problem.NewNotFound(id, recordType)
     } else {
-      slog.Error(err.Error())
+      slog.Error(getErrMsg(err))
     }
 
     return nil, err
@@ -1093,37 +1091,37 @@ func (r *archiveRepository) GetByID(ctx context.Context, id string, isDraft bool
 func (r *archiveRepository) Amend(ctx context.Context, id string) error {
   articleExistsQuery := `
   SELECT "uuid"
-    FROM "article"
-   WHERE "uuid" = @uuid
+    FROM "archive"."article"
+   WHERE "uuid" = $1
      AND "draft" IS FALSE
      AND "published_at" IS NOT NULL;`
 
   ctx1, cancel := context.WithTimeout(ctx, 3*time.Second)
   defer cancel()
 
-  err := r.db.QueryRowContext(ctx1, articleExistsQuery, sql.Named("uuid", id)).Scan(&id)
+  err := r.db.QueryRowContext(ctx1, articleExistsQuery, id).Scan(&id)
   if nil != err {
     if errors.Is(err, sql.ErrNoRows) {
       return problem.NewNotFound(id, "article")
     }
 
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
 
   isBeenAmendedQuery := `
     SELECT count (1)
-      FROM "article_patch"
-     WHERE "article_uuid" = @article_uuid;`
+      FROM "archive"."article_patch"
+     WHERE "article_uuid" = $1;`
 
   var isBeenAmended bool
 
   ctx2, cancel := context.WithTimeout(ctx, 2*time.Second)
   defer cancel()
 
-  err = r.db.QueryRowContext(ctx2, isBeenAmendedQuery, sql.Named("article_uuid", id)).Scan(&isBeenAmended)
+  err = r.db.QueryRowContext(ctx2, isBeenAmendedQuery, id).Scan(&isBeenAmended)
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
   }
 
   if isBeenAmended {
@@ -1138,33 +1136,36 @@ func (r *archiveRepository) Amend(ctx context.Context, id string) error {
 
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
 
   defer tx.Rollback()
 
   amendArticleQuery := `
-  INSERT INTO "article_patch" ("article_uuid",
+  INSERT INTO  "archive"."article_patch"
+                              ("article_uuid",
                                "title",
                                "slug",
                                "content")
-                       VALUES (@uuid,
+                       VALUES ($1,
                                NULL,
                                NULL,
                                NULL);`
 
+  slog.Info("starting article amendment", slog.String("article_uuid", id))
+
   ctx, cancel = context.WithTimeout(ctx, 4*time.Second)
   defer cancel()
 
-  _, err = tx.ExecContext(ctx, amendArticleQuery, sql.Named("uuid", id))
+  _, err = tx.ExecContext(ctx, amendArticleQuery, id)
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
 
   if err = tx.Commit(); nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
 
@@ -1174,24 +1175,24 @@ func (r *archiveRepository) Amend(ctx context.Context, id string) error {
 func (r *archiveRepository) Remove(ctx context.Context, id string) error {
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelReadCommitted})
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
 
   defer tx.Rollback()
 
   removeArticleQuery := `
-  DELETE FROM "article"
-        WHERE "uuid" = @uuid
+  DELETE FROM "archive"."article"
+        WHERE "uuid" = $1
           AND "draft" IS FALSE
           AND "published_at" IS NOT NULL;`
 
   ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
   defer cancel()
 
-  result, err := tx.ExecContext(ctx, removeArticleQuery, sql.Named("uuid", id))
+  result, err := tx.ExecContext(ctx, removeArticleQuery, id)
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
 
@@ -1200,7 +1201,7 @@ func (r *archiveRepository) Remove(ctx context.Context, id string) error {
   }
 
   if err = tx.Commit(); nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
 
@@ -1218,10 +1219,10 @@ func (r *archiveRepository) AddTag(ctx context.Context, articleID, tagID string,
 
   articleExistsQuery := `
   SELECT count (*)
-    FROM "article"
-   WHERE "uuid" = @uuid
-     AND "draft" IS @is_draft
-     AND CASE WHEN @is_draft
+    FROM "archive"."article"
+   WHERE "uuid" = $1
+     AND "draft" = $2
+     AND CASE WHEN $2 = TRUE
            THEN "published_at" IS NULL
            ELSE "published_at" IS NOT NULL
             END;`
@@ -1232,13 +1233,13 @@ func (r *archiveRepository) AddTag(ctx context.Context, articleID, tagID string,
   var articleExists bool
 
   err := r.db.QueryRowContext(ctx1, articleExistsQuery,
-    sql.Named("uuid", articleID),
-    sql.Named("is_draft", isArticleDraft)).
+    articleID,
+    isArticleDraft).
     Scan(&articleExists)
 
   if nil != err {
     if !errors.Is(err, sql.ErrNoRows) {
-      slog.Error(err.Error())
+      slog.Error(getErrMsg(err))
       return err
     }
   }
@@ -1253,7 +1254,7 @@ func (r *archiveRepository) AddTag(ctx context.Context, articleID, tagID string,
 
   tagExistsQuery := `
   SELECT count (*)
-    FROM "tag"
+    FROM "archive"."tag"
    WHERE "id" = $1;`
 
   ctx1, cancel = context.WithTimeout(ctx, 3*time.Second)
@@ -1264,7 +1265,7 @@ func (r *archiveRepository) AddTag(ctx context.Context, articleID, tagID string,
   err = r.db.QueryRowContext(ctx, tagExistsQuery, tagID).Scan(&tagExists)
   if nil != err {
     if !errors.Is(err, sql.ErrNoRows) {
-      slog.Error(err.Error())
+      slog.Error(getErrMsg(err))
       return err
     }
   }
@@ -1275,9 +1276,9 @@ func (r *archiveRepository) AddTag(ctx context.Context, articleID, tagID string,
 
   tagAlreadyExistsQuery := `
   SELECT count (*)
-    FROM "article_tag"
-   WHERE "article_uuid" = @article_uuid
-     AND "tag_id" = @tag_id;`
+    FROM "archive"."article_tag"
+   WHERE "article_uuid" = $1
+     AND "tag_id" = $2;`
 
   ctx, cancel = context.WithTimeout(ctx, 3*time.Second)
   defer cancel()
@@ -1285,13 +1286,13 @@ func (r *archiveRepository) AddTag(ctx context.Context, articleID, tagID string,
   var tagAlreadyExists bool
 
   err = r.db.QueryRowContext(ctx, tagAlreadyExistsQuery,
-    sql.Named("article_uuid", articleID),
-    sql.Named("tag_id", tagID)).
+    articleID,
+    tagID).
     Scan(&tagAlreadyExists)
 
   if nil != err {
     if !errors.Is(err, sql.ErrNoRows) {
-      slog.Error(err.Error())
+      slog.Error(getErrMsg(err))
       return err
     }
   }
@@ -1316,25 +1317,25 @@ func (r *archiveRepository) AddTag(ctx context.Context, articleID, tagID string,
 
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
 
   defer tx.Rollback()
 
   addTagQuery := `
-  INSERT INTO "article_tag" ("article_uuid", "tag_id")
-                       VALUES (@article_uuid, @tag_id);`
+  INSERT INTO "archive"."article_tag" ("article_uuid", "tag_id")
+                       VALUES ($1, $2);`
 
   ctx, cancel = context.WithTimeout(ctx, 2*time.Second)
   defer cancel()
 
   result, err := tx.ExecContext(ctx, addTagQuery,
-    sql.Named("article_uuid", articleID),
-    sql.Named("tag_id", tagID))
+    articleID,
+    tagID)
 
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
 
@@ -1357,7 +1358,7 @@ func (r *archiveRepository) AddTag(ctx context.Context, articleID, tagID string,
   }
 
   if err = tx.Commit(); nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
 
@@ -1373,10 +1374,10 @@ func (r *archiveRepository) RemoveTag(ctx context.Context, articleID, tagID stri
 
   articleExistsQuery := `
   SELECT count (*)
-    FROM "article"
-   WHERE "uuid" = @uuid
-     AND "draft" IS @is_draft
-     AND CASE WHEN @is_draft
+    FROM "archive"."article"
+   WHERE "uuid" = $1
+     AND "draft" = $2
+     AND CASE WHEN $2 = TRUE
            THEN "published_at" IS NULL
            ELSE "published_at" IS NOT NULL
             END;`
@@ -1387,13 +1388,13 @@ func (r *archiveRepository) RemoveTag(ctx context.Context, articleID, tagID stri
   var articleExists bool
 
   err := r.db.QueryRowContext(ctx1, articleExistsQuery,
-    sql.Named("uuid", articleID),
-    sql.Named("is_draft", isArticleDraft)).
+    articleID,
+    isArticleDraft).
     Scan(&articleExists)
 
   if nil != err {
     if !errors.Is(err, sql.ErrNoRows) {
-      slog.Error(err.Error())
+      slog.Error(getErrMsg(err))
       return err
     }
   }
@@ -1408,7 +1409,7 @@ func (r *archiveRepository) RemoveTag(ctx context.Context, articleID, tagID stri
 
   tagExistsQuery := `
   SELECT count (*)
-    FROM "tag"
+    FROM "archive"."tag"
    WHERE "id" = $1;`
 
   ctx1, cancel = context.WithTimeout(ctx, 3*time.Second)
@@ -1419,7 +1420,7 @@ func (r *archiveRepository) RemoveTag(ctx context.Context, articleID, tagID stri
   err = r.db.QueryRowContext(ctx, tagExistsQuery, tagID).Scan(&tagExists)
   if nil != err {
     if !errors.Is(err, sql.ErrNoRows) {
-      slog.Error(err.Error())
+      slog.Error(getErrMsg(err))
       return err
     }
   }
@@ -1430,26 +1431,26 @@ func (r *archiveRepository) RemoveTag(ctx context.Context, articleID, tagID stri
 
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
 
   defer tx.Rollback()
 
   removeTagQuery := `
-  DELETE FROM "article_tag"
-         WHERE "article_uuid" = @article_uuid
-           AND "tag_id" = @tag_id;`
+  DELETE FROM "archive"."article_tag"
+         WHERE "article_uuid" = $1
+           AND "tag_id" = $2;`
 
   ctx, cancel = context.WithTimeout(ctx, 3*time.Second)
   defer cancel()
 
   result, err := tx.ExecContext(ctx, removeTagQuery,
-    sql.Named("article_uuid", articleID),
-    sql.Named("tag_id", tagID))
+    articleID,
+    tagID)
 
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
 
@@ -1465,7 +1466,7 @@ func (r *archiveRepository) RemoveTag(ctx context.Context, articleID, tagID stri
   }
 
   if err = tx.Commit(); nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
 
@@ -1475,25 +1476,25 @@ func (r *archiveRepository) RemoveTag(ctx context.Context, articleID, tagID stri
 func (r *archiveRepository) SetHidden(ctx context.Context, id string, hidden bool) error {
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
 
   defer tx.Rollback()
 
   setHiddenQuery := `
-  UPDATE "article"
-     SET "hidden" = @hidden
-   WHERE "uuid" = @uuid
+  UPDATE "archive"."article"
+     SET "hidden" = $2
+   WHERE "uuid" = $1
      AND "draft" IS FALSE
      AND "published_at" IS NOT NULL;`
 
   ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
   defer cancel()
 
-  result, err := tx.ExecContext(ctx, setHiddenQuery, sql.Named("uuid", id), sql.Named("hidden", hidden))
+  result, err := tx.ExecContext(ctx, setHiddenQuery, id, hidden)
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
 
@@ -1503,7 +1504,7 @@ func (r *archiveRepository) SetHidden(ctx context.Context, id string, hidden boo
   }
 
   if err = tx.Commit(); nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
 
@@ -1515,25 +1516,25 @@ func (r *archiveRepository) SetHidden(ctx context.Context, id string, hidden boo
 func (r *archiveRepository) SetPinned(ctx context.Context, id string, pinned bool) error {
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
 
   defer tx.Rollback()
 
   setPinnedQuery := `
-  UPDATE "article"
-     SET "pinned" = @pinned
-   WHERE "uuid" = @uuid
+  UPDATE "archive"."article"
+     SET "pinned" = $2
+   WHERE "uuid" = $1
      AND "draft" IS FALSE
      AND "published_at" IS NOT NULL;`
 
   ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
   defer cancel()
 
-  result, err := tx.ExecContext(ctx, setPinnedQuery, sql.Named("uuid", id), sql.Named("pinned", pinned))
+  result, err := tx.ExecContext(ctx, setPinnedQuery, id, pinned)
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
 
@@ -1543,7 +1544,7 @@ func (r *archiveRepository) SetPinned(ctx context.Context, id string, pinned boo
   }
 
   if err = tx.Commit(); nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
 
@@ -1561,24 +1562,24 @@ func (r *archiveRepository) Share(ctx context.Context, id string) (link string, 
 
   assertIsArticlePatchQuery := `
   SELECT count(*)
-    FROM "article_patch"
-   WHERE "article_uuid" = @article_uuid;`
+    FROM "archive"."article_patch"
+   WHERE "article_uuid" = $1;`
 
   var isArticlePatch bool
 
   ctx1, cancel := context.WithTimeout(ctx, 2*time.Second)
   defer cancel()
 
-  err = r.db.QueryRowContext(ctx1, assertIsArticlePatchQuery, sql.Named("article_uuid", id)).Scan(&isArticlePatch)
+  err = r.db.QueryRowContext(ctx1, assertIsArticlePatchQuery, id).Scan(&isArticlePatch)
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return "", err
   }
 
   if !isArticlePatch {
     assertIsArticleDraftQuery := `
     SELECT count (*)
-      FROM "article"
+      FROM "archive"."article"
      WHERE "uuid" = $1
        AND "draft" IS TRUE
        AND "published_at" IS NULL;`
@@ -1590,7 +1591,7 @@ func (r *archiveRepository) Share(ctx context.Context, id string) (link string, 
 
     err = r.db.QueryRowContext(ctx1, assertIsArticleDraftQuery, id).Scan(&isDraft)
     if nil != err {
-      slog.Error(err.Error())
+      slog.Error(getErrMsg(err))
       return "", err
     }
 
@@ -1600,9 +1601,9 @@ func (r *archiveRepository) Share(ctx context.Context, id string) (link string, 
   }
 
   tryToGetCurrentLinkWithExpirationTimeQuery := `
-  SELECT "sharable_link",
+  SELECT "shareable_link",
          "expires_at"
-    FROM "article_link"
+    FROM "archive"."article_link"
    WHERE "article_uuid" = $1;`
 
   ctx, cancel = context.WithTimeout(ctx, 2*time.Second)
@@ -1613,7 +1614,7 @@ func (r *archiveRepository) Share(ctx context.Context, id string) (link string, 
   err = r.db.QueryRowContext(ctx, tryToGetCurrentLinkWithExpirationTimeQuery, id).Scan(&link, &expiresAt)
   if nil != err {
     if !errors.Is(err, sql.ErrNoRows) {
-      slog.Error(err.Error())
+      slog.Error(getErrMsg(err))
       return "", err
     }
   }
@@ -1622,7 +1623,7 @@ func (r *archiveRepository) Share(ctx context.Context, id string) (link string, 
     now := time.Now()
     if -1 == expiresAt.Compare(now) || 0 == expiresAt.Compare(now) { // link has expired
       removeObsoleteLinkQuery := `
-      DELETE FROM "article_link"
+      DELETE FROM "archive"."article_link"
             WHERE "article_uuid" = $1;`
 
       ctx, cancel = context.WithTimeout(ctx, 2*time.Second)
@@ -1630,7 +1631,7 @@ func (r *archiveRepository) Share(ctx context.Context, id string) (link string, 
 
       _, err = r.db.ExecContext(ctx, removeObsoleteLinkQuery, id)
       if nil != err {
-        slog.Error(err.Error())
+        slog.Error(getErrMsg(err))
         return "", err
       }
 
@@ -1644,16 +1645,16 @@ func (r *archiveRepository) Share(ctx context.Context, id string) (link string, 
 
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelReadCommitted})
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return "", err
   }
 
   defer tx.Rollback()
 
   makeShareableLinkQuery := `
-  INSERT INTO "article_link" ("article_uuid", "sharable_link")
-                      VALUES (@article_uuid, @sharable_link)
-    RETURNING "sharable_link";`
+  INSERT INTO "archive"."article_link" ("article_uuid", "shareable_link")
+                      VALUES ($1, $2)
+    RETURNING "shareable_link";`
 
   data := fmt.Sprintf("%s at %s", id, time.Now().String())
   hash := sha256.Sum256([]byte(data))
@@ -1662,17 +1663,17 @@ func (r *archiveRepository) Share(ctx context.Context, id string) (link string, 
   defer cancel2()
 
   err = tx.QueryRowContext(ctx2, makeShareableLinkQuery,
-    sql.Named("article_uuid", id),
-    sql.Named("sharable_link", fmt.Sprintf("/archive/sharing/%x", hash))).
+    id,
+    fmt.Sprintf("/archive/sharing/%x", hash)).
     Scan(&link)
 
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return "", nil
   }
 
   if err = tx.Commit(); nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return "", err
   }
 
@@ -1682,23 +1683,23 @@ func (r *archiveRepository) Share(ctx context.Context, id string) (link string, 
 func (r *archiveRepository) Discard(ctx context.Context, id string) error {
   isArticlePatchQuery := `
   SELECT count(*)
-    FROM "article_patch"
-   WHERE "article_uuid" = @article_uuid;`
+    FROM "archive"."article_patch"
+   WHERE "article_uuid" = $1;`
 
   var isArticlePatch bool
 
   ctx1, cancel := context.WithTimeout(ctx, 2*time.Second)
   defer cancel()
 
-  err := r.db.QueryRowContext(ctx1, isArticlePatchQuery, sql.Named("article_uuid", id)).Scan(&isArticlePatch)
+  err := r.db.QueryRowContext(ctx1, isArticlePatchQuery, id).Scan(&isArticlePatch)
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
 
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelReadCommitted})
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
 
@@ -1706,24 +1707,28 @@ func (r *archiveRepository) Discard(ctx context.Context, id string) error {
 
   discardPatchOrDraftQuery := `
   DELETE
-    FROM "article"
-   WHERE "uuid" = @uuid
+    FROM "archive"."article"
+   WHERE "uuid" = $1
      AND "draft" IS TRUE
      AND "published_at" IS NULL;`
 
   if isArticlePatch {
     discardPatchOrDraftQuery = `
     DELETE
-      FROM "article_patch"
-     WHERE "article_uuid" = @uuid;`
+      FROM "archive"."article_patch"
+     WHERE "article_uuid" = $1;`
+
+    slog.Info("discarding amendment", slog.String("article_uuid", id))
+  } else {
+    slog.Info("discarding drafted article", slog.String("draft_uuid", id))
   }
 
   ctx, cancel = context.WithTimeout(ctx, 2*time.Second)
   defer cancel()
 
-  result, err := tx.ExecContext(ctx, discardPatchOrDraftQuery, sql.Named("uuid", id))
+  result, err := tx.ExecContext(ctx, discardPatchOrDraftQuery, id)
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
 
@@ -1737,7 +1742,7 @@ func (r *archiveRepository) Discard(ctx context.Context, id string) error {
   }
 
   if err = tx.Commit(); nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
 
@@ -1747,17 +1752,17 @@ func (r *archiveRepository) Discard(ctx context.Context, id string) error {
 func (r *archiveRepository) Revise(ctx context.Context, id string, revision *transfer.ArticleRevision) error {
   isArticlePatchQuery := `
   SELECT count(*)
-    FROM "article_patch"
-   WHERE "article_uuid" = @article_uuid;`
+    FROM "archive"."article_patch"
+   WHERE "article_uuid" = $1;`
 
   var isArticlePatch bool
 
   ctx1, cancel := context.WithTimeout(ctx, 2*time.Second)
   defer cancel()
 
-  err := r.db.QueryRowContext(ctx1, isArticlePatchQuery, sql.Named("article_uuid", id)).Scan(&isArticlePatch)
+  err := r.db.QueryRowContext(ctx1, isArticlePatchQuery, id).Scan(&isArticlePatch)
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
 
@@ -1765,7 +1770,7 @@ func (r *archiveRepository) Revise(ctx context.Context, id string, revision *tra
     exists := false
     topicExistsQuery := `
     SELECT count (1)
-      FROM "topic"
+      FROM "archive"."topic"
      WHERE "id" = $1;`
 
     ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
@@ -1774,7 +1779,7 @@ func (r *archiveRepository) Revise(ctx context.Context, id string, revision *tra
     err := r.db.QueryRowContext(ctx, topicExistsQuery, revision.Topic).Scan(&exists)
 
     if nil != err {
-      slog.Error(err.Error())
+      slog.Error(getErrMsg(err))
       return err
     }
 
@@ -1785,58 +1790,58 @@ func (r *archiveRepository) Revise(ctx context.Context, id string, revision *tra
 
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelReadCommitted})
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
 
   defer tx.Rollback()
 
   reviseArticleQuery := `
-  UPDATE "article"
-     SET "title" = coalesce (nullif (@title, ''), "title"),
-         "slug" = coalesce (nullif (@slug, ''), "slug"),
-         "topic" = coalesce (nullif (@topic, ''), "topic"),
-         "read_time" = CASE WHEN @read_time = "read_time"
-                              OR @read_time IS NULL
-                              OR @read_time = 0
+  UPDATE "archive"."article"
+     SET "title" = coalesce (nullif ($2, ''), "title"),
+         "slug" = coalesce (nullif ($3, ''), "slug"),
+         "topic" = coalesce (nullif ($4, ''), "topic"),
+         "read_time" = CASE WHEN $5 = "read_time"
+                              OR $5 IS NULL
+                              OR $5 = 0
                             THEN "read_time"
-                            ELSE @read_time
+                            ELSE $5
                              END,
-         "content" = coalesce (nullif (@content, ''), "content")
-   WHERE "uuid" = @uuid
+         "content" = coalesce (nullif ($6, ''), "content")
+   WHERE "uuid" = $1
      AND "draft" IS TRUE
      AND "published_at" IS NULL;`
 
   if isArticlePatch {
     reviseArticleQuery = `
-    UPDATE "article_patch"
-       SET "title" = coalesce (nullif (@title, ''), "title"),
-           "slug" = coalesce (nullif (@slug, ''), "slug"),
-           "topic" = coalesce (nullif (@topic, ''), "topic"),
-           "read_time" = CASE WHEN @read_time = "read_time"
-                                OR @read_time IS NULL
-                                OR @read_time = 0
+    UPDATE "archive"."article_patch"
+       SET "title" = coalesce (nullif ($2, ''), "title"),
+           "slug" = coalesce (nullif ($3, ''), "slug"),
+           "topic" = coalesce (nullif ($4, ''), "topic"),
+           "read_time" = CASE WHEN $5 = "read_time"
+                                OR $5 IS NULL
+                                OR $5 = 0
                               THEN "read_time"
-                              ELSE @read_time
+                              ELSE $5
                                END,
-           "content" = coalesce (nullif (@content, ''), "content")
-     WHERE "article_uuid" = @uuid;`
+           "content" = coalesce (nullif ($6, ''), "content")
+     WHERE "article_uuid" = $1;`
   }
 
   ctx, cancel = context.WithTimeout(ctx, 3*time.Second)
   defer cancel()
 
   result, err := tx.ExecContext(ctx, reviseArticleQuery,
-    sql.Named("uuid", id),
-    sql.Named("title", revision.Title),
-    sql.Named("slug", revision.Slug),
-    sql.Named("topic", revision.Topic),
-    sql.Named("read_time", revision.ReadTime),
-    sql.Named("content", revision.Content),
+    id,
+    revision.Title,
+    revision.Slug,
+    revision.Topic,
+    revision.ReadTime,
+    revision.Content,
   )
 
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
 
@@ -1850,7 +1855,7 @@ func (r *archiveRepository) Revise(ctx context.Context, id string, revision *tra
   }
 
   if err = tx.Commit(); nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
 
@@ -1865,8 +1870,10 @@ func (r *archiveRepository) Release(ctx context.Context, id string) error {
          "topic",
          "read_time",
          "content"
-    FROM "article_patch"
+    FROM "archive"."article_patch"
    WHERE "article_uuid" = $1;`
+
+  slog.Info("releasing article amendment", slog.String("article_uuid", id))
 
   ctx1, cancel := context.WithTimeout(ctx, 3*time.Second)
   defer cancel()
@@ -1887,31 +1894,31 @@ func (r *archiveRepository) Release(ctx context.Context, id string) error {
       return problem.NewNotFound(id, "article patch")
     }
 
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
 
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
 
   releasePatchQuery := `
-  UPDATE "article"
-     SET "title" = coalesce(nullif(@title, ''), "title"),
-         "slug" = coalesce(nullif(@slug, ''), "slug"),
-         "topic" = coalesce(nullif(@topic, ''), "topic"),
-         "read_time" = CASE WHEN @read_time = "read_time"
-                              OR @read_time IS NULL
-                              OR @read_time = 0
+  UPDATE "archive"."article"
+     SET "title" = coalesce(nullif($2, ''), "title"),
+         "slug" = coalesce(nullif($3, ''), "slug"),
+         "topic" = coalesce(nullif($4, ''), "topic"),
+         "read_time" = CASE WHEN $5 = "read_time"
+                              OR $5 IS NULL
+                              OR $5 = 0
                             THEN "read_time"
-                            ELSE @read_time
+                            ELSE $5
                              END,
-         "content" = coalesce(nullif(@content, ''), "content"),
+         "content" = coalesce(nullif($6, ''), "content"),
          "modified_at" = current_timestamp,
          "updated_at" = current_timestamp
-   WHERE "uuid" = @uuid
+   WHERE "uuid" = $1
      AND "draft" IS FALSE
      AND "published_at" IS NOT NULL;`
 
@@ -1919,15 +1926,15 @@ func (r *archiveRepository) Release(ctx context.Context, id string) error {
   defer cancel()
 
   result, err := tx.ExecContext(ctx1, releasePatchQuery,
-    sql.Named("uuid", id),
-    sql.Named("title", patch.Title),
-    sql.Named("slug", patch.Slug),
-    sql.Named("topic", patch.TopicID),
-    sql.Named("read_time", patch.ReadTime),
-    sql.Named("content", patch.Content))
+    id,
+    patch.Title,
+    patch.Slug,
+    patch.TopicID,
+    patch.ReadTime,
+    patch.Content)
 
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return nil
   }
 
@@ -1936,7 +1943,7 @@ func (r *archiveRepository) Release(ctx context.Context, id string) error {
   }
 
   removePatchQuery := `
-  DELETE FROM "article_patch"
+  DELETE FROM "archive"."article_patch"
         WHERE "article_uuid" = $1;`
 
   ctx1, cancel = context.WithTimeout(ctx, 3*time.Second)
@@ -1944,14 +1951,14 @@ func (r *archiveRepository) Release(ctx context.Context, id string) error {
 
   _, err = tx.ExecContext(ctx1, removePatchQuery, id)
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return nil
   }
 
   defer tx.Rollback()
 
   if err = tx.Commit(); nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
 
@@ -1965,14 +1972,14 @@ func (r *archiveRepository) GetPatches(ctx context.Context) (patches []*model.Ar
          "slug",
          "topic",
          "content"
-    FROM "article_patch";`
+    FROM "archive"."article_patch";`
 
   ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
   defer cancel()
 
   result, err := r.db.QueryContext(ctx, getPatchesQuery)
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return nil, err
   }
 
@@ -1991,7 +1998,7 @@ func (r *archiveRepository) GetPatches(ctx context.Context) (patches []*model.Ar
       &patch.Content)
 
     if nil != err {
-      slog.Error(err.Error())
+      slog.Error(getErrMsg(err))
       return nil, err
     }
 
