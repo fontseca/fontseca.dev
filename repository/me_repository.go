@@ -24,12 +24,13 @@ type MeRepository interface {
 }
 
 type meRepositoryImpl struct {
-  db *sql.DB
+  cached *model.Me
+  db     *sql.DB
 }
 
 // NewMeRepository creates a new MeRepository instance associating db as its database.
 func NewMeRepository(db *sql.DB) MeRepository {
-  return &meRepositoryImpl{db}
+  return &meRepositoryImpl{nil, db}
 }
 
 func (r *meRepositoryImpl) registered(ctx context.Context) bool {
@@ -40,7 +41,7 @@ func (r *meRepositoryImpl) registered(ctx context.Context) bool {
     QueryRowContext(ctx, `SELECT count (1) FROM "me"."me";`).
     Scan(&exists)
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return false
   }
   return exists
@@ -69,11 +70,17 @@ func (r *meRepositoryImpl) Register(ctx context.Context) {
   _, err := r.db.ExecContext(ctx, registerMeQuery)
 
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
   }
+
+  r.cache(ctx)
 }
 
 func (r *meRepositoryImpl) Get(ctx context.Context) (me *model.Me, err error) {
+  if nil != r.cached {
+    return r.cached, nil
+  }
+
   getMeQuery := `
   SELECT "username",
          "first_name",
@@ -96,7 +103,7 @@ func (r *meRepositoryImpl) Get(ctx context.Context) (me *model.Me, err error) {
          "updated_at"
     FROM "me"."me";`
 
-  ctx, cancel := context.WithTimeout(ctx, time.Second)
+  ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
   defer cancel()
 
   me = new(model.Me)
@@ -122,10 +129,12 @@ func (r *meRepositoryImpl) Get(ctx context.Context) (me *model.Me, err error) {
     &me.UpdatedAt)
 
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return me, err
   }
 
+  slog.Info("caching 'me' object")
+  r.cached = me
   return me, nil
 }
 
@@ -151,7 +160,7 @@ func (r *meRepositoryImpl) Update(ctx context.Context, update *transfer.MeUpdate
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
 
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return false, err
   }
 
@@ -185,6 +194,8 @@ func (r *meRepositoryImpl) Update(ctx context.Context, update *transfer.MeUpdate
            "updated_at" = current_timestamp
      WHERE "username" = 'fontseca.dev';`
 
+  slog.Info("updating 'me' object")
+
   ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
   defer cancel()
 
@@ -204,7 +215,7 @@ func (r *meRepositoryImpl) Update(ctx context.Context, update *transfer.MeUpdate
     update.InstagramURL, current.InstagramURL)
 
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return false, err
   }
 
@@ -214,9 +225,16 @@ func (r *meRepositoryImpl) Update(ctx context.Context, update *transfer.MeUpdate
   }
 
   if err = tx.Commit(); nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return false, err
   }
 
+  r.cache(ctx)
+
   return true, nil
+}
+
+func (r *meRepositoryImpl) cache(ctx context.Context) {
+  r.cached = nil
+  r.cached, _ = r.Get(ctx)
 }
