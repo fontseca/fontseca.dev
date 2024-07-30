@@ -6,7 +6,6 @@ import (
   "errors"
   "fmt"
   "fontseca.dev/handler"
-  "fontseca.dev/problem"
   "fontseca.dev/repository"
   "fontseca.dev/service"
   "github.com/gin-gonic/gin"
