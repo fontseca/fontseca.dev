@@ -48,14 +48,9 @@ func NewWebHandler(
   }
 }
 
-func (h *WebHandler) NotFound(c *gin.Context) {
-  c.Status(http.StatusNotFound)
-  pages.NotFound().Render(c, c.Writer)
-}
-
 func (h *WebHandler) internal(c *gin.Context) {
   c.Status(http.StatusInternalServerError)
-  pages.Internal().Render(c, c.Writer)
+  http.Error(c.Writer, "500 Internal Server Error", http.StatusInternalServerError)
 }
 
 func (h *WebHandler) RenderMe(c *gin.Context) {
@@ -188,11 +183,11 @@ func (h *WebHandler) RenderArticle(c *gin.Context) {
     if nil != err {
       switch {
       default:
-        pages.Internal().Render(c, c.Writer)
+        http.Error(c.Writer, "500 Internal Server Error", http.StatusInternalServerError)
         return
       case strings.Contains(err.Error(), "has expired") ||
         strings.Contains(err.Error(), "might have been either removed or blocked."):
-        h.NotFound(c)
+        http.Error(c.Writer, "404 Not Found", http.StatusNotFound)
         return
       }
     }
@@ -219,7 +214,7 @@ func (h *WebHandler) RenderArticle(c *gin.Context) {
 
   if nil != err {
     if errors.Is(err, sql.ErrNoRows) {
-      h.NotFound(c)
+      http.Error(c.Writer, "404 Not Found", http.StatusNotFound)
       return
     } else {
       h.internal(c)

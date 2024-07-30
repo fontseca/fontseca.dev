@@ -285,24 +285,27 @@ func main() {
   engine.GET("/archive/:topic/:year/:month/:slug", web.RenderArticle)
   engine.GET("/archive/sharing/:hash", web.RenderArticle)
 
-  engine.NoRoute(web.NotFound)
+  engine.NoRoute(func(c *gin.Context) {
+    http.Error(c.Writer, "404 Not Found", http.StatusNotFound)
+  })
 
   engine.HandleMethodNotAllowed = true
   var routes = engine.Routes()
   engine.NoMethod(func(c *gin.Context) {
+    if "Bearer" != strings.Split(strings.TrimSpace(c.GetHeader("Authorization")), " ")[0] {
+      http.Error(c.Writer, "404 Not Found", http.StatusNotFound)
+      return
+    }
+
     var allowedMethods = make([]string, 0, 1)
     for _, route := range routes {
       if route.Path == c.Request.URL.Path {
         allowedMethods = append(allowedMethods, route.Method)
       }
     }
+
     c.Header("Allow", strings.Join(allowedMethods, ","))
-    var p problem.Problem
-    p.Status(http.StatusMethodNotAllowed)
-    p.Title("Unsupported HTTP method.")
-    p.Detail(fmt.Sprintf("The target resource doesn't support this method (%s). Check the 'Allow' header in the response for a list of supported methods.", c.Request.Method))
-    p.Instance(c.Request.URL.String())
-    p.Emit(c.Writer)
+    http.Error(c.Writer, "405 Not Allowed", http.StatusMethodNotAllowed)
   })
 
   var port = strings.TrimSpace(os.Getenv("PORT"))
