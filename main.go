@@ -6,6 +6,7 @@ import (
   "errors"
   "fmt"
   "fontseca.dev/handler"
+  "fontseca.dev/playground"
   "fontseca.dev/repository"
   "fontseca.dev/service"
   "github.com/gin-gonic/gin"
@@ -116,6 +117,7 @@ func main() {
   }))
 
   engine.Static("/public", "public")
+  engine.Static("/playground", "playground")
   engine.StaticFile("/favicon.ico", "public/icons/favicon.ico")
   engine.StaticFile("/photo.webp", "public/images/photo.webp")
 
@@ -283,6 +285,8 @@ func main() {
   engine.GET("/archive/tag/:tag", web.RenderArchive)
   engine.GET("/archive/:topic/:year/:month/:slug", web.RenderArticle)
   engine.GET("/archive/sharing/:hash", web.RenderArticle)
+  engine.POST("/playground.request", func(c *gin.Context) { playground.Scanner(c.Writer, c.Request) })
+  engine.GET("/playground", func(c *gin.Context) { playground.Renderer(c.Writer, c.Request) })
 
   engine.NoRoute(func(c *gin.Context) {
     http.Error(c.Writer, "404 Not Found", http.StatusNotFound)
