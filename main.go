@@ -332,9 +332,14 @@ func main() {
     Handler:        engine,
   }
 
-  slog.Info("running server",
-    slog.String("address", server.Addr),
-    slog.String("mode", mode))
+  addr := server.Addr
+  if nil == server.TLSConfig {
+    addr = "http://" + addr
+  }
+
+  slog.Info("server is listening for requests", slog.Group("server",
+    slog.String("address", addr),
+    slog.String("mode", mode)))
 
   var (
     didNotServe = make(chan struct{})
