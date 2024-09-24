@@ -6,6 +6,7 @@ import (
   "fontseca.dev/model"
   "fontseca.dev/transfer"
   "log/slog"
+  "sync"
   "time"
 )
 
@@ -26,11 +27,12 @@ type MeRepository interface {
 type meRepositoryImpl struct {
   cached *model.Me
   db     *sql.DB
+  mu     sync.RWMutex
 }
 
 // NewMeRepository creates a new MeRepository instance associating db as its database.
 func NewMeRepository(db *sql.DB) MeRepository {
-  return &meRepositoryImpl{nil, db}
+  return &meRepositoryImpl{nil, db, sync.RWMutex{}}
 }
 
 func (r *meRepositoryImpl) registered(ctx context.Context) bool {
@@ -77,9 +79,12 @@ func (r *meRepositoryImpl) Register(ctx context.Context) {
 }
 
 func (r *meRepositoryImpl) Get(ctx context.Context) (me *model.Me, err error) {
+  r.mu.RLock()
   if nil != r.cached {
+    r.mu.RUnlock()
     return r.cached, nil
   }
+  r.mu.RUnlock()
 
   getMeQuery := `
   SELECT "username",
@@ -133,8 +138,9 @@ func (r *meRepositoryImpl) Get(ctx context.Context) (me *model.Me, err error) {
     return me, err
   }
 
-  slog.Info("caching 'me' object")
+  r.mu.Lock()
   r.cached = me
+  r.mu.Unlock()
   return me, nil
 }
 
@@ -235,6 +241,8 @@ func (r *meRepositoryImpl) Update(ctx context.Context, update *transfer.MeUpdate
 }
 
 func (r *meRepositoryImpl) cache(ctx context.Context) {
+  r.mu.Lock()
+  defer r.mu.Unlock()
   r.cached = nil
   r.cached, _ = r.Get(ctx)
 }
