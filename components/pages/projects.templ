@@ -41,7 +41,7 @@ templ Projects(projects []*model.Project) {
                 <div class="buttons">
                   @ui.Button("See more details", false, "/work/"+project.Slug, nil, true)
                   if (project.Playable) {
-                    @ui.Button("Try it out in playground", true, "", nil)
+                    @ui.Button("Try it out in playground", true, project.PlaygroundURL, nil)
                   }
                 </div>
               </div>
