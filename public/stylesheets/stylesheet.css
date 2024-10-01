@@ -110,7 +110,7 @@ a:hover {
   text-align: center;
   vertical-align: middle;
   padding: .5rem;
-  background-color: white;
+  background-color: rgba(255, 255, 255, 0.5);
   color: black;
   cursor: pointer;
   border: 1px solid black;
@@ -235,6 +235,7 @@ a:hover {
 }
 
 .navigation-list {
+  align-items: center;
   display: flex;
   list-style: none;
 }
