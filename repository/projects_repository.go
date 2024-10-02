@@ -78,14 +78,14 @@ func (r *projectsRepository) Get(ctx context.Context, archived bool) (projects [
             p."finished",
             p."created_at",
             p."updated_at",
-            concat (tt."name")
+            string_agg (tt."name", ',')
        FROM "projects"."project" p
   LEFT JOIN "projects"."project_tag" ptt
          ON ptt."project_uuid" = p."uuid"
   LEFT JOIN "projects"."tag" tt
          ON tt."uuid" = ptt."technology_tag_uuid"
       WHERE p."archived" = $1
-   GROUP BY p."uuid", tt."name"
+   GROUP BY p."uuid"
    ORDER BY p."created_at" DESC;`
   ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
   defer cancel()
@@ -153,7 +153,7 @@ func (r *projectsRepository) doGetByID(ctx context.Context, id string, ignoreArc
             p."finished",
             p."created_at",
             p."updated_at",
-            concat (tt."name")
+            string_agg (tt."name", ',')
        FROM "projects"."project" p
   LEFT JOIN "projects"."project_tag" ptt
          ON ptt."project_uuid" = p."uuid"
@@ -161,7 +161,7 @@ func (r *projectsRepository) doGetByID(ctx context.Context, id string, ignoreArc
          ON tt."uuid" = ptt."technology_tag_uuid"
       WHERE p."uuid" = $1
         AND p."archived" = $2
-   GROUP BY p."uuid", tt."name";`
+   GROUP BY p."uuid";`
 
   ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
   defer cancel()
@@ -231,7 +231,7 @@ func (r *projectsRepository) GetBySlug(ctx context.Context, slug string) (projec
             p."finished",
             p."created_at",
             p."updated_at",
-            concat (tt."name")
+            string_agg (tt."name", ',')
        FROM "projects"."project" p
   LEFT JOIN "projects"."project_tag" ptt
          ON ptt."project_uuid" = p."uuid"
@@ -239,7 +239,7 @@ func (r *projectsRepository) GetBySlug(ctx context.Context, slug string) (projec
          ON tt."uuid" = ptt."technology_tag_uuid"
       WHERE p."archived" IS FALSE
         AND p."slug" = $1
-   GROUP BY p."uuid", tt."name"
+   GROUP BY p."uuid"
       LIMIT 1;`
   ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
   defer cancel()
