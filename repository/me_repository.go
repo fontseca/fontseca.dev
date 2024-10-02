@@ -242,7 +242,7 @@ func (r *meRepositoryImpl) Update(ctx context.Context, update *transfer.MeUpdate
 
 func (r *meRepositoryImpl) cache(ctx context.Context) {
   r.mu.Lock()
-  defer r.mu.Unlock()
   r.cached = nil
+  r.mu.Unlock()
   r.cached, _ = r.Get(ctx)
 }
