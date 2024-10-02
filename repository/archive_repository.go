@@ -14,6 +14,7 @@ import (
   "log/slog"
   "net/http"
   "net/url"
+  "os"
   "strconv"
   "strings"
   "sync"
@@ -733,20 +734,22 @@ func (r *archiveRepository) Get(ctx context.Context, filter *transfer.ArticleFil
 
   defer result.Close()
 
-  URLBase := ""
+  URLBase := "/"
 
-  value := ctx.Value(gin.ContextKey)
-  if nil != value {
-    c := value.(*gin.Context)
+  if gin.ReleaseMode == strings.TrimSpace(os.Getenv("SERVER_MODE")) {
+    value := ctx.Value(gin.ContextKey)
+    if nil != value {
+      c := value.(*gin.Context)
 
-    if nil != c {
-      schema := "http"
+      if nil != c {
+        schema := "http"
 
-      if nil != c.Request.TLS {
-        schema = "https"
+        if nil != c.Request.TLS {
+          schema = "https"
+        }
+
+        URLBase = schema + "://" + c.Request.Host
       }
-
-      URLBase = schema + "://" + c.Request.Host
     }
   }
 
