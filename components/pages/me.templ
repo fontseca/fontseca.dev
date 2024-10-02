@@ -12,7 +12,7 @@ templ Me(me *model.Me) {
 			<article class="info-article">
 				<p class="name">{ me.FirstName } <span>{ me.LastName }</span></p>
 				<p class="job-title">{! templ.Raw(me.JobTitle) }</p>
-				<div class="summary-container">{! templ.Raw(me.Summary) }</div>
+				<div class="summary-container">{! templ.Raw(md2html(me.Summary)) }</div>
 				<div class="contact-icons-container">
 					<p class="label">Find me on</p>
 
