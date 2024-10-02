@@ -1,5 +1,10 @@
 package ui
 
+import (
+  "fmt"
+  "net/url"
+)
+
 templ TitleHeader(value string, endpoint ...string) {
   <header class="title-header">
     <p class="title-header-text">
@@ -7,9 +12,9 @@ templ TitleHeader(value string, endpoint ...string) {
       if 0 != len(endpoint) {
         if "" != endpoint[0] {
           <a class="api-endpoint"
-             href={ templ.URL(endpoint[0]) }
+             href={ templ.URL(fmt.Sprint("/playground?target=",  url.QueryEscape(endpoint[0]))) }
              target="_blank"
-             title="See in JSON format">
+             title="Try out request in Playground">
             <i class="fa fa-external-link"></i>
           </a>
         } else {
