@@ -5,6 +5,8 @@ import (
   "fontseca.dev/components/layout"
   "fontseca.dev/components/ui"
   "strconv"
+  "fmt"
+  "net/url"
 )
 
 templ ProjectDetails(project *model.Project) {
@@ -24,9 +26,9 @@ templ ProjectDetails(project *model.Project) {
               <h1 class="name">
                 { project.Name }
                 <a class="api-endpoint"
-                   href={ templ.URL("/me.projects.info?project_uuid="+project.UUID.String()) }
+                   href={ templ.URL( fmt.Sprint("/playground?target=", url.QueryEscape("/me.projects.info?project_uuid=" + project.UUID.String()))) }
                    target="_blank"
-                   title="See in JSON format">
+                   title="Try out request in Playground">
                   <i class="fa fa-external-link"></i>
                 </a>
               </h1>
@@ -60,7 +62,7 @@ templ ProjectDetails(project *model.Project) {
               </div>
               if (project.Playable) {
                 <div style="margin-top: 1rem;">
-                  @ui.Button("Try it out in playground", true, "", nil)
+                  @ui.Button("Try it out in playground", true, project.PlaygroundURL, nil)
                 </div>
               }
             </div>
