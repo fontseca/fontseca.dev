@@ -710,7 +710,7 @@ func (r *archiveRepository) Get(ctx context.Context, filter *transfer.ArticleFil
         chunk = strings.ReplaceAll(chunk, "'", "''")
       }
 
-      query.WriteString("\nAND \"title\" LIKE '%" + chunk + "%'")
+      query.WriteString("\nAND lower(\"title\") LIKE '%" + strings.ToLower(chunk) + "%'")
     }
   }
 
