@@ -23,13 +23,17 @@ function searchArticles(e) {
 }
 
 function setArchiveTopic(e) {
-  document.getElementById("selected-topic").textContent = e.textContent;
-  document.getElementById("selected-date").textContent = "Any date";
+  document.querySelector("h3.topic-and-date").classList.remove("hide");
+  document.querySelector("div.selected-tag-div").classList.add("hide");
+  document.querySelector("span.selected-topic").textContent = e.textContent;
+  document.querySelector("span.selected-date").textContent = "Any date";
 
-  const topicsList = document.getElementById("topics-list").children;
-
-  for (const topicItem of topicsList) {
+  for (const topicItem of document.getElementById("topics-list").children) {
     topicItem.classList.remove("selected");
+  }
+
+  for (const tagItem of document.getElementById("tags-list").children) {
+    tagItem.classList.remove("selected");
   }
 
   const currentTopicItem = e.parentNode;
@@ -65,12 +69,16 @@ function setArchiveTopic(e) {
 }
 
 function setArchivePublicationDate(e) {
-  document.getElementById("selected-date").textContent = e.textContent;
+  document.querySelector("h3.topic-and-date").classList.remove("hide");
+  document.querySelector("div.selected-tag-div").classList.add("hide");
+  document.querySelector("span.selected-date").textContent = e.textContent;
 
-  const publicationsList = document.getElementById("publications-list").children;
-
-  for (const publicationItem of publicationsList) {
+  for (const publicationItem of document.getElementById("publications-list").children) {
     publicationItem.classList.remove("selected");
+  }
+
+  for (const tagItem of document.getElementById("tags-list").children) {
+    tagItem.classList.remove("selected");
   }
 
   const currentPublicationItem = e.parentNode;
@@ -85,6 +93,50 @@ function setArchivePublicationDate(e) {
   searchbar.setAttribute("hx-push-url", currentURL);
 
   window.history.replaceState({}, "", currentURL);
+
+  htmx.process(document.body);
+}
+
+function setArchiveTag(e) {
+  document.querySelector("h3.topic-and-date").classList.add("hide");
+  document.querySelector("div.selected-tag-div").classList.remove("hide");
+  document.querySelector(".selected-tag").textContent = e.textContent;
+
+  for (const topicItem of document.getElementById("topics-list").children) {
+    topicItem.classList.remove("selected");
+  }
+
+  for (const tagItem of document.getElementById("tags-list").children) {
+    tagItem.classList.remove("selected");
+  }
+
+  const currentTagItem = e.parentNode;
+  currentTagItem.classList.add("selected");
+
+  const baseTagURL = e.getAttribute("hx-get");
+
+  for (const publicationItem of document.getElementById("publications-list").children) {
+    publicationItem.classList.remove("selected");
+
+    let publicationURL = "/archive/any";
+    const anchor = publicationItem.firstChild;
+    const hxGetValue = anchor.getAttribute("hx-get").split("/");
+    const month = hxGetValue.at(-1);
+    const year = hxGetValue.at(-2);
+
+    publicationURL += "/" + year + "/" + month;
+    anchor.setAttribute("href", publicationURL);
+    anchor.setAttribute("hx-get", publicationURL);
+    anchor.setAttribute("hx-push-url", "true");
+  }
+
+  const searchbar = document.getElementById("searchbar");
+
+  searchbar.value = "";
+
+  searchbar.setAttribute("hx-get", baseTagURL);
+  searchbar.setAttribute("hx-push-url", baseTagURL);
+  window.history.replaceState({}, "", baseTagURL);
 
   htmx.process(document.body);
 }

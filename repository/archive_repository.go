@@ -672,7 +672,14 @@ func (r *archiveRepository) Get(ctx context.Context, filter *transfer.ArticleFil
          "topic",
          "pinned",
          "published_at"
-    FROM "archive"."article"
+    FROM "archive"."article" a`)
+
+  if "" != filter.Tag {
+    query.WriteString(`
+    INNER JOIN "archive"."article_tag" t ON t."article_uuid" = a."uuid"`)
+  }
+
+  query.WriteString(`
    WHERE "draft" = $1
      AND CASE WHEN $1 = TRUE
               THEN "published_at" IS NULL
@@ -688,6 +695,14 @@ func (r *archiveRepository) Get(ctx context.Context, filter *transfer.ArticleFil
                         "topic" = $5
                    ELSE TRUE END
                END`)
+
+  if "" != filter.Tag {
+    query.WriteString(`
+               AND t."tag_id" = $8`)
+  } else {
+    query.WriteString(`
+               AND length($8) >= 0`)
+  }
 
   if "" != filter.Search {
     for _, chunk := range strings.Fields(filter.Search) {
@@ -725,6 +740,7 @@ func (r *archiveRepository) Get(ctx context.Context, filter *transfer.ArticleFil
     filter.Topic,
     year,
     month,
+    filter.Tag,
   )
 
   if nil != err {

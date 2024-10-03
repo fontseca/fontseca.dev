@@ -46,6 +46,7 @@ type Publication struct {
 type ArticleFilter struct {
   Search      string
   Topic       string
+  Tag         string
   Publication *Publication
   Page        int
   RPP         int // records per page

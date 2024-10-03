@@ -11,6 +11,7 @@ import (
   "fontseca.dev/service"
   "fontseca.dev/transfer"
   "github.com/gin-gonic/gin"
+  "golang.org/x/sync/errgroup"
   "net/http"
   "slices"
   "strconv"
@@ -95,9 +96,11 @@ func (h *WebHandler) RenderArchive(c *gin.Context) {
     year, _               = strconv.Atoi(c.Param("year"))
     month, _              = strconv.Atoi(c.Param("month"))
     topic, includeTopic   = c.Params.Get("topic")
+    tag, filteringByTag   = c.Params.Get("tag")
     filter                = &transfer.ArticleFilter{
       Search:      strings.TrimSpace(search),
-      Topic:       topic,
+      Topic:       strings.TrimSpace(topic),
+      Tag:         strings.TrimSpace(tag),
       Publication: &transfer.Publication{Month: time.Month(month), Year: year},
       Page:        1,
       RPP:         10000,
@@ -108,52 +111,90 @@ func (h *WebHandler) RenderArchive(c *gin.Context) {
     filter.Topic = ""
   }
 
-  articles, err := h.articles.Get(c, filter)
+  group := errgroup.Group{}
 
-  if nil != err {
-    h.internal(c)
-    return
-  }
+  var (
+    articles     []*transfer.Article
+    publications []*transfer.Publication
+    topics       []*model.Topic
+    tags         []*model.Tag
+    err          error
+  )
 
-  publications, err := h.articles.Publications(c)
+  group.Go(func() error {
+    a, err := h.articles.Get(c, filter)
 
-  if nil != err {
-    h.internal(c)
-    return
-  }
+    if nil != err {
+      return err
+    }
 
-  topics, err := h.topics.Get(c)
+    articles = a
+    return nil
+  })
 
-  if nil != err {
+  group.Go(func() error {
+    p, err := h.articles.Publications(c)
+
+    if nil != err {
+      return err
+    }
+
+    publications = p
+    return nil
+  })
+
+  group.Go(func() error {
+    t, err := h.topics.Get(c)
+
+    if nil != err {
+      return err
+    }
+
+    topics = t
+    return nil
+  })
+
+  group.Go(func() error {
+    t, err := h.tags.Get(c)
+
+    if nil != err {
+      return err
+    }
+
+    tags = t
+    return nil
+  })
+
+  if err = group.Wait(); nil != err {
     h.internal(c)
     return
   }
 
   hxRequest, _ := strconv.ParseBool(c.GetHeader("HX-Request"))
 
-  if hxRequest && (includeSearch || includeTopic) {
+  if hxRequest && (includeSearch || includeTopic || filteringByTag) {
     ui.SearchResults(articles).Render(c, c.Writer)
     return
   }
 
   var (
-    i             = slices.IndexFunc(topics, func(t *model.Topic) bool { return t.ID == topic })
+    topicFoundAt  = slices.IndexFunc(topics, func(t *model.Topic) bool { return t.ID == topic })
     selectedTopic = anyTopicSentinel
   )
 
-  if -1 != i {
-    selectedTopic = topics[i]
+  if -1 != topicFoundAt {
+    selectedTopic = topics[topicFoundAt]
   } else {
     if "" != topic {
       selectedTopic.Name = "?"
     }
   }
 
-  tags, err := h.tags.Get(c)
+  tagFoundAt := slices.IndexFunc(tags, func(t *model.Tag) bool { return t.ID == tag })
+  selectedTag := (*model.Tag)(nil)
 
-  if nil != err {
-    h.internal(c)
-    return
+  if -1 != tagFoundAt {
+    selectedTag = tags[tagFoundAt]
   }
 
   pages.Archive(
@@ -164,6 +205,7 @@ func (h *WebHandler) RenderArchive(c *gin.Context) {
     filter.Search,
     filter.Publication,
     selectedTopic,
+    selectedTag,
   ).Render(c, c.Writer)
 }
 

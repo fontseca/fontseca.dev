@@ -4,6 +4,7 @@ import(
   "fontseca.dev/components/layout"
   "fontseca.dev/model"
   "strconv"
+  "fmt"
 )
 
 templ Article(article *model.Article) {
@@ -58,7 +59,9 @@ templ Article(article *model.Article) {
               <div class="tags-list">
                 for _, t := range article.Tags {
                   if nil != t {
-                    <span class="tag"> { t.Name } </span>
+                    <span class="tag">
+                      <a href={ templ.SafeURL(fmt.Sprint("/archive/tag/", t.ID)) }>{ t.Name }</a>
+                    </span>
                   }
                 }
               </div>

@@ -9,20 +9,20 @@ import (
   "fmt"
 )
 
-templ Archive(articles []*transfer.Article, publications []*transfer.Publication, topics []*model.Topic, tags []*model.Tag, search string, publication *transfer.Publication, topic *model.Topic) {
+templ Archive(articles []*transfer.Article, publications []*transfer.Publication, topics []*model.Topic, tags []*model.Tag, search string, publication *transfer.Publication, topic *model.Topic, tag *model.Tag) {
   @layout.Layout("archive", 3) {
     <section class="archive">
-      @ui.TitleHeader("archive", "/archive.articles.list")
+      @ui.TitleHeader("archive", "/archive.articles.list?page=1&rpp=5&search=")
       <section class="archive-content">
         <div class="archive-content-main">
           <section class="topic-and-search">
-            <h3>
-              <span class="selected-topic" id="selected-topic">
+            <h3 class={ "topic-and-date", templ.KV("hide", nil != tag) }>
+              <span class="selected-topic">
                 if nil != topic {
                   { topic.Name }
                 }
               </span>
-              <span id="selected-date">
+              <span class="selected-date">
                 if nil != publication && 0 != int(publication.Month) && 0 != publication.Year {
                   { publication.Month.String() } { strconv.Itoa(publication.Year) }
                 } else {
@@ -43,6 +43,14 @@ templ Archive(articles []*transfer.Article, publications []*transfer.Publication
                      hx-indicator=".articles-search-loader" />
               <span class="htmx-indicator articles-search-loader"></span>
             </label>
+            <div class={ "selected-tag-div", templ.KV("hide", nil == tag) }>
+              <span></span>
+              <span class="selected-tag">
+                if nil != tag {
+                  { tag.Name }
+                }
+              </span>
+            </div>
           </section>
           <section class="article-results" id="article-results">
             @ui.SearchResults(articles)
@@ -92,11 +100,12 @@ templ Archive(articles []*transfer.Article, publications []*transfer.Publication
             <header>
               <h3>Tags</h3>
             </header>
-            <div class="tags-list">
+            <div id="tags-list" class="tags-list">
               for _, t := range tags {
                 if nil != t {
                   <span class="tag">
                     <a href={ templ.SafeURL(fmt.Sprintf("/archive/tag/%s", t.ID)) }
+                       onclick="setArchiveTag(this)"
                        hx-get={ fmt.Sprintf("/archive/tag/%s", t.ID) }
                        hx-trigger="click"
                        hx-boost="true"
