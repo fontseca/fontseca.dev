@@ -48,103 +48,13 @@ import (
 // patch is a completely different object that points to an article.
 // Since an article can only have one patch at a time, by using the
 // article's UUID, you can access any patch it currently has.
-type ArchiveRepository interface {
-  // Draft starts the creation process of an article. It returns the
-  // UUID of the draft that was created.
-  //
-  // To draft an article, only its title is required, other fields
-  // are completely optional and can be added in an eventual revision.
-  Draft(ctx context.Context, creation *transfer.ArticleCreation) (id string, err error)
-
-  // Publish makes a draft publicly available.
-  //
-  // Invoking Publish on an already published article or a patch has
-  // no effect.
-  Publish(ctx context.Context, id string) error
-
-  // SetSlug changes the slug of a published article.
-  SetSlug(ctx context.Context, id, slug string) error
-
-  // Publications retrieves a list of distinct months during which articles have been published.
-  Publications(ctx context.Context) (publications []*transfer.Publication, err error)
-
-  // Get retrieves all the articles that are either hidden or not. If
-  // draftsOnly is true, then only retrieves all the ongoing drafts.
-  //
-  // If needle is a non-empty string, then Get behaves like a search
-  // function over non-hidden articles, so it attempts to find and
-  // amass every article whose title contains any of the keywords
-  // (if more than one) in needle.
-  Get(ctx context.Context, filter *transfer.ArticleFilter, hidden, draftsOnly bool) (articles []*transfer.Article, err error)
-
-  // GetOne retrieves one published article by the URL '/archive/:topic/:year/:month/:slug'.
-  GetOne(ctx context.Context, request *transfer.ArticleRequest) (article *model.Article, err error)
-
-  // GetByLink retrieves a draft by its shareable link.
-  GetByLink(ctx context.Context, link string) (article *model.Article, err error)
-
-  // GetByID retrieves one article (or article draft) by its UUID.
-  GetByID(ctx context.Context, id string, isDraft bool) (article *model.Article, err error)
-
-  // Amend starts the process to update an article. To amend the article,
-  // a public copy of it is kept available to everyone while a patch
-  // is created to store any revision made to the article.
-  //
-  // If the article is still a draft, or it's already being amended,
-  // any call to this method has no effect.
-  Amend(ctx context.Context, id string) error
-
-  // Remove completely removes an article and any patch it currently
-  // has from the database. If the article is a draft, calling Remove
-  // has no effect on it whatsoever.
-  //
-  // If you want to remove a draft, use Discard instead.
-  Remove(ctx context.Context, id string) error
-
-  // AddTag adds a tag to the article. If the tag already
-  // exists, it returns an error informing about a conflicting
-  // state.
-  AddTag(ctx context.Context, articleID, tagID string, isDraft ...bool) error
-
-  // RemoveTag removes a tag from the article. If the article has
-  // no tag identified by its UUID, it returns an error indication
-  // a not found state.
-  RemoveTag(ctx context.Context, articleID, tagID string, isDraft ...bool) error
-
-  // SetHidden hides or shows an article depending on the value of hidden.
-  SetHidden(ctx context.Context, id string, hidden bool) error
-
-  // SetPinned pins or unpins an article depending on the value of pinned.
-  SetPinned(ctx context.Context, id string, pinned bool) error
-
-  // Share creates a shareable link for a draft or a patch. Only users
-  // with that link can see the progress and provide feedback.
-  //
-  // A shareable link does not make an article public. This link will
-  // eventually expire after a certain amount of time.
-  Share(ctx context.Context, id string) (link string, err error)
-
-  // Discard completely drops a draft; otherwise if called on a patch
-  // it discards it but keeps the original article.
-  //
-  // This method has no effect on an article.
-  Discard(ctx context.Context, id string) error
-
-  // Revise adds a correction or inclusion to a draft or patch in order
-  // to correct or improve it.
-  Revise(ctx context.Context, id string, revision *transfer.ArticleRevision) error
-
-  // Release merges patch into the original article and published the
-  // update immediately after merging.
-  //
-  // This method works only for patches.
-  Release(ctx context.Context, id string) error
-
-  // GetPatches retrieves all the ongoing patches of every article.
-  GetPatches(ctx context.Context) (patches []*model.ArticlePatch, err error)
-
-  // Close forces all caches be written.
-  Close()
+type ArchiveRepository struct {
+  db                *sql.DB
+  publicationsCache []*transfer.Publication
+  articleViewsCache articleViewsCache
+  done              chan struct{}
+  mu                sync.RWMutex
+  cleanOnce         sync.Once // for cleaning broken links once per share
 }
 
 // visitor is the IP address of an article reader.
@@ -159,17 +69,8 @@ type entry struct {
 // articleViewsCache is the article views cache abstraction.
 type articleViewsCache map[string]*entry
 
-type archiveRepository struct {
-  db                *sql.DB
-  publicationsCache []*transfer.Publication
-  articleViewsCache articleViewsCache
-  done              chan struct{}
-  mu                sync.RWMutex
-  cleanOnce         sync.Once // for cleaning broken links once per share
-}
-
-func NewArchiveRepository(db *sql.DB) ArchiveRepository {
-  r := &archiveRepository{
+func NewArchiveRepository(db *sql.DB) *ArchiveRepository {
+  r := &ArchiveRepository{
     db:                db,
     publicationsCache: []*transfer.Publication{},
     articleViewsCache: articleViewsCache{},
@@ -182,7 +83,7 @@ func NewArchiveRepository(db *sql.DB) ArchiveRepository {
 }
 
 // cacheWriter is a goroutine that writes articles view cache every midnight.
-func (r *archiveRepository) cacheWriter() {
+func (r *ArchiveRepository) cacheWriter() {
   var (
     now           = time.Now()
     midnight      = time.Date(now.Year(), now.Month(), 1+now.Day(), 0, 0, 0, 0, now.Location())
@@ -213,14 +114,15 @@ func (r *archiveRepository) cacheWriter() {
   }
 }
 
-func (r *archiveRepository) Close() {
+// Close forces all caches be written.
+func (r *ArchiveRepository) Close() {
   close(r.done)
   r.writeViewsCache(context.TODO())
 }
 
 // closed checks if the repository has been closed, that is the
 // Close method was invoked.
-func (r *archiveRepository) closed() bool {
+func (r *ArchiveRepository) closed() bool {
   select {
   default:
     return false
@@ -231,7 +133,7 @@ func (r *archiveRepository) closed() bool {
 
 // writeViewsCache is a goroutine that writes the cached article views to the database;
 // it should be run every midnight.
-func (r *archiveRepository) writeViewsCache(ctx context.Context) {
+func (r *ArchiveRepository) writeViewsCache(ctx context.Context) {
   r.mu.RLock()
 
   if 0 == len(r.articleViewsCache) {
@@ -297,7 +199,7 @@ func (r *archiveRepository) writeViewsCache(ctx context.Context) {
 }
 
 // views returns the cached views of the given article.
-func (r *archiveRepository) views(article string) int64 {
+func (r *ArchiveRepository) views(article string) int64 {
   r.mu.RLock()
   defer r.mu.RUnlock()
 
@@ -315,7 +217,7 @@ func (r *archiveRepository) views(article string) int64 {
 const VisitorKey string = "visitor-ip"
 
 // incrementViews increments the views counter of the given article,
-func (r *archiveRepository) incrementViews(ctx context.Context, article string) {
+func (r *ArchiveRepository) incrementViews(ctx context.Context, article string) {
   r.mu.Lock()
   defer r.mu.Unlock()
 
@@ -355,7 +257,7 @@ func (r *archiveRepository) incrementViews(ctx context.Context, article string) 
 
 // cleanBrokenLinks is a goroutine that cleans up shareable links that
 // are no longer valid because have already expired.
-func (r *archiveRepository) cleanBrokenLinks() {
+func (r *ArchiveRepository) cleanBrokenLinks() {
   r.cleanOnce.Do(func() {
     ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
     defer cancel()
@@ -427,7 +329,12 @@ func (r *archiveRepository) cleanBrokenLinks() {
   })
 }
 
-func (r *archiveRepository) Draft(ctx context.Context, creation *transfer.ArticleCreation) (id string, err error) {
+// Draft starts the creation process of an article. It returns the
+// UUID of the draft that was created.
+//
+// To draft an article, only its title is required, other fields
+// are completely optional and can be added in an eventual revision.
+func (r *ArchiveRepository) Draft(ctx context.Context, creation *transfer.ArticleCreation) (id string, err error) {
   slog.Info("drafting new article", slog.String("title", creation.Title))
 
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
@@ -466,7 +373,11 @@ func (r *archiveRepository) Draft(ctx context.Context, creation *transfer.Articl
   return id, nil
 }
 
-func (r *archiveRepository) Publish(ctx context.Context, id string) error {
+// Publish makes a draft publicly available.
+//
+// Invoking Publish on an already published article or a patch has
+// no effect.
+func (r *ArchiveRepository) Publish(ctx context.Context, id string) error {
   isArticleDraftQuery := `
   SELECT "draft" IS TRUE
      AND "published_at" IS NULL
@@ -567,7 +478,8 @@ func (r *archiveRepository) Publish(ctx context.Context, id string) error {
   return nil
 }
 
-func (r *archiveRepository) SetSlug(ctx context.Context, id, slug string) error {
+// SetSlug changes the slug of a published article.
+func (r *ArchiveRepository) SetSlug(ctx context.Context, id, slug string) error {
   slog.Info("changing article slug", slog.String("article_uuid", id), slog.String("new_slug", slug))
 
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
@@ -608,12 +520,13 @@ func (r *archiveRepository) SetSlug(ctx context.Context, id, slug string) error 
   return nil
 }
 
-func (r *archiveRepository) setPublicationsCache(ctx context.Context) {
+func (r *ArchiveRepository) setPublicationsCache(ctx context.Context) {
   r.publicationsCache = nil
   r.publicationsCache, _ = r.Publications(ctx)
 }
 
-func (r *archiveRepository) Publications(ctx context.Context) (publications []*transfer.Publication, err error) {
+// Publications retrieves a list of distinct months during which articles have been published.
+func (r *ArchiveRepository) Publications(ctx context.Context) (publications []*transfer.Publication, err error) {
   if 0 < len(r.publicationsCache) {
     return r.publicationsCache, nil
   }
@@ -663,7 +576,14 @@ func (r *archiveRepository) Publications(ctx context.Context) (publications []*t
   return publications, nil
 }
 
-func (r *archiveRepository) Get(ctx context.Context, filter *transfer.ArticleFilter, hidden, draftsOnly bool) (articles []*transfer.Article, err error) {
+// Get retrieves all the articles that are either hidden or not. If
+// draftsOnly is true, then only retrieves all the ongoing drafts.
+//
+// If needle is a non-empty string, then Get behaves like a search
+// function over non-hidden articles, so it attempts to find and
+// amass every article whose title contains any of the keywords
+// (if more than one) in needle.
+func (r *ArchiveRepository) Get(ctx context.Context, filter *transfer.ArticleFilter, hidden, draftsOnly bool) (articles []*transfer.Article, err error) {
   query := strings.Builder{}
   query.WriteString(`
   SELECT "uuid",
@@ -847,7 +767,8 @@ func (r *archiveRepository) Get(ctx context.Context, filter *transfer.ArticleFil
   return articles, nil
 }
 
-func (r *archiveRepository) GetOne(ctx context.Context, request *transfer.ArticleRequest) (article *model.Article, err error) {
+// GetOne retrieves one published article by the URL '/archive/:topic/:year/:month/:slug'.
+func (r *ArchiveRepository) GetOne(ctx context.Context, request *transfer.ArticleRequest) (article *model.Article, err error) {
   requestArticleUUIDQuery := `
   SELECT "uuid"
     FROM "archive"."article"
@@ -898,7 +819,8 @@ func (r *archiveRepository) GetOne(ctx context.Context, request *transfer.Articl
   return r.GetByID(ctx, id, false)
 }
 
-func (r *archiveRepository) GetByLink(ctx context.Context, link string) (article *model.Article, err error) {
+// GetByLink retrieves a draft by its shareable link.
+func (r *ArchiveRepository) GetByLink(ctx context.Context, link string) (article *model.Article, err error) {
   getByLinkQuery := `
   SELECT "article_uuid",
          "expires_at"
@@ -957,7 +879,8 @@ func (r *archiveRepository) GetByLink(ctx context.Context, link string) (article
   return r.GetByID(ctx, id, true)
 }
 
-func (r *archiveRepository) GetByID(ctx context.Context, id string, isDraft bool) (article *model.Article, err error) {
+// GetByID retrieves one article (or article draft) by its UUID.
+func (r *ArchiveRepository) GetByID(ctx context.Context, id string, isDraft bool) (article *model.Article, err error) {
   getTagsQuery := `
      SELECT t."id",
             t."name",
@@ -1107,7 +1030,13 @@ func (r *archiveRepository) GetByID(ctx context.Context, id string, isDraft bool
   return article, nil
 }
 
-func (r *archiveRepository) Amend(ctx context.Context, id string) error {
+// Amend starts the process to update an article. To amend the article,
+// a public copy of it is kept available to everyone while a patch
+// is created to store any revision made to the article.
+//
+// If the article is still a draft, or it's already being amended,
+// any call to this method has no effect.
+func (r *ArchiveRepository) Amend(ctx context.Context, id string) error {
   articleExistsQuery := `
   SELECT "uuid"
     FROM "archive"."article"
@@ -1191,7 +1120,12 @@ func (r *archiveRepository) Amend(ctx context.Context, id string) error {
   return nil
 }
 
-func (r *archiveRepository) Remove(ctx context.Context, id string) error {
+// Remove completely removes an article and any patch it currently
+// has from the database. If the article is a draft, calling Remove
+// has no effect on it whatsoever.
+//
+// If you want to remove a draft, use Discard instead.
+func (r *ArchiveRepository) Remove(ctx context.Context, id string) error {
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelReadCommitted})
   if nil != err {
     slog.Error(getErrMsg(err))
@@ -1229,7 +1163,10 @@ func (r *archiveRepository) Remove(ctx context.Context, id string) error {
   return nil
 }
 
-func (r *archiveRepository) AddTag(ctx context.Context, articleID, tagID string, isDraft ...bool) error {
+// AddTag adds a tag to the article. If the tag already
+// exists, it returns an error informing about a conflicting
+// state.
+func (r *ArchiveRepository) AddTag(ctx context.Context, articleID, tagID string, isDraft ...bool) error {
   var isArticleDraft bool
 
   if 0 < len(isDraft) {
@@ -1384,7 +1321,10 @@ func (r *archiveRepository) AddTag(ctx context.Context, articleID, tagID string,
   return nil
 }
 
-func (r *archiveRepository) RemoveTag(ctx context.Context, articleID, tagID string, isDraft ...bool) error {
+// RemoveTag removes a tag from the article. If the article has
+// no tag identified by its UUID, it returns an error indication
+// a not found state.
+func (r *ArchiveRepository) RemoveTag(ctx context.Context, articleID, tagID string, isDraft ...bool) error {
   var isArticleDraft bool
 
   if 0 < len(isDraft) {
@@ -1492,7 +1432,8 @@ func (r *archiveRepository) RemoveTag(ctx context.Context, articleID, tagID stri
   return nil
 }
 
-func (r *archiveRepository) SetHidden(ctx context.Context, id string, hidden bool) error {
+// SetHidden hides or shows an article depending on the value of hidden.
+func (r *ArchiveRepository) SetHidden(ctx context.Context, id string, hidden bool) error {
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
   if nil != err {
     slog.Error(getErrMsg(err))
@@ -1532,7 +1473,8 @@ func (r *archiveRepository) SetHidden(ctx context.Context, id string, hidden boo
   return nil
 }
 
-func (r *archiveRepository) SetPinned(ctx context.Context, id string, pinned bool) error {
+// SetPinned pins or unpins an article depending on the value of pinned.
+func (r *ArchiveRepository) SetPinned(ctx context.Context, id string, pinned bool) error {
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
   if nil != err {
     slog.Error(getErrMsg(err))
@@ -1570,7 +1512,12 @@ func (r *archiveRepository) SetPinned(ctx context.Context, id string, pinned boo
   return nil
 }
 
-func (r *archiveRepository) Share(ctx context.Context, id string) (link string, err error) {
+// Share creates a shareable link for a draft or a patch. Only users
+// with that link can see the progress and provide feedback.
+//
+// A shareable link does not make an article public. This link will
+// eventually expire after a certain amount of time.
+func (r *ArchiveRepository) Share(ctx context.Context, id string) (link string, err error) {
   defer func() {
     if nil == err {
       r.mu.Lock()
@@ -1699,7 +1646,11 @@ func (r *archiveRepository) Share(ctx context.Context, id string) (link string, 
   return link, nil
 }
 
-func (r *archiveRepository) Discard(ctx context.Context, id string) error {
+// Discard completely drops a draft; otherwise if called on a patch
+// it discards it but keeps the original article.
+//
+// This method has no effect on an article.
+func (r *ArchiveRepository) Discard(ctx context.Context, id string) error {
   isArticlePatchQuery := `
   SELECT count(*)
     FROM "archive"."article_patch"
@@ -1768,7 +1719,9 @@ func (r *archiveRepository) Discard(ctx context.Context, id string) error {
   return nil
 }
 
-func (r *archiveRepository) Revise(ctx context.Context, id string, revision *transfer.ArticleRevision) error {
+// Revise adds a correction or inclusion to a draft or patch in order
+// to correct or improve it.
+func (r *ArchiveRepository) Revise(ctx context.Context, id string, revision *transfer.ArticleRevision) error {
   isArticlePatchQuery := `
   SELECT count(*)
     FROM "archive"."article_patch"
@@ -1881,7 +1834,11 @@ func (r *archiveRepository) Revise(ctx context.Context, id string, revision *tra
   return nil
 }
 
-func (r *archiveRepository) Release(ctx context.Context, id string) error {
+// Release merges patch into the original article and published the
+// update immediately after merging.
+//
+// This method works only for patches.
+func (r *ArchiveRepository) Release(ctx context.Context, id string) error {
   getPatchQuery := `
   SELECT "article_uuid",
          "title",
@@ -1984,7 +1941,8 @@ func (r *archiveRepository) Release(ctx context.Context, id string) error {
   return nil
 }
 
-func (r *archiveRepository) GetPatches(ctx context.Context) (patches []*model.ArticlePatch, err error) {
+// GetPatches retrieves all the ongoing patches of every article.
+func (r *ArchiveRepository) GetPatches(ctx context.Context) (patches []*model.ArticlePatch, err error) {
   getPatchesQuery := `
   SELECT "article_uuid",
          "title",
