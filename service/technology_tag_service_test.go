@@ -22,7 +22,7 @@ type technologyTagRepositoryMockAPI struct {
   called    bool
 }
 
-func (mock *technologyTagRepositoryMockAPI) Get(context.Context) ([]*model.TechnologyTag, error) {
+func (mock *technologyTagRepositoryMockAPI) List(context.Context) ([]*model.TechnologyTag, error) {
   return mock.returns[0].([]*model.TechnologyTag), mock.errors
 }
 
@@ -30,7 +30,7 @@ func TestTechnologyTagService_Get(t *testing.T) {
   t.Run("success", func(t *testing.T) {
     var r = &technologyTagRepositoryMockAPI{returns: []any{[]*model.TechnologyTag{}}}
     var ctx = context.Background()
-    res, err := NewTechnologyTagService(r).Get(ctx)
+    res, err := NewTechnologyTagService(r).List(ctx)
     assert.NotNil(t, res)
     assert.NoError(t, err)
   })
@@ -39,13 +39,13 @@ func TestTechnologyTagService_Get(t *testing.T) {
     var unexpected = errors.New("unexpected error")
     var r = &technologyTagRepositoryMockAPI{returns: []any{([]*model.TechnologyTag)(nil)}, errors: unexpected}
     var ctx = context.Background()
-    res, err := NewTechnologyTagService(r).Get(ctx)
+    res, err := NewTechnologyTagService(r).List(ctx)
     assert.Nil(t, res)
     assert.ErrorIs(t, err, unexpected)
   })
 }
 
-func (mock *technologyTagRepositoryMockAPI) Add(_ context.Context, t *transfer.TechnologyTagCreation) (string, error) {
+func (mock *technologyTagRepositoryMockAPI) Create(_ context.Context, t *transfer.TechnologyTagCreation) (string, error) {
   mock.called = true
 
   if nil != mock.t {
@@ -68,14 +68,14 @@ func TestTechnologyTagService_Add(t *testing.T) {
       returns:   []any{id},
       errors:    nil,
     }
-    res, err := NewTechnologyTagService(r).Add(ctx, dirty)
+    res, err := NewTechnologyTagService(r).Create(ctx, dirty)
     assert.Equal(t, id, res)
     assert.NoError(t, err)
   })
 
   t.Run("error on nil creation", func(t *testing.T) {
     var r = &technologyTagRepositoryMockAPI{}
-    res, err := NewTechnologyTagService(r).Add(ctx, nil)
+    res, err := NewTechnologyTagService(r).Create(ctx, nil)
     require.False(t, r.called)
     assert.ErrorContains(t, err, "nil value for parameter: creation")
     assert.Empty(t, res)
@@ -87,7 +87,7 @@ func TestTechnologyTagService_Add(t *testing.T) {
       returns: []any{""},
       errors:  unexpected,
     }
-    res, err := NewTechnologyTagService(r).Add(ctx, creation)
+    res, err := NewTechnologyTagService(r).Create(ctx, creation)
     assert.Empty(t, res)
     assert.ErrorIs(t, err, unexpected)
   })
@@ -96,7 +96,7 @@ func TestTechnologyTagService_Add(t *testing.T) {
     var p = problem.NewValidation([3]string{"name", "max", "64"})
     var r = &technologyTagRepositoryMockAPI{}
     creation.Name = strings.Repeat("x", 65)
-    res, err := NewTechnologyTagService(r).Add(ctx, creation)
+    res, err := NewTechnologyTagService(r).Create(ctx, creation)
     require.False(t, r.called)
     assert.ErrorAs(t, err, &p)
     assert.Empty(t, res)

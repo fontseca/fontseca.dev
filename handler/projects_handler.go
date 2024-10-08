@@ -10,17 +10,17 @@ import (
 )
 
 type projectsServiceAPI interface {
-  Get(ctx context.Context, archived ...bool) ([]*model.Project, error)
-  GetByID(ctx context.Context, projectID string) (*model.Project, error)
+  List(ctx context.Context, archived ...bool) ([]*model.Project, error)
+  Get(ctx context.Context, projectID string) (*model.Project, error)
   GetBySlug(ctx context.Context, projectID string) (*model.Project, error)
-  Add(ctx context.Context, creation *transfer.ProjectCreation) (string, error)
+  Create(ctx context.Context, creation *transfer.ProjectCreation) (string, error)
   Exists(ctx context.Context, projectID string) error
   Update(ctx context.Context, projectID string, update *transfer.ProjectUpdate) (bool, error)
   Unarchive(ctx context.Context, projectID string) (bool, error)
   Remove(ctx context.Context, projectID string) error
-  ContainsTechnologyTag(ctx context.Context, projectID, tagID string) (bool, error)
-  AddTechnologyTag(ctx context.Context, projectID, tagID string) (bool, error)
-  RemoveTechnologyTag(ctx context.Context, projectID, tagID string) (bool, error)
+  HasTag(ctx context.Context, projectID, tagID string) (bool, error)
+  AddTag(ctx context.Context, projectID, tagID string) (bool, error)
+  RemoveTag(ctx context.Context, projectID, tagID string) (bool, error)
 }
 
 type ProjectsHandler struct {
@@ -33,32 +33,32 @@ func NewProjectsHandler(service projectsServiceAPI) *ProjectsHandler {
   }
 }
 
+func (h *ProjectsHandler) List(c *gin.Context) {
+  var projects, err = h.s.List(c)
+  if check(err, c.Writer) {
+    return
+  }
+  c.JSON(http.StatusOK, projects)
+}
+
+func (h *ProjectsHandler) ListArchived(c *gin.Context) {
+  var projects, err = h.s.List(c, true)
+  if check(err, c.Writer) {
+    return
+  }
+  c.JSON(http.StatusOK, projects)
+}
+
 func (h *ProjectsHandler) Get(c *gin.Context) {
-  var projects, err = h.s.Get(c)
-  if check(err, c.Writer) {
-    return
-  }
-  c.JSON(http.StatusOK, projects)
-}
-
-func (h *ProjectsHandler) GetArchived(c *gin.Context) {
-  var projects, err = h.s.Get(c, true)
-  if check(err, c.Writer) {
-    return
-  }
-  c.JSON(http.StatusOK, projects)
-}
-
-func (h *ProjectsHandler) GetByID(c *gin.Context) {
   var id = c.Query("project_uuid")
-  var project, err = h.s.GetByID(c, id)
+  var project, err = h.s.Get(c, id)
   if check(err, c.Writer) {
     return
   }
   c.JSON(http.StatusOK, project)
 }
 
-func (h *ProjectsHandler) Add(c *gin.Context) {
+func (h *ProjectsHandler) Create(c *gin.Context) {
   var creation = transfer.ProjectCreation{}
   if err := bindPostForm(c, &creation); check(err, c.Writer) {
     return
@@ -66,7 +66,7 @@ func (h *ProjectsHandler) Add(c *gin.Context) {
   if err := validateStruct(&creation); check(err, c.Writer) {
     return
   }
-  var insertedID, err = h.s.Add(c, &creation)
+  var insertedID, err = h.s.Create(c, &creation)
   if check(err, c.Writer) {
     return
   }
@@ -240,7 +240,7 @@ func (h *ProjectsHandler) Remove(c *gin.Context) {
   c.Status(http.StatusNoContent)
 }
 
-func (h *ProjectsHandler) AddTechnologyTag(c *gin.Context) {
+func (h *ProjectsHandler) AddTag(c *gin.Context) {
   var projectID, success = c.GetPostForm("project_uuid")
   if !success {
     problem.NewMissingParameter("project_uuid").Emit(c.Writer)
@@ -251,7 +251,7 @@ func (h *ProjectsHandler) AddTechnologyTag(c *gin.Context) {
     problem.NewMissingParameter("technology_id").Emit(c.Writer)
     return
   }
-  var added, err = h.s.AddTechnologyTag(c, projectID, technologyTagID)
+  var added, err = h.s.AddTag(c, projectID, technologyTagID)
   if check(err, c.Writer) {
     return
   }
@@ -262,7 +262,7 @@ func (h *ProjectsHandler) AddTechnologyTag(c *gin.Context) {
   }
 }
 
-func (h *ProjectsHandler) RemoveTechnologyTag(c *gin.Context) {
+func (h *ProjectsHandler) RemoveTag(c *gin.Context) {
   var projectID, success = c.GetPostForm("project_uuid")
   if !success {
     problem.NewMissingParameter("project_uuid").Emit(c.Writer)
@@ -273,7 +273,7 @@ func (h *ProjectsHandler) RemoveTechnologyTag(c *gin.Context) {
     problem.NewMissingParameter("technology_id").Emit(c.Writer)
     return
   }
-  var removed, err = h.s.RemoveTechnologyTag(c, projectID, technologyTagID)
+  var removed, err = h.s.RemoveTag(c, projectID, technologyTagID)
   if check(err, c.Writer) {
     return
   }

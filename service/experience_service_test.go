@@ -20,7 +20,7 @@ type experienceRepositoryMockAPI struct {
   called  bool
 }
 
-func (mock *experienceRepositoryMockAPI) Get(_ context.Context, _ bool) ([]*model.Experience, error) {
+func (mock *experienceRepositoryMockAPI) List(context.Context, bool) ([]*model.Experience, error) {
   return mock.returns[0].([]*model.Experience), mock.errors
 }
 
@@ -30,15 +30,15 @@ func TestExperienceService_Get(t *testing.T) {
     var exp = make([]*model.Experience, 0)
     var r = &experienceRepositoryMockAPI{returns: []any{exp}}
 
-    res, err := NewExperienceService(r).Get(ctx, true)
+    res, err := NewExperienceService(r).List(ctx, true)
     assert.NotNil(t, res)
     assert.NoError(t, err)
 
-    res, err = NewExperienceService(r).Get(ctx, false)
+    res, err = NewExperienceService(r).List(ctx, false)
     assert.NotNil(t, res)
     assert.NoError(t, err)
 
-    res, err = NewExperienceService(r).Get(ctx)
+    res, err = NewExperienceService(r).List(ctx)
     assert.NotNil(t, res)
     assert.NoError(t, err)
   })
@@ -47,13 +47,13 @@ func TestExperienceService_Get(t *testing.T) {
     var unexpected = errors.New("unexpected error")
     var ctx = context.Background()
     var r = &experienceRepositoryMockAPI{returns: []any{[]*model.Experience(nil)}, errors: unexpected}
-    res, err := NewExperienceService(r).Get(ctx)
+    res, err := NewExperienceService(r).List(ctx)
     assert.Nil(t, res)
     assert.ErrorIs(t, err, unexpected)
   })
 }
 
-func (mock *experienceRepositoryMockAPI) GetByID(_ context.Context, _ string) (*model.Experience, error) {
+func (mock *experienceRepositoryMockAPI) Get(context.Context, string) (*model.Experience, error) {
   return mock.returns[0].(*model.Experience), mock.errors
 }
 
@@ -63,7 +63,7 @@ func TestExperienceService_GetByID(t *testing.T) {
   t.Run("success", func(t *testing.T) {
     var r = &experienceRepositoryMockAPI{returns: []any{new(model.Experience)}}
     var ctx = context.Background()
-    res, err := NewExperienceService(r).GetByID(ctx, id)
+    res, err := NewExperienceService(r).Get(ctx, id)
     assert.NotNil(t, res)
     assert.NoError(t, err)
   })
@@ -72,13 +72,13 @@ func TestExperienceService_GetByID(t *testing.T) {
     var unexpected = errors.New("unexpected error")
     var r = &experienceRepositoryMockAPI{returns: []any{(*model.Experience)(nil)}, errors: unexpected}
     var ctx = context.Background()
-    res, err := NewExperienceService(r).GetByID(ctx, id)
+    res, err := NewExperienceService(r).Get(ctx, id)
     assert.Nil(t, res)
     assert.ErrorIs(t, err, unexpected)
   })
 }
 
-func (mock *experienceRepositoryMockAPI) Save(_ context.Context, _ *transfer.ExperienceCreation) (bool, error) {
+func (mock *experienceRepositoryMockAPI) Create(context.Context, *transfer.ExperienceCreation) (bool, error) {
   return mock.returns[0].(bool), mock.errors
 }
 
@@ -103,14 +103,14 @@ func TestExperienceService_Save(t *testing.T) {
       Summary:  " \n\t " + expected.Summary + " \n\t ",
     }
     var ctx = context.Background()
-    res, err := NewExperienceService(r).Save(ctx, &dirty)
+    res, err := NewExperienceService(r).Create(ctx, &dirty)
     assert.NoError(t, err)
     assert.True(t, res)
   })
 
   t.Run("error on nil creation", func(t *testing.T) {
     var ctx = context.Background()
-    res, err := NewExperienceService(r).Save(ctx, nil)
+    res, err := NewExperienceService(r).Create(ctx, nil)
     require.False(t, r.called)
     assert.ErrorContains(t, err, "nil value for parameter: creation")
     assert.False(t, res)
@@ -123,7 +123,7 @@ func TestExperienceService_Save(t *testing.T) {
       t.Run("fails:creation.Starts=2016", func(t *testing.T) {
         creation.Starts = 2016
         var ctx = context.Background()
-        res, err := NewExperienceService(r).Save(ctx, &creation)
+        res, err := NewExperienceService(r).Create(ctx, &creation)
         assert.ErrorContains(t, err, "The provided data does not meet the required validation criteria")
         assert.False(t, res)
       })
@@ -131,7 +131,7 @@ func TestExperienceService_Save(t *testing.T) {
       t.Run("meets:creation.Starts=2020", func(t *testing.T) {
         creation.Starts = 2020
         var ctx = context.Background()
-        res, err := NewExperienceService(r).Save(ctx, &creation)
+        res, err := NewExperienceService(r).Create(ctx, &creation)
         assert.NoError(t, err)
         assert.True(t, res)
       })
@@ -140,7 +140,7 @@ func TestExperienceService_Save(t *testing.T) {
         creation.Starts = time.Now().Year()
         creation.Ends = creation.Starts
         var ctx = context.Background()
-        res, err := NewExperienceService(r).Save(ctx, &creation)
+        res, err := NewExperienceService(r).Create(ctx, &creation)
         assert.NoError(t, err)
         assert.True(t, res)
       })
@@ -148,7 +148,7 @@ func TestExperienceService_Save(t *testing.T) {
       t.Run("fails:creation.Starts=1+current_year", func(t *testing.T) {
         creation.Starts = 1 + time.Now().Year()
         var ctx = context.Background()
-        res, err := NewExperienceService(r).Save(ctx, &creation)
+        res, err := NewExperienceService(r).Create(ctx, &creation)
         assert.ErrorContains(t, err, "The provided data does not meet the required validation criteria")
         assert.False(t, res)
       })
@@ -162,7 +162,7 @@ func TestExperienceService_Save(t *testing.T) {
       t.Run("fails:creation.Ends=2016", func(t *testing.T) {
         creation.Ends = 2016
         var ctx = context.Background()
-        res, err := NewExperienceService(r).Save(ctx, &creation)
+        res, err := NewExperienceService(r).Create(ctx, &creation)
         assert.ErrorContains(t, err, "The provided data does not meet the required validation criteria")
         assert.False(t, res)
       })
@@ -171,7 +171,7 @@ func TestExperienceService_Save(t *testing.T) {
         creation.Ends = creation.Starts
         var ctx = context.Background()
 
-        res, err := NewExperienceService(r).Save(ctx, &creation)
+        res, err := NewExperienceService(r).Create(ctx, &creation)
         assert.NoError(t, err)
         assert.True(t, res)
       })
@@ -179,7 +179,7 @@ func TestExperienceService_Save(t *testing.T) {
       t.Run("meets:creation.Ends=1+creation.Starts", func(t *testing.T) {
         creation.Ends = 1 + creation.Starts
         var ctx = context.Background()
-        res, err := NewExperienceService(r).Save(ctx, &creation)
+        res, err := NewExperienceService(r).Create(ctx, &creation)
         assert.NoError(t, err)
         assert.True(t, res)
       })
@@ -187,7 +187,7 @@ func TestExperienceService_Save(t *testing.T) {
       t.Run("meets:creation.Ends=current_year", func(t *testing.T) {
         creation.Ends = time.Now().Year()
         var ctx = context.Background()
-        res, err := NewExperienceService(r).Save(ctx, &creation)
+        res, err := NewExperienceService(r).Create(ctx, &creation)
         assert.NoError(t, err)
         assert.True(t, res)
       })
@@ -195,7 +195,7 @@ func TestExperienceService_Save(t *testing.T) {
       t.Run("fails:creation.Ends=1+current_year", func(t *testing.T) {
         creation.Ends = 1 + time.Now().Year()
         var ctx = context.Background()
-        res, err := NewExperienceService(r).Save(ctx, &creation)
+        res, err := NewExperienceService(r).Create(ctx, &creation)
         assert.ErrorContains(t, err, "The provided data does not meet the required validation criteria")
         assert.False(t, res)
       })
@@ -206,13 +206,13 @@ func TestExperienceService_Save(t *testing.T) {
     var unexpected = errors.New("unexpected error")
     var r = &experienceRepositoryMockAPI{returns: []any{false}, errors: unexpected}
     var ctx = context.Background()
-    res, err := NewExperienceService(r).Save(ctx, new(transfer.ExperienceCreation))
+    res, err := NewExperienceService(r).Create(ctx, new(transfer.ExperienceCreation))
     assert.False(t, res)
     assert.ErrorIs(t, err, unexpected)
   })
 }
 
-func (mock *experienceRepositoryMockAPI) Update(_ context.Context, _ string, _ *transfer.ExperienceUpdate) (bool, error) {
+func (mock *experienceRepositoryMockAPI) Update(context.Context, string, *transfer.ExperienceUpdate) (bool, error) {
   return mock.returns[0].(bool), mock.errors
 }
 
@@ -337,7 +337,7 @@ func TestExperienceService_Update(t *testing.T) {
   })
 }
 
-func (mock *experienceRepositoryMockAPI) Remove(_ context.Context, _ string) error {
+func (mock *experienceRepositoryMockAPI) Remove(context.Context, string) error {
   return mock.errors
 }
 

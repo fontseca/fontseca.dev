@@ -10,7 +10,7 @@ import (
 )
 
 type patchesServiceAPI interface {
-  Get(ctx context.Context) (patches []*model.ArticlePatch, err error)
+  List(ctx context.Context) (patches []*model.ArticlePatch, err error)
   Revise(ctx context.Context, patchID string, revision *transfer.ArticleRevision) error
   Share(ctx context.Context, patchID string) (link string, err error)
   Discard(ctx context.Context, patchID string) error
@@ -25,8 +25,8 @@ func NewPatchesHandler(patches patchesServiceAPI) *PatchesHandler {
   return &PatchesHandler{patches}
 }
 
-func (h *PatchesHandler) Get(c *gin.Context) {
-  patches, err := h.patches.Get(c)
+func (h *PatchesHandler) List(c *gin.Context) {
+  patches, err := h.patches.List(c)
 
   if check(err, c.Writer) {
     return

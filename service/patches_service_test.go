@@ -21,7 +21,7 @@ type archiveRepositoryMockAPIForPatches struct {
   called    bool
 }
 
-func (mock *archiveRepositoryMockAPIForPatches) GetPatches(context.Context) ([]*model.ArticlePatch, error) {
+func (mock *archiveRepositoryMockAPIForPatches) ListPatches(context.Context) ([]*model.ArticlePatch, error) {
   return mock.returns[0].([]*model.ArticlePatch), mock.errors
 }
 
@@ -33,7 +33,7 @@ func TestPatchesService_Get(t *testing.T) {
 
     r := &archiveRepositoryMockAPIForPatches{returns: []any{expectedPatches}}
 
-    articles, err := NewPatchesService(r).Get(ctx)
+    articles, err := NewPatchesService(r).List(ctx)
 
     assert.Equal(t, expectedPatches, articles)
     assert.NoError(t, err)
@@ -44,7 +44,7 @@ func TestPatchesService_Get(t *testing.T) {
 
     r := &archiveRepositoryMockAPIForPatches{returns: []any{[]*model.ArticlePatch(nil)}, errors: unexpected}
 
-    articles, err := NewPatchesService(r).Get(ctx)
+    articles, err := NewPatchesService(r).List(ctx)
 
     assert.Nil(t, articles)
     assert.ErrorIs(t, err, unexpected)

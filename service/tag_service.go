@@ -10,8 +10,8 @@ import (
 )
 
 type tagsRepositoryAPI interface {
-  Add(context.Context, *transfer.TagCreation) error
-  Get(context.Context) ([]*model.Tag, error)
+  Create(context.Context, *transfer.TagCreation) error
+  List(context.Context) ([]*model.Tag, error)
   Update(context.Context, string, *transfer.TagUpdate) error
   Remove(context.Context, string) error
 }
@@ -29,8 +29,8 @@ func NewTagsService(r tagsRepositoryAPI) *TagsService {
   }
 }
 
-// Add adds a new tag.
-func (s *TagsService) Add(ctx context.Context, creation *transfer.TagCreation) error {
+// Create adds a new tag.
+func (s *TagsService) Create(ctx context.Context, creation *transfer.TagCreation) error {
   if nil == creation {
     err := errors.New("nil value for parameter: creation")
     slog.Error(err.Error())
@@ -41,7 +41,7 @@ func (s *TagsService) Add(ctx context.Context, creation *transfer.TagCreation) e
   sanitizeTextWordIntersections(&creation.Name)
   creation.ID = toKebabCase(creation.Name)
 
-  err := s.r.Add(ctx, creation)
+  err := s.r.Create(ctx, creation)
 
   if nil != err {
     return err
@@ -52,13 +52,13 @@ func (s *TagsService) Add(ctx context.Context, creation *transfer.TagCreation) e
   return nil
 }
 
-// Get retrieves all the tags.
-func (s *TagsService) Get(ctx context.Context) (tags []*model.Tag, err error) {
+// List retrieves all the tags.
+func (s *TagsService) List(ctx context.Context) (tags []*model.Tag, err error) {
   if s.hasCache() {
     return s.cache, nil
   }
 
-  tags, err = s.r.Get(ctx)
+  tags, err = s.r.List(ctx)
 
   if nil != err {
     return nil, err
@@ -108,7 +108,7 @@ func (s *TagsService) Remove(ctx context.Context, id string) error {
 
 func (s *TagsService) setCache(ctx context.Context) {
   s.cache = nil
-  s.cache, _ = s.Get(ctx)
+  s.cache, _ = s.List(ctx)
 }
 
 func (s *TagsService) hasCache() bool {

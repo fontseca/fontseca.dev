@@ -19,7 +19,7 @@ import (
 )
 
 type WebHandler struct {
-  meService  meServiceAPI
+  me         meServiceAPI
   experience experienceServiceAPI
   projects   projectsServiceAPI
   drafts     draftsServiceAPI
@@ -38,7 +38,7 @@ func NewWebHandler(
   tags tagsServiceAPI,
 ) *WebHandler {
   return &WebHandler{
-    meService:  meService,
+    me:         meService,
     experience: experience,
     projects:   projects,
     drafts:     drafts,
@@ -54,7 +54,7 @@ func (h *WebHandler) internal(c *gin.Context) {
 }
 
 func (h *WebHandler) RenderMe(c *gin.Context) {
-  me, err := h.meService.Get(c)
+  me, err := h.me.Get(c)
   if nil != err {
     return
   }
@@ -62,7 +62,7 @@ func (h *WebHandler) RenderMe(c *gin.Context) {
 }
 
 func (h *WebHandler) RenderExperience(c *gin.Context) {
-  var exp, err = h.experience.Get(c)
+  var exp, err = h.experience.List(c)
   if nil != err {
     return
   }
@@ -70,7 +70,7 @@ func (h *WebHandler) RenderExperience(c *gin.Context) {
 }
 
 func (h *WebHandler) RenderProjects(c *gin.Context) {
-  var projects, err = h.projects.Get(c, false)
+  var projects, err = h.projects.List(c, false)
   if nil != err {
     return
   }
@@ -121,7 +121,7 @@ func (h *WebHandler) RenderArchive(c *gin.Context) {
   )
 
   group.Go(func() error {
-    a, err := h.articles.Get(c, filter)
+    a, err := h.articles.List(c, filter)
 
     if nil != err {
       return err
@@ -143,7 +143,7 @@ func (h *WebHandler) RenderArchive(c *gin.Context) {
   })
 
   group.Go(func() error {
-    t, err := h.topics.Get(c)
+    t, err := h.topics.List(c)
 
     if nil != err {
       return err
@@ -154,7 +154,7 @@ func (h *WebHandler) RenderArchive(c *gin.Context) {
   })
 
   group.Go(func() error {
-    t, err := h.tags.Get(c)
+    t, err := h.tags.List(c)
 
     if nil != err {
       return err
@@ -251,7 +251,7 @@ func (h *WebHandler) RenderArticle(c *gin.Context) {
     Slug: slug,
   }
 
-  article, err := h.articles.GetOne(c.Request.Context(), r)
+  article, err := h.articles.Get(c.Request.Context(), r)
 
   if nil != err {
     if errors.Is(err, sql.ErrNoRows) {

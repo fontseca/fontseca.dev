@@ -24,7 +24,7 @@ type experienceServiceMockAPI struct {
   called  bool
 }
 
-func (mock *experienceServiceMockAPI) Get(context.Context, ...bool) (experience []*model.Experience, err error) {
+func (mock *experienceServiceMockAPI) List(context.Context, ...bool) (experience []*model.Experience, err error) {
   return mock.returns[0].([]*model.Experience), mock.errors
 }
 
@@ -37,7 +37,7 @@ func TestExperienceHandler_Get(t *testing.T) {
     var s = &experienceServiceMockAPI{returns: []any{e}}
     gin.SetMode(gin.ReleaseMode)
     var engine = gin.Default()
-    engine.GET(target, NewExperienceHandler(s).Get)
+    engine.GET(target, NewExperienceHandler(s).List)
     var request = httptest.NewRequest(method, target, nil)
     var recorder = httptest.NewRecorder()
     engine.ServeHTTP(recorder, request)
@@ -55,7 +55,7 @@ func TestExperienceHandler_GetHidden(t *testing.T) {
     var s = &experienceServiceMockAPI{returns: []any{e}}
     gin.SetMode(gin.ReleaseMode)
     var engine = gin.Default()
-    engine.GET(target, NewExperienceHandler(s).GetHidden)
+    engine.GET(target, NewExperienceHandler(s).ListHidden)
     var request = httptest.NewRequest(method, target, nil)
     var recorder = httptest.NewRecorder()
     engine.ServeHTTP(recorder, request)
@@ -64,7 +64,7 @@ func TestExperienceHandler_GetHidden(t *testing.T) {
   })
 }
 
-func (mock *experienceServiceMockAPI) GetByID(context.Context, string) (*model.Experience, error) {
+func (mock *experienceServiceMockAPI) Get(context.Context, string) (*model.Experience, error) {
   return mock.returns[0].(*model.Experience), mock.errors
 }
 
@@ -91,7 +91,7 @@ func TestExperienceHandler_GetByID(t *testing.T) {
     var s = &experienceServiceMockAPI{returns: []any{e}}
     gin.SetMode(gin.ReleaseMode)
     var engine = gin.Default()
-    engine.GET(target, NewExperienceHandler(s).GetByID)
+    engine.GET(target, NewExperienceHandler(s).Get)
     var request = httptest.NewRequest(method, target, nil)
     var query = url.Values{}
     query.Add("experience_uuid", id)
@@ -103,7 +103,7 @@ func TestExperienceHandler_GetByID(t *testing.T) {
   })
 }
 
-func (mock *experienceServiceMockAPI) Save(context.Context, *transfer.ExperienceCreation) (bool, error) {
+func (mock *experienceServiceMockAPI) Create(context.Context, *transfer.ExperienceCreation) (bool, error) {
   return mock.returns[0].(bool), mock.errors
 }
 
@@ -123,7 +123,7 @@ func TestExperienceHandler_Add(t *testing.T) {
   t.Run("success", func(t *testing.T) {
     var s = &experienceServiceMockAPI{returns: []any{true}}
     var engine = gin.Default()
-    engine.POST(target, NewExperienceHandler(s).Add)
+    engine.POST(target, NewExperienceHandler(s).Create)
     var recorder = httptest.NewRecorder()
     engine.ServeHTTP(recorder, request)
     assert.Equal(t, http.StatusCreated, recorder.Code)
@@ -136,7 +136,7 @@ func TestExperienceHandler_Add(t *testing.T) {
     expected.Detail("Expected problem detail.")
     var s = &experienceServiceMockAPI{returns: []any{false}, errors: expected}
     var engine = gin.Default()
-    engine.POST(target, NewExperienceHandler(s).Add)
+    engine.POST(target, NewExperienceHandler(s).Create)
     var recorder = httptest.NewRecorder()
     engine.ServeHTTP(recorder, request)
     assert.Equal(t, http.StatusGone, recorder.Code)
@@ -147,7 +147,7 @@ func TestExperienceHandler_Add(t *testing.T) {
     var unexpected = errors.New("unexpected error")
     var s = &experienceServiceMockAPI{returns: []any{false}, errors: unexpected}
     var engine = gin.Default()
-    engine.POST(target, NewExperienceHandler(s).Add)
+    engine.POST(target, NewExperienceHandler(s).Create)
     var recorder = httptest.NewRecorder()
     engine.ServeHTTP(recorder, request)
     assert.Equal(t, http.StatusInternalServerError, recorder.Code)

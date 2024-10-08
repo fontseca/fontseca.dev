@@ -11,7 +11,7 @@ import (
 )
 
 type archiveRepositoryAPIForPatches interface {
-  GetPatches(ctx context.Context) (patches []*model.ArticlePatch, err error)
+  ListPatches(ctx context.Context) (patches []*model.ArticlePatch, err error)
   Revise(ctx context.Context, patchID string, revision *transfer.ArticleRevision) error
   Share(ctx context.Context, patchID string) (link string, err error)
   Discard(ctx context.Context, patchID string) error
@@ -27,9 +27,9 @@ func NewPatchesService(r archiveRepositoryAPIForPatches) *PatchesService {
   return &PatchesService{r}
 }
 
-// Get retrieves all the ongoing article patches.
-func (s *PatchesService) Get(ctx context.Context) (patches []*model.ArticlePatch, err error) {
-  return s.r.GetPatches(ctx)
+// List retrieves all the ongoing article patches.
+func (s *PatchesService) List(ctx context.Context) (patches []*model.ArticlePatch, err error) {
+  return s.r.ListPatches(ctx)
 }
 
 // Revise adds a correction or inclusion to an article patch in order

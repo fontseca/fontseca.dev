@@ -10,8 +10,8 @@ import (
 )
 
 type technologyTagServiceAPI interface {
-  Get(context.Context) ([]*model.TechnologyTag, error)
-  Add(context.Context, *transfer.TechnologyTagCreation) (string, error)
+  List(context.Context) ([]*model.TechnologyTag, error)
+  Create(context.Context, *transfer.TechnologyTagCreation) (string, error)
   Exists(context.Context, string) error
   Update(context.Context, string, *transfer.TechnologyTagUpdate) (bool, error)
   Remove(context.Context, string) error
@@ -25,15 +25,15 @@ func NewTechnologyTagHandler(service technologyTagServiceAPI) *TechnologyTagHand
   return &TechnologyTagHandler{s: service}
 }
 
-func (h *TechnologyTagHandler) Get(c *gin.Context) {
-  var tags, err = h.s.Get(c)
+func (h *TechnologyTagHandler) List(c *gin.Context) {
+  var tags, err = h.s.List(c)
   if check(err, c.Writer) {
     return
   }
   c.JSON(http.StatusOK, tags)
 }
 
-func (h *TechnologyTagHandler) Add(c *gin.Context) {
+func (h *TechnologyTagHandler) Create(c *gin.Context) {
   var creation transfer.TechnologyTagCreation
   if err := bindPostForm(c, &creation); check(err, c.Writer) {
     return
@@ -41,7 +41,7 @@ func (h *TechnologyTagHandler) Add(c *gin.Context) {
   if err := validateStruct(&creation); check(err, c.Writer) {
     return
   }
-  insertedID, err := h.s.Add(c, &creation)
+  insertedID, err := h.s.Create(c, &creation)
   if check(err, c.Writer) {
     return
   }

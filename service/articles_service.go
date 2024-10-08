@@ -12,8 +12,8 @@ import (
 type archiveRepositoryAPIForArticles interface {
   SetSlug(ctx context.Context, articleID, slug string) error
   Publications(ctx context.Context) (publications []*transfer.Publication, err error)
-  Get(ctx context.Context, filter *transfer.ArticleFilter, hidden, draftsOnly bool) (articles []*transfer.Article, err error)
-  GetOne(ctx context.Context, request *transfer.ArticleRequest) (article *model.Article, err error)
+  List(ctx context.Context, filter *transfer.ArticleFilter, hidden, draftsOnly bool) (articles []*transfer.Article, err error)
+  Get(ctx context.Context, request *transfer.ArticleRequest) (article *model.Article, err error)
   GetByID(ctx context.Context, articleID string, isDraft bool) (article *model.Article, err error)
   Amend(ctx context.Context, articleID string) error
   Remove(ctx context.Context, articleID string) error
@@ -32,22 +32,22 @@ func NewArticlesService(r archiveRepositoryAPIForArticles) *ArticlesService {
   return &ArticlesService{r}
 }
 
-func (s *ArticlesService) doGet(ctx context.Context, filter *transfer.ArticleFilter, hidden ...bool) (articles []*transfer.Article, err error) {
+func (s *ArticlesService) list(ctx context.Context, filter *transfer.ArticleFilter, hidden ...bool) (articles []*transfer.Article, err error) {
   if 0 < len(hidden) {
-    return s.r.Get(ctx, filter, hidden[0], false)
+    return s.r.List(ctx, filter, hidden[0], false)
   }
 
-  return s.r.Get(ctx, filter, false, false)
+  return s.r.List(ctx, filter, false, false)
 }
 
-// Get retrieves all the published articles.
+// List retrieves all the published articles.
 //
 // If filter.Search is a non-empty string, then Get behaves like a search
 // function over articles, so it attempts to find and amass every
 // article whose title contains any of the keywords (if more than one)
 // in filter.Search.
-func (s *ArticlesService) Get(ctx context.Context, filter *transfer.ArticleFilter) (articles []*transfer.Article, err error) {
-  return s.doGet(ctx, filter)
+func (s *ArticlesService) List(ctx context.Context, filter *transfer.ArticleFilter) (articles []*transfer.Article, err error) {
+  return s.list(ctx, filter)
 }
 
 // Publications retrieves a list of distinct months during which articles have been published.
@@ -55,25 +55,25 @@ func (s *ArticlesService) Publications(ctx context.Context) (publications []*tra
   return s.r.Publications(ctx)
 }
 
-// GetHidden retrieves all the published articles thar are hidden.
+// ListHidden retrieves all the published articles thar are hidden.
 //
 // If filter.Search is a non-empty string, then Get behaves like a search
 // function over articles, so it attempts to find and amass every
 // article whose title contains any of the keywords (if more than one)
 // in filter.Search.
-func (s *ArticlesService) GetHidden(ctx context.Context, filter *transfer.ArticleFilter) (articles []*transfer.Article, err error) {
-  return s.doGet(ctx, filter, true)
+func (s *ArticlesService) ListHidden(ctx context.Context, filter *transfer.ArticleFilter) (articles []*transfer.Article, err error) {
+  return s.list(ctx, filter, true)
 }
 
-// GetOne retrieves one published article by the URL '/archive/:topic/:year/:month/:slug'.
-func (s *ArticlesService) GetOne(ctx context.Context, request *transfer.ArticleRequest) (article *model.Article, err error) {
+// Get retrieves one published article by the URL '/archive/:topic/:year/:month/:slug'.
+func (s *ArticlesService) Get(ctx context.Context, request *transfer.ArticleRequest) (article *model.Article, err error) {
   if nil == request {
     err = errors.New("nil value for parameter: request")
     slog.Error(err.Error())
     return nil, err
   }
 
-  return s.r.GetOne(ctx, request)
+  return s.r.Get(ctx, request)
 }
 
 // GetByID retrieves one article by its UUID.

@@ -21,8 +21,8 @@ func NewTagsRepository(db *sql.DB) *TagsRepository {
   return &TagsRepository{db}
 }
 
-// Add adds a new tag.
-func (r *TagsRepository) Add(ctx context.Context, creation *transfer.TagCreation) error {
+// Create adds a new tag.
+func (r *TagsRepository) Create(ctx context.Context, creation *transfer.TagCreation) error {
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
   if nil != err {
     return err
@@ -64,8 +64,8 @@ func (r *TagsRepository) Add(ctx context.Context, creation *transfer.TagCreation
   return nil
 }
 
-// Get retrieves all the tags.
-func (r *TagsRepository) Get(ctx context.Context) (tags []*model.Tag, err error) {
+// List retrieves all the tags.
+func (r *TagsRepository) List(ctx context.Context) (tags []*model.Tag, err error) {
   getTagsQuery := `
   SELECT "id",
          "name",

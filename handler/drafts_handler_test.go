@@ -194,7 +194,7 @@ func TestDraftsHandler_Publish(t *testing.T) {
   })
 }
 
-func (mock *draftsServiceMockAPI) Get(_ context.Context, filter *transfer.ArticleFilter) (drafts []*transfer.Article, err error) {
+func (mock *draftsServiceMockAPI) List(_ context.Context, filter *transfer.ArticleFilter) (drafts []*transfer.Article, err error) {
   if nil != mock.t {
     require.Equal(mock.t, mock.arguments[1], filter)
   }
@@ -219,7 +219,7 @@ func TestDraftsHandler_Get(t *testing.T) {
     s := &draftsServiceMockAPI{t: t, arguments: []any{context.Background(), filter}, returns: []any{drafts}}
 
     engine := gin.Default()
-    engine.GET(target, NewDraftsHandler(s).Get)
+    engine.GET(target, NewDraftsHandler(s).List)
 
     recorder := httptest.NewRecorder()
 
@@ -241,7 +241,7 @@ func TestDraftsHandler_Get(t *testing.T) {
     s := &draftsServiceMockAPI{returns: []any{[]*transfer.Article(nil)}, errors: expected}
 
     engine := gin.Default()
-    engine.GET(target, NewDraftsHandler(s).Get)
+    engine.GET(target, NewDraftsHandler(s).List)
 
     recorder := httptest.NewRecorder()
 
@@ -261,7 +261,7 @@ func TestDraftsHandler_Get(t *testing.T) {
     s := &draftsServiceMockAPI{returns: []any{[]*transfer.Article(nil)}, errors: unexpected}
 
     engine := gin.Default()
-    engine.GET(target, NewDraftsHandler(s).Get)
+    engine.GET(target, NewDraftsHandler(s).List)
 
     recorder := httptest.NewRecorder()
 
@@ -274,7 +274,7 @@ func TestDraftsHandler_Get(t *testing.T) {
   })
 }
 
-func (mock *draftsServiceMockAPI) GetByID(_ context.Context, draftUUID string) (draft *model.Article, err error) {
+func (mock *draftsServiceMockAPI) Get(_ context.Context, draftUUID string) (draft *model.Article, err error) {
   if nil != mock.t {
     require.Equal(mock.t, mock.arguments[1], draftUUID)
   }
@@ -304,7 +304,7 @@ func TestDraftsHandler_GetByID(t *testing.T) {
     s := &draftsServiceMockAPI{t: t, arguments: []any{context.Background(), id}, returns: []any{draft}}
 
     engine := gin.Default()
-    engine.GET(target, NewDraftsHandler(s).GetByID)
+    engine.GET(target, NewDraftsHandler(s).Get)
 
     recorder := httptest.NewRecorder()
 
@@ -326,7 +326,7 @@ func TestDraftsHandler_GetByID(t *testing.T) {
     s := &draftsServiceMockAPI{returns: []any{(*model.Article)(nil)}, errors: expected}
 
     engine := gin.Default()
-    engine.GET(target, NewDraftsHandler(s).GetByID)
+    engine.GET(target, NewDraftsHandler(s).Get)
 
     recorder := httptest.NewRecorder()
 
@@ -346,7 +346,7 @@ func TestDraftsHandler_GetByID(t *testing.T) {
     s := &draftsServiceMockAPI{returns: []any{(*model.Article)(nil)}, errors: unexpected}
 
     engine := gin.Default()
-    engine.GET(target, NewDraftsHandler(s).GetByID)
+    engine.GET(target, NewDraftsHandler(s).Get)
 
     recorder := httptest.NewRecorder()
 

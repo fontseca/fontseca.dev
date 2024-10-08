@@ -23,7 +23,7 @@ type patchesServiceMockAPI struct {
   errors    error
 }
 
-func (mock *patchesServiceMockAPI) Get(context.Context) (patches []*model.ArticlePatch, err error) {
+func (mock *patchesServiceMockAPI) List(context.Context) (patches []*model.ArticlePatch, err error) {
   return mock.returns[0].([]*model.ArticlePatch), mock.errors
 }
 
@@ -43,7 +43,7 @@ func TestPatchesHandler_Get(t *testing.T) {
     s := &patchesServiceMockAPI{returns: []any{patches}}
 
     engine := gin.Default()
-    engine.GET(target, NewPatchesHandler(s).Get)
+    engine.GET(target, NewPatchesHandler(s).List)
 
     recorder := httptest.NewRecorder()
 
@@ -65,7 +65,7 @@ func TestPatchesHandler_Get(t *testing.T) {
     s := &patchesServiceMockAPI{returns: []any{[]*model.ArticlePatch(nil)}, errors: expected}
 
     engine := gin.Default()
-    engine.GET(target, NewPatchesHandler(s).Get)
+    engine.GET(target, NewPatchesHandler(s).List)
 
     recorder := httptest.NewRecorder()
 
@@ -85,7 +85,7 @@ func TestPatchesHandler_Get(t *testing.T) {
     s := &patchesServiceMockAPI{returns: []any{[]*model.ArticlePatch(nil)}, errors: unexpected}
 
     engine := gin.Default()
-    engine.GET(target, NewPatchesHandler(s).Get)
+    engine.GET(target, NewPatchesHandler(s).List)
 
     recorder := httptest.NewRecorder()
 

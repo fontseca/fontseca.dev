@@ -21,8 +21,8 @@ func NewTopicsRepository(db *sql.DB) *TopicsRepository {
   return &TopicsRepository{db}
 }
 
-// Add adds a new topic.
-func (r *TopicsRepository) Add(ctx context.Context, creation *transfer.TopicCreation) error {
+// Create adds a new topic.
+func (r *TopicsRepository) Create(ctx context.Context, creation *transfer.TopicCreation) error {
   slog.Info("adding new article topic",
     slog.String("id", creation.ID),
     slog.String("name", creation.Name))
@@ -83,8 +83,8 @@ func (r *TopicsRepository) Add(ctx context.Context, creation *transfer.TopicCrea
   return nil
 }
 
-// Get retrieves all the topics.
-func (r *TopicsRepository) Get(ctx context.Context) (topics []*model.Topic, err error) {
+// List retrieves all the topics.
+func (r *TopicsRepository) List(ctx context.Context) (topics []*model.Topic, err error) {
   getTopicsQuery := `
   SELECT "id",
          "name",

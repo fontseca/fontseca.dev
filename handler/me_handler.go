@@ -114,7 +114,7 @@ func (h *MeHandler) SetHireable(c *gin.Context) {
   }
 }
 
-func (h *MeHandler) Update(c *gin.Context) {
+func (h *MeHandler) Set(c *gin.Context) {
   var update transfer.MeUpdate
 
   if ok := bindJSONRequestBody(c, &update); !ok {

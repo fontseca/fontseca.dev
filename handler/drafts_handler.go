@@ -13,9 +13,9 @@ import (
 type draftsServiceAPI interface {
   Draft(ctx context.Context, creation *transfer.ArticleCreation) (insertedUUID uuid.UUID, err error)
   Publish(ctx context.Context, draftUUID string) error
-  Get(ctx context.Context, filter *transfer.ArticleFilter) (drafts []*transfer.Article, err error)
+  List(ctx context.Context, filter *transfer.ArticleFilter) (drafts []*transfer.Article, err error)
   GetByLink(ctx context.Context, link string) (article *model.Article, err error)
-  GetByID(ctx context.Context, draftUUID string) (draft *model.Article, err error)
+  Get(ctx context.Context, draftUUID string) (draft *model.Article, err error)
   AddTag(ctx context.Context, draftUUID, tagID string) error
   RemoveTag(ctx context.Context, draftUUID, tagID string) error
   Share(ctx context.Context, draftUUID string) (link string, err error)
@@ -66,9 +66,9 @@ func (h *DraftsHandler) Publish(c *gin.Context) {
   c.Status(http.StatusNoContent)
 }
 
-func (h *DraftsHandler) Get(c *gin.Context) {
+func (h *DraftsHandler) List(c *gin.Context) {
   filter := getArticleFilter(c)
-  drafts, err := h.drafts.Get(c, filter)
+  drafts, err := h.drafts.List(c, filter)
 
   if check(err, c.Writer) {
     return
@@ -77,9 +77,9 @@ func (h *DraftsHandler) Get(c *gin.Context) {
   c.JSON(http.StatusOK, drafts)
 }
 
-func (h *DraftsHandler) GetByID(c *gin.Context) {
+func (h *DraftsHandler) Get(c *gin.Context) {
   id := c.Query("draft_uuid")
-  draft, err := h.drafts.GetByID(c, id)
+  draft, err := h.drafts.Get(c, id)
 
   if check(err, c.Writer) {
     return

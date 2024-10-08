@@ -13,9 +13,9 @@ import (
 )
 
 type experienceRepositoryAPI interface {
-  Get(context.Context, bool) ([]*model.Experience, error)
-  GetByID(context.Context, string) (*model.Experience, error)
-  Save(context.Context, *transfer.ExperienceCreation) (bool, error)
+  List(context.Context, bool) ([]*model.Experience, error)
+  Get(context.Context, string) (*model.Experience, error)
+  Create(context.Context, *transfer.ExperienceCreation) (bool, error)
   Update(context.Context, string, *transfer.ExperienceUpdate) (bool, error)
   Remove(context.Context, string) error
 }
@@ -30,28 +30,28 @@ func NewExperienceService(r experienceRepositoryAPI) *ExperienceService {
   return &ExperienceService{r}
 }
 
-// Get returns a slice of experience models and an error if
+// List returns a slice of experience models and an error if
 // the operation fails. If hidden is true it returns all the
 // hidden experience records.
-func (s *ExperienceService) Get(ctx context.Context, hidden ...bool) (experience []*model.Experience, err error) {
+func (s *ExperienceService) List(ctx context.Context, hidden ...bool) (experience []*model.Experience, err error) {
   if 0 != len(hidden) && hidden[0] {
-    return s.r.Get(ctx, true)
+    return s.r.List(ctx, true)
   }
-  return s.r.Get(ctx, false)
+  return s.r.List(ctx, false)
 }
 
-// GetByID retrieves a single experience record by its UUID.
-func (s *ExperienceService) GetByID(ctx context.Context, id string) (experience *model.Experience, err error) {
+// Get retrieves a single experience record by its UUID.
+func (s *ExperienceService) Get(ctx context.Context, id string) (experience *model.Experience, err error) {
   if err = validateUUID(&id); nil != err {
     return nil, err
   }
-  return s.r.GetByID(ctx, id)
+  return s.r.Get(ctx, id)
 }
 
-// Save creates a new experience record with the provided creation data.
+// Create creates a new experience record with the provided creation data.
 // It returns a boolean indicating whether the experience was successfully
 // saved and an error if something went wrong.
-func (s *ExperienceService) Save(ctx context.Context, creation *transfer.ExperienceCreation) (saved bool, err error) {
+func (s *ExperienceService) Create(ctx context.Context, creation *transfer.ExperienceCreation) (saved bool, err error) {
   if nil == creation {
     err = errors.New("nil value for parameter: creation")
     slog.Error(err.Error())
@@ -74,7 +74,7 @@ func (s *ExperienceService) Save(ctx context.Context, creation *transfer.Experie
     return false, problem.NewValidation([3]string{"ends", "lte", strconv.Itoa(year)})
   }
 
-  return s.r.Save(ctx, creation)
+  return s.r.Create(ctx, creation)
 }
 
 // Update modifies an existing experience record with the provided update data.

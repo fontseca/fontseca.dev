@@ -22,7 +22,7 @@ type projectsRepositoryMockAPI struct {
   called    bool
 }
 
-func (mock *projectsRepositoryMockAPI) Get(context.Context, bool) (projects []*model.Project, err error) {
+func (mock *projectsRepositoryMockAPI) List(context.Context, bool) (projects []*model.Project, err error) {
   return mock.returns[0].([]*model.Project), mock.errors
 }
 
@@ -33,15 +33,15 @@ func TestProjectService_Get(t *testing.T) {
     var projects = make([]*model.Project, 0)
 
     var r = &projectsRepositoryMockAPI{returns: []any{projects}}
-    res, err := NewProjectsService(r).Get(ctx, true)
+    res, err := NewProjectsService(r).List(ctx, true)
     assert.NotNil(t, res)
     assert.NoError(t, err)
 
-    res, err = NewProjectsService(r).Get(ctx, false)
+    res, err = NewProjectsService(r).List(ctx, false)
     assert.NotNil(t, res)
     assert.NoError(t, err)
 
-    res, err = NewProjectsService(r).Get(ctx)
+    res, err = NewProjectsService(r).List(ctx)
     assert.NotNil(t, res)
     assert.NoError(t, err)
   })
@@ -49,13 +49,13 @@ func TestProjectService_Get(t *testing.T) {
   t.Run("error", func(t *testing.T) {
     var unexpected = errors.New("unexpected error")
     var r = &projectsRepositoryMockAPI{returns: []any{([]*model.Project)(nil)}, errors: unexpected}
-    res, err := NewProjectsService(r).Get(ctx)
+    res, err := NewProjectsService(r).List(ctx)
     assert.Nil(t, res)
     assert.ErrorIs(t, err, unexpected)
   })
 }
 
-func (mock *projectsRepositoryMockAPI) GetByID(context.Context, string) (*model.Project, error) {
+func (mock *projectsRepositoryMockAPI) Get(context.Context, string) (*model.Project, error) {
   return mock.returns[0].(*model.Project), mock.errors
 }
 
@@ -66,7 +66,7 @@ func TestProjectService_GetByID(t *testing.T) {
   t.Run("success", func(t *testing.T) {
     var project = new(model.Project)
     var r = &projectsRepositoryMockAPI{returns: []any{project}}
-    res, err := NewProjectsService(r).GetByID(ctx, id)
+    res, err := NewProjectsService(r).Get(ctx, id)
     assert.Equal(t, project, res)
     assert.NoError(t, err)
   })
@@ -74,7 +74,7 @@ func TestProjectService_GetByID(t *testing.T) {
   t.Run("error", func(t *testing.T) {
     var unexpected = errors.New("unexpected error")
     var r = &projectsRepositoryMockAPI{returns: []any{(*model.Project)(nil)}, errors: unexpected}
-    res, err := NewProjectsService(r).GetByID(ctx, id)
+    res, err := NewProjectsService(r).Get(ctx, id)
     assert.Nil(t, res)
     assert.ErrorIs(t, err, unexpected)
   })
@@ -105,7 +105,7 @@ func TestProjectService_GetBySlug(t *testing.T) {
   })
 }
 
-func (mock *projectsRepositoryMockAPI) Add(_ context.Context, t *transfer.ProjectCreation) (string, error) {
+func (mock *projectsRepositoryMockAPI) Create(_ context.Context, t *transfer.ProjectCreation) (string, error) {
   mock.called = true
 
   if nil != mock.t {
@@ -151,7 +151,7 @@ func TestProjectsService_Add(t *testing.T) {
       errors:    nil,
     }
 
-    res, err := NewProjectsService(r).Add(ctx, &dirty)
+    res, err := NewProjectsService(r).Create(ctx, &dirty)
     assert.NoError(t, err)
     assert.Equal(t, id, res)
   })
@@ -170,14 +170,14 @@ func TestProjectsService_Add(t *testing.T) {
       returns:   []any{id},
     }
 
-    res, err := NewProjectsService(r).Add(ctx, &dirty)
+    res, err := NewProjectsService(r).Create(ctx, &dirty)
     assert.NoError(t, err)
     assert.Equal(t, id, res)
   })
 
   t.Run("no nil parameter", func(t *testing.T) {
     var r = &projectsRepositoryMockAPI{}
-    res, err := NewProjectsService(r).Add(ctx, nil)
+    res, err := NewProjectsService(r).Create(ctx, nil)
     require.False(t, r.called)
     assert.ErrorContains(t, err, "nil value for parameter: creation")
     assert.Empty(t, res)
@@ -195,7 +195,7 @@ func TestProjectsService_Add(t *testing.T) {
         returns:   []any{id},
       }
 
-      res, err := NewProjectsService(r).Add(ctx, &creation)
+      res, err := NewProjectsService(r).Create(ctx, &creation)
       assert.NoError(t, err)
       assert.Equal(t, id, res)
 
@@ -206,7 +206,7 @@ func TestProjectsService_Add(t *testing.T) {
         returns:   []any{id},
       }
 
-      res, err = NewProjectsService(r).Add(ctx, &creation)
+      res, err = NewProjectsService(r).Create(ctx, &creation)
       assert.Error(t, err)
       assert.Empty(t, res)
     })
@@ -221,7 +221,7 @@ func TestProjectsService_Add(t *testing.T) {
         returns:   []any{id},
       }
 
-      res, err := NewProjectsService(r).Add(ctx, &creation)
+      res, err := NewProjectsService(r).Create(ctx, &creation)
       assert.NoError(t, err)
       assert.Equal(t, id, res)
 
@@ -232,7 +232,7 @@ func TestProjectsService_Add(t *testing.T) {
         returns:   []any{id},
       }
 
-      res, err = NewProjectsService(r).Add(ctx, &creation)
+      res, err = NewProjectsService(r).Create(ctx, &creation)
       assert.Error(t, err)
       assert.Empty(t, res)
     })
@@ -247,7 +247,7 @@ func TestProjectsService_Add(t *testing.T) {
         returns:   []any{id},
       }
 
-      res, err := NewProjectsService(r).Add(ctx, &creation)
+      res, err := NewProjectsService(r).Create(ctx, &creation)
       assert.NoError(t, err)
       assert.Equal(t, id, res)
 
@@ -258,7 +258,7 @@ func TestProjectsService_Add(t *testing.T) {
         returns:   []any{id},
       }
 
-      res, err = NewProjectsService(r).Add(ctx, &creation)
+      res, err = NewProjectsService(r).Create(ctx, &creation)
       assert.Error(t, err)
       assert.Empty(t, res)
     })
@@ -273,7 +273,7 @@ func TestProjectsService_Add(t *testing.T) {
         returns:   []any{id},
       }
 
-      res, err := NewProjectsService(r).Add(ctx, &creation)
+      res, err := NewProjectsService(r).Create(ctx, &creation)
       assert.NoError(t, err)
       assert.Equal(t, id, res)
 
@@ -285,7 +285,7 @@ func TestProjectsService_Add(t *testing.T) {
         returns:   []any{id},
       }
 
-      res, err = NewProjectsService(r).Add(ctx, &creation)
+      res, err = NewProjectsService(r).Create(ctx, &creation)
       assert.Error(t, err)
       assert.Empty(t, res)
     })
@@ -300,7 +300,7 @@ func TestProjectsService_Add(t *testing.T) {
         returns:   []any{id},
       }
 
-      res, err := NewProjectsService(r).Add(ctx, &creation)
+      res, err := NewProjectsService(r).Create(ctx, &creation)
       assert.NoError(t, err)
       assert.Equal(t, id, res)
 
@@ -311,7 +311,7 @@ func TestProjectsService_Add(t *testing.T) {
         returns:   []any{id},
       }
 
-      res, err = NewProjectsService(r).Add(ctx, &creation)
+      res, err = NewProjectsService(r).Create(ctx, &creation)
       assert.Error(t, err)
       assert.Empty(t, res)
     })
@@ -326,7 +326,7 @@ func TestProjectsService_Add(t *testing.T) {
         returns:   []any{id},
       }
 
-      res, err := NewProjectsService(r).Add(ctx, &creation)
+      res, err := NewProjectsService(r).Create(ctx, &creation)
       assert.NoError(t, err)
       assert.Equal(t, id, res)
 
@@ -337,7 +337,7 @@ func TestProjectsService_Add(t *testing.T) {
         returns:   []any{id},
       }
 
-      res, err = NewProjectsService(r).Add(ctx, &creation)
+      res, err = NewProjectsService(r).Create(ctx, &creation)
       assert.Error(t, err)
       assert.Empty(t, res)
     })
@@ -352,7 +352,7 @@ func TestProjectsService_Add(t *testing.T) {
         returns:   []any{id},
       }
 
-      res, err := NewProjectsService(r).Add(ctx, &creation)
+      res, err := NewProjectsService(r).Create(ctx, &creation)
       assert.NoError(t, err)
       assert.Equal(t, id, res)
 
@@ -363,7 +363,7 @@ func TestProjectsService_Add(t *testing.T) {
         returns:   []any{id},
       }
 
-      res, err = NewProjectsService(r).Add(ctx, &creation)
+      res, err = NewProjectsService(r).Create(ctx, &creation)
       assert.Error(t, err)
       assert.Empty(t, res)
     })
@@ -378,7 +378,7 @@ func TestProjectsService_Add(t *testing.T) {
         returns:   []any{id},
       }
 
-      res, err := NewProjectsService(r).Add(ctx, &creation)
+      res, err := NewProjectsService(r).Create(ctx, &creation)
       assert.NoError(t, err)
       assert.Equal(t, id, res)
 
@@ -389,7 +389,7 @@ func TestProjectsService_Add(t *testing.T) {
         returns:   []any{id},
       }
 
-      res, err = NewProjectsService(r).Add(ctx, &creation)
+      res, err = NewProjectsService(r).Create(ctx, &creation)
       assert.Error(t, err)
       assert.Empty(t, res)
     })
@@ -404,7 +404,7 @@ func TestProjectsService_Add(t *testing.T) {
         returns:   []any{id},
       }
 
-      res, err := NewProjectsService(r).Add(ctx, &creation)
+      res, err := NewProjectsService(r).Create(ctx, &creation)
       assert.NoError(t, err)
       assert.Equal(t, id, res)
 
@@ -415,7 +415,7 @@ func TestProjectsService_Add(t *testing.T) {
         returns:   []any{id},
       }
 
-      res, err = NewProjectsService(r).Add(ctx, &creation)
+      res, err = NewProjectsService(r).Create(ctx, &creation)
       assert.Error(t, err)
       assert.Empty(t, res)
     })
@@ -430,7 +430,7 @@ func TestProjectsService_Add(t *testing.T) {
         returns:   []any{id},
       }
 
-      res, err := NewProjectsService(r).Add(ctx, &creation)
+      res, err := NewProjectsService(r).Create(ctx, &creation)
       assert.NoError(t, err)
       assert.Equal(t, id, res)
 
@@ -441,7 +441,7 @@ func TestProjectsService_Add(t *testing.T) {
         returns:   []any{id},
       }
 
-      res, err = NewProjectsService(r).Add(ctx, &creation)
+      res, err = NewProjectsService(r).Create(ctx, &creation)
       assert.Error(t, err)
       assert.Empty(t, res)
     })
@@ -454,7 +454,7 @@ func TestProjectsService_Add(t *testing.T) {
       errors:  expected,
     }
 
-    res, err := NewProjectsService(r).Add(ctx, new(transfer.ProjectCreation))
+    res, err := NewProjectsService(r).Create(ctx, new(transfer.ProjectCreation))
     assert.ErrorAs(t, err, &expected)
     assert.Empty(t, res)
   })
@@ -465,7 +465,7 @@ func TestProjectsService_Add(t *testing.T) {
       returns: []any{""},
       errors:  unexpected,
     }
-    res, err := NewProjectsService(r).Add(ctx, new(transfer.ProjectCreation))
+    res, err := NewProjectsService(r).Create(ctx, new(transfer.ProjectCreation))
     assert.ErrorIs(t, err, unexpected)
     assert.Empty(t, res)
   })

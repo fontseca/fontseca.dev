@@ -576,14 +576,14 @@ func (r *ArchiveRepository) Publications(ctx context.Context) (publications []*t
   return publications, nil
 }
 
-// Get retrieves all the articles that are either hidden or not. If
+// List retrieves all the articles that are either hidden or not. If
 // draftsOnly is true, then only retrieves all the ongoing drafts.
 //
 // If needle is a non-empty string, then Get behaves like a search
 // function over non-hidden articles, so it attempts to find and
 // amass every article whose title contains any of the keywords
 // (if more than one) in needle.
-func (r *ArchiveRepository) Get(ctx context.Context, filter *transfer.ArticleFilter, hidden, draftsOnly bool) (articles []*transfer.Article, err error) {
+func (r *ArchiveRepository) List(ctx context.Context, filter *transfer.ArticleFilter, hidden, draftsOnly bool) (articles []*transfer.Article, err error) {
   query := strings.Builder{}
   query.WriteString(`
   SELECT "uuid",
@@ -767,8 +767,8 @@ func (r *ArchiveRepository) Get(ctx context.Context, filter *transfer.ArticleFil
   return articles, nil
 }
 
-// GetOne retrieves one published article by the URL '/archive/:topic/:year/:month/:slug'.
-func (r *ArchiveRepository) GetOne(ctx context.Context, request *transfer.ArticleRequest) (article *model.Article, err error) {
+// Get retrieves one published article by the URL '/archive/:topic/:year/:month/:slug'.
+func (r *ArchiveRepository) Get(ctx context.Context, request *transfer.ArticleRequest) (article *model.Article, err error) {
   requestArticleUUIDQuery := `
   SELECT "uuid"
     FROM "archive"."article"
@@ -1941,8 +1941,8 @@ func (r *ArchiveRepository) Release(ctx context.Context, id string) error {
   return nil
 }
 
-// GetPatches retrieves all the ongoing patches of every article.
-func (r *ArchiveRepository) GetPatches(ctx context.Context) (patches []*model.ArticlePatch, err error) {
+// ListPatches retrieves all the ongoing patches of every article.
+func (r *ArchiveRepository) ListPatches(ctx context.Context) (patches []*model.ArticlePatch, err error) {
   getPatchesQuery := `
   SELECT "article_uuid",
          "title",

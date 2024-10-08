@@ -23,11 +23,11 @@ type topicsRepositoryThenGetMock struct {
   topicsRepositoryMockAPI
 }
 
-func (mock *topicsRepositoryThenGetMock) Get(context.Context) ([]*model.Topic, error) {
+func (mock *topicsRepositoryThenGetMock) List(context.Context) ([]*model.Topic, error) {
   return make([]*model.Topic, 2), nil
 }
 
-func (mock *topicsRepositoryThenGetMock) Add(_ context.Context, t *transfer.TopicCreation) error {
+func (mock *topicsRepositoryThenGetMock) Create(_ context.Context, t *transfer.TopicCreation) error {
   if nil != mock.errors {
     return mock.errors
   }
@@ -54,7 +54,7 @@ func TestTopicsService_Add(t *testing.T) {
         arguments: []any{ctx, creation},
       },
     }
-    err := NewTopicsService(r).Add(ctx, dirty)
+    err := NewTopicsService(r).Create(ctx, dirty)
 
     assert.NoError(t, err)
   })
@@ -66,12 +66,12 @@ func TestTopicsService_Add(t *testing.T) {
         errors: unexpected,
       },
     }
-    err := NewTopicsService(r).Add(ctx, creation)
+    err := NewTopicsService(r).Create(ctx, creation)
     assert.ErrorIs(t, err, unexpected)
   })
 }
 
-func (mock *topicsRepositoryMockAPI) Get(context.Context) ([]*model.Topic, error) {
+func (mock *topicsRepositoryMockAPI) List(context.Context) ([]*model.Topic, error) {
   mock.called = true
   return mock.returns[0].([]*model.Topic), mock.errors
 }
@@ -84,7 +84,7 @@ func TestTopicsService_Get(t *testing.T) {
     r := &topicsRepositoryMockAPI{returns: []any{expectedTopics}}
     s := NewTopicsService(r)
     s.cache = nil
-    topics, err := s.Get(ctx)
+    topics, err := s.List(ctx)
 
     assert.Equal(t, expectedTopics, topics)
     assert.NoError(t, err)
@@ -96,7 +96,7 @@ func TestTopicsService_Get(t *testing.T) {
     r := &topicsRepositoryMockAPI{}
     s := NewTopicsService(r)
     s.cache = expectedTopics
-    topics, err := s.Get(ctx)
+    topics, err := s.List(ctx)
 
     require.False(t, r.called)
     assert.Equal(t, expectedTopics, topics)
@@ -107,7 +107,7 @@ func TestTopicsService_Get(t *testing.T) {
     unexpected := errors.New("unexpected error")
 
     r := &topicsRepositoryMockAPI{returns: []any{([]*model.Topic)(nil)}, errors: unexpected}
-    topics, err := NewTopicsService(r).Get(ctx)
+    topics, err := NewTopicsService(r).List(ctx)
 
     assert.Nil(t, topics)
     assert.ErrorIs(t, err, unexpected)

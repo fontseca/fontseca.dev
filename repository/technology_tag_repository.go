@@ -20,8 +20,8 @@ func NewTechnologyTagRepository(db *sql.DB) *TechnologyTagRepository {
   return &TechnologyTagRepository{db}
 }
 
-// Get retrieves a slice of technology tags.
-func (r *TechnologyTagRepository) Get(ctx context.Context) (technologies []*model.TechnologyTag, err error) {
+// List retrieves a slice of technology tags.
+func (r *TechnologyTagRepository) List(ctx context.Context) (technologies []*model.TechnologyTag, err error) {
   var getTagsQuery = `
   SELECT *
     FROM "projects"."tag"
@@ -46,8 +46,8 @@ ORDER BY "created_at" DESC;`
   return
 }
 
-// Add creates a new technology tag record with the provided creation data.
-func (r *TechnologyTagRepository) Add(ctx context.Context, creation *transfer.TechnologyTagCreation) (id string, err error) {
+// Create creates a new technology tag record with the provided creation data.
+func (r *TechnologyTagRepository) Create(ctx context.Context, creation *transfer.TechnologyTagCreation) (id string, err error) {
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
   if nil != err {
     slog.Error(err.Error())

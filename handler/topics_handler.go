@@ -10,8 +10,8 @@ import (
 )
 
 type topicsServiceAPI interface {
-  Add(context.Context, *transfer.TopicCreation) error
-  Get(context.Context) ([]*model.Topic, error)
+  Create(context.Context, *transfer.TopicCreation) error
+  List(context.Context) ([]*model.Topic, error)
   Update(context.Context, string, *transfer.TopicUpdate) error
   Remove(context.Context, string) error
 }
@@ -24,7 +24,7 @@ func NewTopicsHandler(topics topicsServiceAPI) *TopicsHandler {
   return &TopicsHandler{topics: topics}
 }
 
-func (h *TopicsHandler) Add(c *gin.Context) {
+func (h *TopicsHandler) Create(c *gin.Context) {
   var creation transfer.TopicCreation
 
   if err := bindPostForm(c, &creation); check(err, c.Writer) {
@@ -35,15 +35,15 @@ func (h *TopicsHandler) Add(c *gin.Context) {
     return
   }
 
-  if err := h.topics.Add(c, &creation); check(err, c.Writer) {
+  if err := h.topics.Create(c, &creation); check(err, c.Writer) {
     return
   }
 
   c.Status(http.StatusCreated)
 }
 
-func (h *TopicsHandler) Get(c *gin.Context) {
-  topics, err := h.topics.Get(c)
+func (h *TopicsHandler) List(c *gin.Context) {
+  topics, err := h.topics.List(c)
 
   if check(err, c.Writer) {
     return
@@ -52,7 +52,7 @@ func (h *TopicsHandler) Get(c *gin.Context) {
   c.JSON(http.StatusOK, topics)
 }
 
-func (h *TopicsHandler) Update(c *gin.Context) {
+func (h *TopicsHandler) Set(c *gin.Context) {
   var update transfer.TopicUpdate
 
   topic, ok := c.GetPostForm("topic_id")

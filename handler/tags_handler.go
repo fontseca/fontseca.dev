@@ -10,8 +10,8 @@ import (
 )
 
 type tagsServiceAPI interface {
-  Add(context.Context, *transfer.TagCreation) error
-  Get(context.Context) ([]*model.Tag, error)
+  Create(context.Context, *transfer.TagCreation) error
+  List(context.Context) ([]*model.Tag, error)
   Update(context.Context, string, *transfer.TagUpdate) error
   Remove(context.Context, string) error
 }
@@ -24,7 +24,7 @@ func NewTagsHandler(tags tagsServiceAPI) *TagsHandler {
   return &TagsHandler{tags: tags}
 }
 
-func (h *TagsHandler) Add(c *gin.Context) {
+func (h *TagsHandler) Create(c *gin.Context) {
   var creation transfer.TagCreation
 
   if err := bindPostForm(c, &creation); check(err, c.Writer) {
@@ -35,15 +35,15 @@ func (h *TagsHandler) Add(c *gin.Context) {
     return
   }
 
-  if err := h.tags.Add(c, &creation); check(err, c.Writer) {
+  if err := h.tags.Create(c, &creation); check(err, c.Writer) {
     return
   }
 
   c.Status(http.StatusCreated)
 }
 
-func (h *TagsHandler) Get(c *gin.Context) {
-  tags, err := h.tags.Get(c)
+func (h *TagsHandler) List(c *gin.Context) {
+  tags, err := h.tags.List(c)
 
   if check(err, c.Writer) {
     return
@@ -52,7 +52,7 @@ func (h *TagsHandler) Get(c *gin.Context) {
   c.JSON(http.StatusOK, tags)
 }
 
-func (h *TagsHandler) Update(c *gin.Context) {
+func (h *TagsHandler) Set(c *gin.Context) {
   var update transfer.TagUpdate
 
   tag, ok := c.GetPostForm("tag_id")

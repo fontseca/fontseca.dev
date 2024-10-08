@@ -23,11 +23,11 @@ type tagsRepositoryThenGetMock struct {
   tagsRepositoryMockAPI
 }
 
-func (mock *tagsRepositoryThenGetMock) Get(context.Context) ([]*model.Tag, error) {
+func (mock *tagsRepositoryThenGetMock) List(context.Context) ([]*model.Tag, error) {
   return make([]*model.Tag, 2), nil
 }
 
-func (mock *tagsRepositoryThenGetMock) Add(_ context.Context, t *transfer.TagCreation) error {
+func (mock *tagsRepositoryThenGetMock) Create(_ context.Context, t *transfer.TagCreation) error {
   if nil != mock.errors {
     return mock.errors
   }
@@ -51,19 +51,19 @@ func TestTagsService_Add(t *testing.T) {
     r := &tagsRepositoryThenGetMock{
       tagsRepositoryMockAPI{t: t, arguments: []any{nil, creation}},
     }
-    err := NewTagsService(r).Add(ctx, dirty)
+    err := NewTagsService(r).Create(ctx, dirty)
     assert.NoError(t, err)
   })
 
   t.Run("gets a repository failure", func(t *testing.T) {
     unexpected := errors.New("unexpected error")
     r := &tagsRepositoryThenGetMock{tagsRepositoryMockAPI{errors: unexpected}}
-    err := NewTagsService(r).Add(ctx, creation)
+    err := NewTagsService(r).Create(ctx, creation)
     assert.ErrorIs(t, err, unexpected)
   })
 }
 
-func (mock *tagsRepositoryMockAPI) Get(_ context.Context) ([]*model.Tag, error) {
+func (mock *tagsRepositoryMockAPI) List(_ context.Context) ([]*model.Tag, error) {
   mock.called = true
   return mock.returns[0].([]*model.Tag), mock.errors
 }
@@ -78,7 +78,7 @@ func TestTagsService_Get(t *testing.T) {
     s := NewTagsService(r)
     s.cache = nil
 
-    tags, err := s.Get(ctx)
+    tags, err := s.List(ctx)
 
     assert.Equal(t, expectedTags, tags)
     assert.NoError(t, err)
@@ -92,7 +92,7 @@ func TestTagsService_Get(t *testing.T) {
 
     s.cache = expectedTags
 
-    tags, err := s.Get(ctx)
+    tags, err := s.List(ctx)
 
     require.False(t, r.called)
     assert.Equal(t, expectedTags, tags)
@@ -102,7 +102,7 @@ func TestTagsService_Get(t *testing.T) {
   t.Run("gets a repository failure", func(t *testing.T) {
     unexpected := errors.New("unexpected error")
     r := &tagsRepositoryMockAPI{returns: []any{([]*model.Tag)(nil)}, errors: unexpected}
-    tags, err := NewTagsService(r).Get(ctx)
+    tags, err := NewTagsService(r).List(ctx)
 
     assert.Nil(t, tags)
     assert.ErrorIs(t, err, unexpected)

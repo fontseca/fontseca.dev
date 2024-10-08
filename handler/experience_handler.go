@@ -12,11 +12,11 @@ import (
 )
 
 type experienceServiceAPI interface {
-  Get(context.Context, ...bool) ([]*model.Experience, error)
-  GetByID(context.Context, string) (*model.Experience, error)
-  Save(context.Context, *transfer.ExperienceCreation) (bool, error)
-  Update(context.Context, string, *transfer.ExperienceUpdate) (bool, error)
-  Remove(context.Context, string) error
+  List(ctx context.Context, hidden ...bool) ([]*model.Experience, error)
+  Get(ctx context.Context, id string) (*model.Experience, error)
+  Create(ctx context.Context, creation *transfer.ExperienceCreation) (bool, error)
+  Update(ctx context.Context, id string, update *transfer.ExperienceUpdate) (bool, error)
+  Remove(ctx context.Context, id string) error
 }
 
 type ExperienceHandler struct {
@@ -27,37 +27,37 @@ func NewExperienceHandler(s experienceServiceAPI) *ExperienceHandler {
   return &ExperienceHandler{s}
 }
 
+func (h *ExperienceHandler) List(c *gin.Context) {
+  var e, err = h.s.List(c)
+  if nil != err {
+    var p *problem.Problem
+    if errors.As(err, &p) {
+      p.Emit(c.Writer)
+    } else {
+      problem.NewInternal().Emit(c.Writer)
+    }
+    return
+  }
+  c.JSON(http.StatusOK, e)
+}
+
+func (h *ExperienceHandler) ListHidden(c *gin.Context) {
+  var e, err = h.s.List(c, true)
+  if nil != err {
+    var p *problem.Problem
+    if errors.As(err, &p) {
+      p.Emit(c.Writer)
+    } else {
+      problem.NewInternal().Emit(c.Writer)
+    }
+    return
+  }
+  c.JSON(http.StatusOK, e)
+}
+
 func (h *ExperienceHandler) Get(c *gin.Context) {
-  var e, err = h.s.Get(c)
-  if nil != err {
-    var p *problem.Problem
-    if errors.As(err, &p) {
-      p.Emit(c.Writer)
-    } else {
-      problem.NewInternal().Emit(c.Writer)
-    }
-    return
-  }
-  c.JSON(http.StatusOK, e)
-}
-
-func (h *ExperienceHandler) GetHidden(c *gin.Context) {
-  var e, err = h.s.Get(c, true)
-  if nil != err {
-    var p *problem.Problem
-    if errors.As(err, &p) {
-      p.Emit(c.Writer)
-    } else {
-      problem.NewInternal().Emit(c.Writer)
-    }
-    return
-  }
-  c.JSON(http.StatusOK, e)
-}
-
-func (h *ExperienceHandler) GetByID(c *gin.Context) {
   var id = c.Query("experience_uuid")
-  var e, err = h.s.GetByID(c, id)
+  var e, err = h.s.Get(c, id)
   if nil != err {
     var p *problem.Problem
     if errors.As(err, &p) {
@@ -70,7 +70,7 @@ func (h *ExperienceHandler) GetByID(c *gin.Context) {
   c.JSON(http.StatusOK, e)
 }
 
-func (h *ExperienceHandler) Add(c *gin.Context) {
+func (h *ExperienceHandler) Create(c *gin.Context) {
   var e transfer.ExperienceCreation
 
   if err := bindPostForm(c, &e); check(err, c.Writer) {
@@ -81,7 +81,7 @@ func (h *ExperienceHandler) Add(c *gin.Context) {
     return
   }
 
-  ok, err := h.s.Save(c, &e)
+  ok, err := h.s.Create(c, &e)
   if check(err, c.Writer) {
     return
   }

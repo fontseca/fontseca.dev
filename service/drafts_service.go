@@ -14,7 +14,7 @@ import (
 type archiveRepositoryAPIForDrafts interface {
   Draft(ctx context.Context, creation *transfer.ArticleCreation) (draft string, err error)
   Publish(ctx context.Context, draftID string) error
-  Get(ctx context.Context, filter *transfer.ArticleFilter, hidden, draftsOnly bool) (drafts []*transfer.Article, err error)
+  List(ctx context.Context, filter *transfer.ArticleFilter, hidden, draftsOnly bool) (drafts []*transfer.Article, err error)
   GetByLink(ctx context.Context, link string) (article *model.Article, err error)
   GetByID(ctx context.Context, draftID string, isDraft bool) (draft *model.Article, err error)
   AddTag(ctx context.Context, draftID, tagID string, isDraft ...bool) error
@@ -89,14 +89,14 @@ func (s *DraftsService) Publish(ctx context.Context, draftUUID string) error {
   return s.r.Publish(ctx, draftUUID)
 }
 
-// Get retrieves all the ongoing articles drafts.
+// List retrieves all the ongoing articles drafts.
 //
 // If [filter.Search] is a non-empty string, then Get behaves like a search
 // function over draft articles, so it attempts to find and
 // amass every article whose title contains any of the keywords
 // (if more than one) in filter.Search.
-func (s *DraftsService) Get(ctx context.Context, filter *transfer.ArticleFilter) (drafts []*transfer.Article, err error) {
-  return s.r.Get(ctx, filter, false, true)
+func (s *DraftsService) List(ctx context.Context, filter *transfer.ArticleFilter) (drafts []*transfer.Article, err error) {
+  return s.r.List(ctx, filter, false, true)
 }
 
 // GetByLink retrieves a draft by its shareable link.
@@ -104,8 +104,8 @@ func (s *DraftsService) GetByLink(ctx context.Context, link string) (article *mo
   return s.r.GetByLink(ctx, link)
 }
 
-// GetByID retrieves one article draft by its UUID.
-func (s *DraftsService) GetByID(ctx context.Context, draftUUID string) (draft *model.Article, err error) {
+// Get retrieves one article draft by its UUID.
+func (s *DraftsService) Get(ctx context.Context, draftUUID string) (draft *model.Article, err error) {
   if err = validateUUID(&draftUUID); nil != err {
     return nil, err
   }

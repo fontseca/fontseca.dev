@@ -20,7 +20,7 @@ type archiveRepositoryMockAPIForArticles struct {
   called    bool
 }
 
-func (mock *archiveRepositoryMockAPIForArticles) Get(_ context.Context, filter *transfer.ArticleFilter, hidden, draftsOnly bool) (articles []*transfer.Article, err error) {
+func (mock *archiveRepositoryMockAPIForArticles) List(_ context.Context, filter *transfer.ArticleFilter, hidden, draftsOnly bool) (articles []*transfer.Article, err error) {
   mock.called = true
 
   if nil != mock.t {
@@ -40,7 +40,7 @@ func TestArticlesService_Get(t *testing.T) {
     expectedArticles := []*transfer.Article{{}, {}, {}}
 
     r := &archiveRepositoryMockAPIForArticles{t: t, arguments: []any{ctx, filter, false, false}, returns: []any{expectedArticles}}
-    articles, err := NewArticlesService(r).Get(ctx, filter)
+    articles, err := NewArticlesService(r).List(ctx, filter)
 
     assert.Equal(t, expectedArticles, articles)
     assert.NoError(t, err)
@@ -49,7 +49,7 @@ func TestArticlesService_Get(t *testing.T) {
   t.Run("gets a repository failure", func(t *testing.T) {
     unexpected := errors.New("unexpected error")
     r := &archiveRepositoryMockAPIForArticles{returns: []any{([]*transfer.Article)(nil)}, errors: unexpected}
-    _, err := NewArticlesService(r).Get(ctx, filter)
+    _, err := NewArticlesService(r).List(ctx, filter)
     assert.ErrorIs(t, err, unexpected)
   })
 }
@@ -62,7 +62,7 @@ func TestArticlesService_GetHidden(t *testing.T) {
     expectedArticles := []*transfer.Article{{}, {}, {}}
 
     r := &archiveRepositoryMockAPIForArticles{t: t, arguments: []any{ctx, filter, true, false}, returns: []any{expectedArticles}}
-    articles, err := NewArticlesService(r).GetHidden(ctx, filter)
+    articles, err := NewArticlesService(r).ListHidden(ctx, filter)
 
     assert.Equal(t, expectedArticles, articles)
     assert.NoError(t, err)
@@ -72,7 +72,7 @@ func TestArticlesService_GetHidden(t *testing.T) {
     unexpected := errors.New("unexpected error")
 
     r := &archiveRepositoryMockAPIForArticles{returns: []any{([]*transfer.Article)(nil)}, errors: unexpected}
-    _, err := NewArticlesService(r).GetHidden(ctx, filter)
+    _, err := NewArticlesService(r).ListHidden(ctx, filter)
     assert.ErrorIs(t, err, unexpected)
   })
 }

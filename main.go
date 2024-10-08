@@ -140,11 +140,11 @@ func main() {
 
   meRepository.Register(context.Background())
 
-  engine.GET("/me.info", me.Get)
-  engine.POST("/me.setPhoto", me.SetPhoto)
-  engine.POST("/me.setResume", me.SetResume)
-  engine.POST("/me.setHireable", me.SetHireable)
-  engine.POST("/me.set", me.Update)
+  engine.GET("/me.get", me.Get)
+  engine.POST("/me.set_photo", me.SetPhoto)
+  engine.POST("/me.set_resume", me.SetResume)
+  engine.POST("/me.set_hireable", me.SetHireable)
+  engine.POST("/me.set", me.Set)
 
   var (
     experienceRepository = repository.NewExperienceRepository(db)
@@ -152,10 +152,10 @@ func main() {
     experience           = handler.NewExperienceHandler(experienceService)
   )
 
-  engine.GET("/me.experience.list", experience.Get)
-  engine.GET("/me.experience.hidden.list", experience.GetHidden)
-  engine.GET("/me.experience.info", experience.GetByID)
-  engine.POST("/me.experience.add", experience.Add)
+  engine.GET("/me.experience.list", experience.List)
+  engine.GET("/me.experience.hidden.list", experience.ListHidden)
+  engine.GET("/me.experience.get", experience.Get)
+  engine.POST("/me.experience.create", experience.Create)
   engine.POST("/me.experience.set", experience.Set)
   engine.POST("/me.experience.hide", experience.Hide)
   engine.POST("/me.experience.show", experience.Show)
@@ -168,8 +168,8 @@ func main() {
     technologies            = handler.NewTechnologyTagHandler(technologyTagService)
   )
 
-  engine.GET("/technologies.list", technologies.Get)
-  engine.POST("/technologies.add", technologies.Add)
+  engine.GET("/technologies.list", technologies.List)
+  engine.POST("/technologies.create", technologies.Create)
   engine.POST("/technologies.set", technologies.Set)
   engine.POST("/technologies.remove", technologies.Remove)
 
@@ -179,23 +179,23 @@ func main() {
     projects           = handler.NewProjectsHandler(projectsService)
   )
 
-  engine.GET("/me.projects.list", projects.Get)
-  engine.GET("/me.projects.info", projects.GetByID)
-  engine.GET("/me.projects.archived.list", projects.GetArchived)
-  engine.POST("/me.projects.add", projects.Add)
+  engine.GET("/me.projects.list", projects.List)
+  engine.GET("/me.projects.get", projects.Get)
+  engine.GET("/me.projects.archived.list", projects.ListArchived)
+  engine.POST("/me.projects.create", projects.Create)
   engine.POST("/me.projects.set", projects.Set)
   engine.POST("/me.projects.archive", projects.Archive)
   engine.POST("/me.projects.unarchive", projects.Unarchive)
   engine.POST("/me.projects.finish", projects.Finish)
   engine.POST("/me.projects.unfinish", projects.Unfinish)
   engine.POST("/me.projects.remove", projects.Remove)
-  engine.POST("/me.projects.setPlaygroundURL", projects.SetPlaygroundURL)
-  engine.POST("/me.projects.setFirstImageURL", projects.SetFirstImageURL)
-  engine.POST("/me.projects.setSecondImageURL", projects.SetSecondImageURL)
-  engine.POST("/me.projects.setGitHubURL", projects.SetGitHubURL)
-  engine.POST("/me.projects.setCollectionURL", projects.SetCollectionURL)
-  engine.POST("/me.projects.technologies.add", projects.AddTechnologyTag)
-  engine.POST("/me.projects.technologies.remove", projects.RemoveTechnologyTag)
+  engine.POST("/me.projects.set_playground_url", projects.SetPlaygroundURL)
+  engine.POST("/me.projects.set_first_image_url", projects.SetFirstImageURL)
+  engine.POST("/me.projects.set_second_image_url", projects.SetSecondImageURL)
+  engine.POST("/me.projects.set_github_url", projects.SetGitHubURL)
+  engine.POST("/me.projects.set_collection_url", projects.SetCollectionURL)
+  engine.POST("/me.projects.technologies.add", projects.AddTag)
+  engine.POST("/me.projects.technologies.remove", projects.RemoveTag)
 
   var archive = repository.NewArchiveRepository(db)
 
@@ -205,9 +205,9 @@ func main() {
     tags           = handler.NewTagsHandler(tagsService)
   )
 
-  engine.POST("/archive.tags.add", tags.Add)
-  engine.GET("/archive.tags.list", tags.Get)
-  engine.POST("/archive.tags.set", tags.Update)
+  engine.POST("/archive.tags.create", tags.Create)
+  engine.GET("/archive.tags.list", tags.List)
+  engine.POST("/archive.tags.set", tags.Set)
   engine.POST("/archive.tags.remove", tags.Remove)
 
   var (
@@ -216,9 +216,9 @@ func main() {
     topics           = handler.NewTopicsHandler(topicsService)
   )
 
-  engine.POST("/archive.topics.add", topics.Add)
-  engine.GET("/archive.topics.list", topics.Get)
-  engine.POST("/archive.topics.set", topics.Update)
+  engine.POST("/archive.topics.create", topics.Create)
+  engine.GET("/archive.topics.list", topics.List)
+  engine.POST("/archive.topics.set", topics.Set)
   engine.POST("/archive.topics.remove", topics.Remove)
 
   var (
@@ -228,8 +228,8 @@ func main() {
 
   engine.POST("/archive.drafts.start", drafts.Start)
   engine.POST("/archive.drafts.publish", drafts.Publish)
-  engine.GET("/archive.drafts.list", drafts.Get)
-  engine.GET("/archive.drafts.info", drafts.GetByID)
+  engine.GET("/archive.drafts.list", drafts.List)
+  engine.GET("/archive.drafts.get", drafts.Get)
   engine.POST("/archive.drafts.share", drafts.Share)
   engine.POST("/archive.drafts.revise", drafts.Revise)
   engine.POST("/archive.drafts.discard", drafts.Discard)
@@ -241,11 +241,11 @@ func main() {
     articles        = handler.NewArticlesHandler(articlesService)
   )
 
-  engine.GET("/archive.articles.list", articles.Get)
-  engine.GET("/archive.articles.hidden.list", articles.GetHidden)
-  engine.GET("/archive.articles.info", articles.GetByID)
+  engine.GET("/archive.articles.list", articles.List)
+  engine.GET("/archive.articles.hidden.list", articles.ListHidden)
+  engine.GET("/archive.articles.get", articles.Get)
   engine.POST("/archive.articles.amend", articles.Amend)
-  engine.POST("/archive.articles.setSlug", articles.SetSlug)
+  engine.POST("/archive.articles.set_slug", articles.SetSlug)
   engine.POST("/archive.articles.hide", articles.Hide)
   engine.POST("/archive.articles.show", articles.Show)
   engine.POST("/archive.articles.remove", articles.Remove)
@@ -259,7 +259,7 @@ func main() {
     patches         = handler.NewPatchesHandler(patchesServices)
   )
 
-  engine.GET("/archive.articles.patches.list", patches.Get)
+  engine.GET("/archive.articles.patches.list", patches.List)
   engine.POST("/archive.articles.patches.revise", patches.Revise)
   engine.POST("/archive.articles.patches.share", patches.Share)
   engine.POST("/archive.articles.patches.discard", patches.Discard)

@@ -10,8 +10,8 @@ import (
 )
 
 type topicsRepositoryAPI interface {
-  Add(ctx context.Context, creation *transfer.TopicCreation) error
-  Get(ctx context.Context) (topics []*model.Topic, err error)
+  Create(ctx context.Context, creation *transfer.TopicCreation) error
+  List(ctx context.Context) (topics []*model.Topic, err error)
   Update(ctx context.Context, id string, update *transfer.TopicUpdate) error
   Remove(ctx context.Context, id string) error
 }
@@ -29,8 +29,8 @@ func NewTopicsService(r topicsRepositoryAPI) *TopicsService {
   }
 }
 
-// Add adds a new topic.
-func (s *TopicsService) Add(ctx context.Context, creation *transfer.TopicCreation) error {
+// Create adds a new topic.
+func (s *TopicsService) Create(ctx context.Context, creation *transfer.TopicCreation) error {
   if nil == creation {
     err := errors.New("nil value for parameter: creation")
     slog.Error(err.Error())
@@ -41,7 +41,7 @@ func (s *TopicsService) Add(ctx context.Context, creation *transfer.TopicCreatio
   sanitizeTextWordIntersections(&creation.Name)
   creation.ID = toKebabCase(creation.Name)
 
-  err := s.r.Add(ctx, creation)
+  err := s.r.Create(ctx, creation)
 
   if nil != err {
     return err
@@ -52,13 +52,13 @@ func (s *TopicsService) Add(ctx context.Context, creation *transfer.TopicCreatio
   return nil
 }
 
-// Get retrieves all the topics.
-func (s *TopicsService) Get(ctx context.Context) (topics []*model.Topic, err error) {
+// List retrieves all the topics.
+func (s *TopicsService) List(ctx context.Context) (topics []*model.Topic, err error) {
   if s.hasCache() {
     return s.cache, nil
   }
 
-  topics, err = s.r.Get(ctx)
+  topics, err = s.r.List(ctx)
 
   if nil != err {
     return nil, err
@@ -108,7 +108,7 @@ func (s *TopicsService) Remove(ctx context.Context, id string) error {
 
 func (s *TopicsService) setCache(ctx context.Context) {
   s.cache = nil
-  s.cache, _ = s.Get(ctx)
+  s.cache, _ = s.List(ctx)
 }
 
 func (s *TopicsService) hasCache() bool {

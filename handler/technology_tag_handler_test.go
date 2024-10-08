@@ -25,7 +25,7 @@ type technologyTagServiceMockAPI struct {
   called    bool
 }
 
-func (mock *technologyTagServiceMockAPI) Get(context.Context) ([]*model.TechnologyTag, error) {
+func (mock *technologyTagServiceMockAPI) List(context.Context) ([]*model.TechnologyTag, error) {
   mock.called = true
   return mock.returns[0].([]*model.TechnologyTag), mock.errors
 }
@@ -42,7 +42,7 @@ func TestTechnologyTagHandler_Get(t *testing.T) {
     }
     var s = &technologyTagServiceMockAPI{returns: []any{technologies}}
     var engine = gin.Default()
-    engine.GET(target, NewTechnologyTagHandler(s).Get)
+    engine.GET(target, NewTechnologyTagHandler(s).List)
     var request = httptest.NewRequest(method, target, nil)
     var recorder = httptest.NewRecorder()
     engine.ServeHTTP(recorder, request)
@@ -51,7 +51,7 @@ func TestTechnologyTagHandler_Get(t *testing.T) {
   })
 }
 
-func (mock *technologyTagServiceMockAPI) Add(_ context.Context, t *transfer.TechnologyTagCreation) (string, error) {
+func (mock *technologyTagServiceMockAPI) Create(_ context.Context, t *transfer.TechnologyTagCreation) (string, error) {
   mock.called = true
 
   if nil != mock.t {
@@ -77,7 +77,7 @@ func TestTechnologyTagHandler_Add(t *testing.T) {
       returns:   []any{id},
     }
     var engine = gin.Default()
-    engine.POST(target, NewTechnologyTagHandler(s).Add)
+    engine.POST(target, NewTechnologyTagHandler(s).Create)
     var recorder = httptest.NewRecorder()
     engine.ServeHTTP(recorder, request)
     assert.Equal(t, http.StatusOK, recorder.Code)
@@ -95,7 +95,7 @@ func TestTechnologyTagHandler_Add(t *testing.T) {
       errors:    expected,
     }
     var engine = gin.Default()
-    engine.POST(target, NewTechnologyTagHandler(s).Add)
+    engine.POST(target, NewTechnologyTagHandler(s).Create)
     var recorder = httptest.NewRecorder()
     engine.ServeHTTP(recorder, request)
     assert.Equal(t, http.StatusGone, recorder.Code)
@@ -111,7 +111,7 @@ func TestTechnologyTagHandler_Add(t *testing.T) {
       errors:    unexpected,
     }
     var engine = gin.Default()
-    engine.POST(target, NewTechnologyTagHandler(s).Add)
+    engine.POST(target, NewTechnologyTagHandler(s).Create)
     var recorder = httptest.NewRecorder()
     engine.ServeHTTP(recorder, request)
     assert.Equal(t, http.StatusInternalServerError, recorder.Code)

@@ -190,7 +190,7 @@ func TestMeHandler_Update(t *testing.T) {
     var s = &meServiceMockAPI{returns: []any{true}}
     gin.SetMode(gin.ReleaseMode)
     var engine = gin.Default()
-    engine.POST(target, NewMeHandler(s).Update)
+    engine.POST(target, NewMeHandler(s).Set)
     var recorder = httptest.NewRecorder()
     var request = httptest.NewRequest(method, target, bytes.NewReader(marshal(t, update)))
     engine.ServeHTTP(recorder, request)

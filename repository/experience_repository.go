@@ -23,9 +23,9 @@ func NewExperienceRepository(db *sql.DB) *ExperienceRepository {
   return &ExperienceRepository{db}
 }
 
-// Get retrieves a slice of experience. If hidden is true it returns all
+// List retrieves a slice of experience. If hidden is true it returns all
 // the hidden experience records.
-func (r *ExperienceRepository) Get(ctx context.Context, hidden bool) (experience []*model.Experience, err error) {
+func (r *ExperienceRepository) List(ctx context.Context, hidden bool) (experience []*model.Experience, err error) {
   getMyExperienceQuery := `
   SELECT "uuid",
          "starts",
@@ -79,7 +79,7 @@ ORDER BY "starts" DESC;`
   return experience, nil
 }
 
-func (r *ExperienceRepository) doGetByID(ctx context.Context, id string, strict bool) (experience *model.Experience, err error) {
+func (r *ExperienceRepository) doGet(ctx context.Context, id string, strict bool) (experience *model.Experience, err error) {
   getExperienceByIDQuery := `
   SELECT "uuid",
          "starts",
@@ -130,13 +130,13 @@ func (r *ExperienceRepository) doGetByID(ctx context.Context, id string, strict 
   return experience, nil
 }
 
-// GetByID retrieves a single experience record by its UUID.
-func (r *ExperienceRepository) GetByID(ctx context.Context, id string) (experience *model.Experience, err error) {
-  return r.doGetByID(ctx, id, true)
+// Get retrieves a single experience record by its UUID.
+func (r *ExperienceRepository) Get(ctx context.Context, id string) (experience *model.Experience, err error) {
+  return r.doGet(ctx, id, true)
 }
 
-// Save creates a new experience record with the provided creation data.
-func (r *ExperienceRepository) Save(ctx context.Context, creation *transfer.ExperienceCreation) (saved bool, err error) {
+// Create creates a new experience record with the provided creation data.
+func (r *ExperienceRepository) Create(ctx context.Context, creation *transfer.ExperienceCreation) (saved bool, err error) {
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
 
   if nil != err {
@@ -208,7 +208,7 @@ func (r *ExperienceRepository) Update(ctx context.Context, id string, update *tr
     return false, err
   }
 
-  current, err := r.doGetByID(ctx, id, false)
+  current, err := r.doGet(ctx, id, false)
 
   if nil != err {
     return false, err

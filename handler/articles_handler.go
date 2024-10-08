@@ -10,10 +10,10 @@ import (
 )
 
 type articlesServiceAPI interface {
-  Get(ctx context.Context, filter *transfer.ArticleFilter) (articles []*transfer.Article, err error)
+  List(ctx context.Context, filter *transfer.ArticleFilter) (articles []*transfer.Article, err error)
   Publications(ctx context.Context) (publications []*transfer.Publication, err error)
-  GetHidden(ctx context.Context, filter *transfer.ArticleFilter) (articles []*transfer.Article, err error)
-  GetOne(ctx context.Context, request *transfer.ArticleRequest) (article *model.Article, err error)
+  ListHidden(ctx context.Context, filter *transfer.ArticleFilter) (articles []*transfer.Article, err error)
+  Get(ctx context.Context, request *transfer.ArticleRequest) (article *model.Article, err error)
   GetByID(ctx context.Context, articleUUID string) (article *model.Article, err error)
   Hide(ctx context.Context, articleID string) error
   Show(ctx context.Context, articleID string) error
@@ -34,29 +34,29 @@ func NewArticlesHandler(articles articlesServiceAPI) *ArticlesHandler {
   return &ArticlesHandler{articles}
 }
 
+func (h *ArticlesHandler) List(c *gin.Context) {
+  filter := getArticleFilter(c)
+  articles, err := h.articles.List(c, filter)
+
+  if check(err, c.Writer) {
+    return
+  }
+
+  c.JSON(http.StatusOK, articles)
+}
+
+func (h *ArticlesHandler) ListHidden(c *gin.Context) {
+  filter := getArticleFilter(c)
+  articles, err := h.articles.ListHidden(c, filter)
+
+  if check(err, c.Writer) {
+    return
+  }
+
+  c.JSON(http.StatusOK, articles)
+}
+
 func (h *ArticlesHandler) Get(c *gin.Context) {
-  filter := getArticleFilter(c)
-  articles, err := h.articles.Get(c, filter)
-
-  if check(err, c.Writer) {
-    return
-  }
-
-  c.JSON(http.StatusOK, articles)
-}
-
-func (h *ArticlesHandler) GetHidden(c *gin.Context) {
-  filter := getArticleFilter(c)
-  articles, err := h.articles.GetHidden(c, filter)
-
-  if check(err, c.Writer) {
-    return
-  }
-
-  c.JSON(http.StatusOK, articles)
-}
-
-func (h *ArticlesHandler) GetByID(c *gin.Context) {
   id := c.Query("article_uuid")
   article, err := h.articles.GetByID(c, id)
 

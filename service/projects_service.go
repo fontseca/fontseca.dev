@@ -12,17 +12,17 @@ import (
 )
 
 type projectsRepositoryAPI interface {
-  Get(ctx context.Context, archived bool) ([]*model.Project, error)
-  GetByID(ctx context.Context, projectID string) (*model.Project, error)
+  List(ctx context.Context, archived bool) ([]*model.Project, error)
+  Get(ctx context.Context, projectID string) (*model.Project, error)
   GetBySlug(ctx context.Context, projectID string) (*model.Project, error)
-  Add(ctx context.Context, creation *transfer.ProjectCreation) (string, error)
+  Create(ctx context.Context, creation *transfer.ProjectCreation) (string, error)
   Exists(ctx context.Context, projectID string) error
   Update(ctx context.Context, projectID string, update *transfer.ProjectUpdate) (bool, error)
   Unarchive(ctx context.Context, projectID string) (bool, error)
   Remove(ctx context.Context, projectID string) error
-  ContainsTechnologyTag(ctx context.Context, projectID, tagID string) (bool, error)
-  AddTechnologyTag(ctx context.Context, projectID, tagID string) (bool, error)
-  RemoveTechnologyTag(ctx context.Context, projectID, tagID string) (bool, error)
+  HasTag(ctx context.Context, projectID, tagID string) (bool, error)
+  AddTag(ctx context.Context, projectID, tagID string) (bool, error)
+  RemoveTag(ctx context.Context, projectID, tagID string) (bool, error)
 }
 
 // ProjectsService provides methods for interacting with projects
@@ -35,21 +35,21 @@ func NewProjectsService(repository projectsRepositoryAPI) *ProjectsService {
   return &ProjectsService{repository}
 }
 
-// Get retrieves a slice of projects.
-func (s *ProjectsService) Get(ctx context.Context, archived ...bool) (projects []*model.Project, err error) {
+// List retrieves a slice of projects.
+func (s *ProjectsService) List(ctx context.Context, archived ...bool) (projects []*model.Project, err error) {
   var a = false
   if 0 != len(archived) && archived[0] {
     a = true
   }
-  return s.r.Get(ctx, a)
+  return s.r.List(ctx, a)
 }
 
-// GetByID retrieves a single project by its UUID.
-func (s *ProjectsService) GetByID(ctx context.Context, id string) (project *model.Project, err error) {
+// Get retrieves a single project by its UUID.
+func (s *ProjectsService) Get(ctx context.Context, id string) (project *model.Project, err error) {
   if err = validateUUID(&id); err != nil {
     return nil, err
   }
-  return s.r.GetByID(ctx, id)
+  return s.r.Get(ctx, id)
 }
 
 // GetBySlug retrieves a project type by its slug.
@@ -57,8 +57,8 @@ func (s *ProjectsService) GetBySlug(ctx context.Context, slug string) (project *
   return s.r.GetBySlug(ctx, slug)
 }
 
-// Add creates a project record with the provided creation data.
-func (s *ProjectsService) Add(ctx context.Context, creation *transfer.ProjectCreation) (id string, err error) {
+// Create creates a project record with the provided creation data.
+func (s *ProjectsService) Create(ctx context.Context, creation *transfer.ProjectCreation) (id string, err error) {
   if nil == creation {
     err = errors.New("nil value for parameter: creation")
     slog.Error(err.Error())
@@ -138,7 +138,7 @@ func (s *ProjectsService) Add(ctx context.Context, creation *transfer.ProjectCre
     return "", err
   }
 
-  return s.r.Add(ctx, creation)
+  return s.r.Create(ctx, creation)
 }
 
 // Exists checks whether a given project exists in the database.
@@ -265,26 +265,26 @@ func (s *ProjectsService) Remove(ctx context.Context, id string) (err error) {
   return s.r.Remove(ctx, id)
 }
 
-// ContainsTechnologyTag checks whether technologyTagID belongs to projectID.
-func (s *ProjectsService) ContainsTechnologyTag(ctx context.Context, projectID, technologyTagID string) (success bool, err error) {
+// HasTag checks whether technologyTagID belongs to projectID.
+func (s *ProjectsService) HasTag(ctx context.Context, projectID, technologyTagID string) (success bool, err error) {
   if err = validateUUID(&projectID); err != nil {
     return false, err
   }
   if err = validateUUID(&technologyTagID); err != nil {
     return false, err
   }
-  return s.r.ContainsTechnologyTag(ctx, projectID, technologyTagID)
+  return s.r.HasTag(ctx, projectID, technologyTagID)
 }
 
-// AddTechnologyTag adds an existing technology tag that will belong to the project represented by projectID .
-func (s *ProjectsService) AddTechnologyTag(ctx context.Context, projectID, technologyTagID string) (added bool, err error) {
+// AddTag adds an existing technology tag that will belong to the project represented by projectID .
+func (s *ProjectsService) AddTag(ctx context.Context, projectID, technologyTagID string) (added bool, err error) {
   if err = validateUUID(&projectID); err != nil {
     return false, err
   }
   if err = validateUUID(&technologyTagID); err != nil {
     return false, err
   }
-  conflict, err := s.ContainsTechnologyTag(ctx, projectID, technologyTagID)
+  conflict, err := s.HasTag(ctx, projectID, technologyTagID)
   if nil != err {
     return false, err
   }
@@ -297,16 +297,16 @@ func (s *ProjectsService) AddTechnologyTag(ctx context.Context, projectID, techn
     p.With("technology_tag_id", projectID)
     return false, &p
   }
-  return s.r.AddTechnologyTag(ctx, projectID, technologyTagID)
+  return s.r.AddTag(ctx, projectID, technologyTagID)
 }
 
-// RemoveTechnologyTag removes a technology tag that belongs to the project represented by projectID.
-func (s *ProjectsService) RemoveTechnologyTag(ctx context.Context, projectID, technologyTagID string) (removed bool, err error) {
+// RemoveTag removes a technology tag that belongs to the project represented by projectID.
+func (s *ProjectsService) RemoveTag(ctx context.Context, projectID, technologyTagID string) (removed bool, err error) {
   if err = validateUUID(&projectID); err != nil {
     return false, err
   }
   if err = validateUUID(&technologyTagID); err != nil {
     return false, err
   }
-  return s.r.RemoveTechnologyTag(ctx, projectID, technologyTagID)
+  return s.r.RemoveTag(ctx, projectID, technologyTagID)
 }

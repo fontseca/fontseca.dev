@@ -27,7 +27,7 @@ type projectsServiceMockAPI struct {
   called    bool
 }
 
-func (mock *projectsServiceMockAPI) Get(_ context.Context, b ...bool) ([]*model.Project, error) {
+func (mock *projectsServiceMockAPI) List(_ context.Context, b ...bool) ([]*model.Project, error) {
   if nil != mock.t {
     require.Equal(mock.t, mock.arguments[1], b)
   }
@@ -43,7 +43,7 @@ func TestProjectsHandler_Get(t *testing.T) {
     var projects = make([]*model.Project, 0)
     var s = &projectsServiceMockAPI{returns: []any{projects}}
     var engine = gin.Default()
-    engine.GET(target, NewProjectsHandler(s).Get)
+    engine.GET(target, NewProjectsHandler(s).List)
     var request = httptest.NewRequest(method, target, nil)
     var recorder = httptest.NewRecorder()
     engine.ServeHTTP(recorder, request)
@@ -64,7 +64,7 @@ func TestProjectsHandler_GetArchived(t *testing.T) {
       returns:   []any{projects},
     }
     var engine = gin.Default()
-    engine.GET(target, NewProjectsHandler(s).GetArchived)
+    engine.GET(target, NewProjectsHandler(s).ListArchived)
     var request = httptest.NewRequest(method, target, nil)
     var recorder = httptest.NewRecorder()
     engine.ServeHTTP(recorder, request)
@@ -73,7 +73,7 @@ func TestProjectsHandler_GetArchived(t *testing.T) {
   })
 }
 
-func (mock *projectsServiceMockAPI) GetByID(context.Context, string) (*model.Project, error) {
+func (mock *projectsServiceMockAPI) Get(context.Context, string) (*model.Project, error) {
   return mock.returns[0].(*model.Project), mock.errors
 }
 
@@ -105,7 +105,7 @@ func TestProjectsHandler_GetByID(t *testing.T) {
     var id = project.UUID.String()
     var s = &projectsServiceMockAPI{returns: []any{project}}
     var engine = gin.Default()
-    engine.GET(target, NewProjectsHandler(s).GetByID)
+    engine.GET(target, NewProjectsHandler(s).Get)
     var request = httptest.NewRequest(method, target, nil)
     var query = url.Values{}
     query.Add("project_uuid", id)
@@ -117,7 +117,7 @@ func TestProjectsHandler_GetByID(t *testing.T) {
   })
 }
 
-func (mock *projectsServiceMockAPI) Add(_ context.Context, t *transfer.ProjectCreation) (string, error) {
+func (mock *projectsServiceMockAPI) Create(_ context.Context, t *transfer.ProjectCreation) (string, error) {
   if nil != mock.t {
     require.Equal(mock.t, mock.arguments[1], t)
   }
@@ -160,7 +160,7 @@ func TestProjectsHandler_Add(t *testing.T) {
       returns:   []any{id},
     }
     var engine = gin.Default()
-    engine.POST(target, NewProjectsHandler(s).Add)
+    engine.POST(target, NewProjectsHandler(s).Create)
     var recorder = httptest.NewRecorder()
     engine.ServeHTTP(recorder, request)
     assert.Equal(t, http.StatusOK, recorder.Code)
@@ -177,7 +177,7 @@ func TestProjectsHandler_Add(t *testing.T) {
       errors:    expected,
     }
     var engine = gin.Default()
-    engine.POST(target, NewProjectsHandler(s).Add)
+    engine.POST(target, NewProjectsHandler(s).Create)
     var recorder = httptest.NewRecorder()
     engine.ServeHTTP(recorder, request)
     assert.Equal(t, http.StatusGone, recorder.Code)
@@ -192,7 +192,7 @@ func TestProjectsHandler_Add(t *testing.T) {
       errors:    unexpected,
     }
     var engine = gin.Default()
-    engine.POST(target, NewProjectsHandler(s).Add)
+    engine.POST(target, NewProjectsHandler(s).Create)
     var recorder = httptest.NewRecorder()
     engine.ServeHTTP(recorder, request)
     assert.Equal(t, http.StatusInternalServerError, recorder.Code)
@@ -1102,7 +1102,7 @@ func TestProjectsHandler_Remove(t *testing.T) {
   })
 }
 
-func (mock *projectsServiceMockAPI) AddTechnologyTag(_ context.Context, id1 string, id2 string) (bool, error) {
+func (mock *projectsServiceMockAPI) AddTag(_ context.Context, id1 string, id2 string) (bool, error) {
   mock.called = true
 
   if nil != mock.t {
@@ -1122,7 +1122,7 @@ func TestProjectsHandler_AddTechnologyTag(t *testing.T) {
   t.Run("missing 'project_uuid' parameter", func(t *testing.T) {
     var s = &projectsServiceMockAPI{}
     var engine = gin.Default()
-    engine.POST(target, NewProjectsHandler(s).AddTechnologyTag)
+    engine.POST(target, NewProjectsHandler(s).AddTag)
     var recorder = httptest.NewRecorder()
     engine.ServeHTTP(recorder, request)
     require.False(t, s.called)
@@ -1136,7 +1136,7 @@ func TestProjectsHandler_AddTechnologyTag(t *testing.T) {
   t.Run("missing 'technology_id' parameter", func(t *testing.T) {
     var s = &projectsServiceMockAPI{}
     var engine = gin.Default()
-    engine.POST(target, NewProjectsHandler(s).AddTechnologyTag)
+    engine.POST(target, NewProjectsHandler(s).AddTag)
     var recorder = httptest.NewRecorder()
     engine.ServeHTTP(recorder, request)
     require.False(t, s.called)
@@ -1154,7 +1154,7 @@ func TestProjectsHandler_AddTechnologyTag(t *testing.T) {
       errors:    nil,
     }
     var engine = gin.Default()
-    engine.POST(target, NewProjectsHandler(s).AddTechnologyTag)
+    engine.POST(target, NewProjectsHandler(s).AddTag)
     var recorder = httptest.NewRecorder()
     engine.ServeHTTP(recorder, request)
     assert.Equal(t, http.StatusNoContent, recorder.Code)
@@ -1170,7 +1170,7 @@ func TestProjectsHandler_AddTechnologyTag(t *testing.T) {
       errors:  expected,
     }
     var engine = gin.Default()
-    engine.POST(target, NewProjectsHandler(s).AddTechnologyTag)
+    engine.POST(target, NewProjectsHandler(s).AddTag)
     var recorder = httptest.NewRecorder()
     engine.ServeHTTP(recorder, request)
     assert.Equal(t, http.StatusGone, recorder.Code)
@@ -1184,7 +1184,7 @@ func TestProjectsHandler_AddTechnologyTag(t *testing.T) {
       errors:  unexpected,
     }
     var engine = gin.Default()
-    engine.POST(target, NewProjectsHandler(s).AddTechnologyTag)
+    engine.POST(target, NewProjectsHandler(s).AddTag)
     var recorder = httptest.NewRecorder()
     engine.ServeHTTP(recorder, request)
     assert.Equal(t, http.StatusInternalServerError, recorder.Code)
@@ -1192,7 +1192,7 @@ func TestProjectsHandler_AddTechnologyTag(t *testing.T) {
   })
 }
 
-func (mock *projectsServiceMockAPI) RemoveTechnologyTag(_ context.Context, id1 string, id2 string) (bool, error) {
+func (mock *projectsServiceMockAPI) RemoveTag(_ context.Context, id1 string, id2 string) (bool, error) {
   mock.called = true
 
   if nil != mock.t {
@@ -1212,7 +1212,7 @@ func TestProjectsHandler_RemoveTechnologyTag(t *testing.T) {
   t.Run("missing 'project_uuid' parameter", func(t *testing.T) {
     var s = &projectsServiceMockAPI{}
     var engine = gin.Default()
-    engine.POST(target, NewProjectsHandler(s).RemoveTechnologyTag)
+    engine.POST(target, NewProjectsHandler(s).RemoveTag)
     var recorder = httptest.NewRecorder()
     engine.ServeHTTP(recorder, request)
     require.False(t, s.called)
@@ -1226,7 +1226,7 @@ func TestProjectsHandler_RemoveTechnologyTag(t *testing.T) {
   t.Run("missing 'technology_id' parameter", func(t *testing.T) {
     var s = &projectsServiceMockAPI{}
     var engine = gin.Default()
-    engine.POST(target, NewProjectsHandler(s).RemoveTechnologyTag)
+    engine.POST(target, NewProjectsHandler(s).RemoveTag)
     var recorder = httptest.NewRecorder()
     engine.ServeHTTP(recorder, request)
     require.False(t, s.called)
@@ -1244,7 +1244,7 @@ func TestProjectsHandler_RemoveTechnologyTag(t *testing.T) {
       errors:    nil,
     }
     var engine = gin.Default()
-    engine.POST(target, NewProjectsHandler(s).RemoveTechnologyTag)
+    engine.POST(target, NewProjectsHandler(s).RemoveTag)
     var recorder = httptest.NewRecorder()
     engine.ServeHTTP(recorder, request)
     assert.Equal(t, http.StatusNoContent, recorder.Code)
@@ -1260,7 +1260,7 @@ func TestProjectsHandler_RemoveTechnologyTag(t *testing.T) {
       errors:  expected,
     }
     var engine = gin.Default()
-    engine.POST(target, NewProjectsHandler(s).RemoveTechnologyTag)
+    engine.POST(target, NewProjectsHandler(s).RemoveTag)
     var recorder = httptest.NewRecorder()
     engine.ServeHTTP(recorder, request)
     assert.Equal(t, http.StatusGone, recorder.Code)
@@ -1274,7 +1274,7 @@ func TestProjectsHandler_RemoveTechnologyTag(t *testing.T) {
       errors:  unexpected,
     }
     var engine = gin.Default()
-    engine.POST(target, NewProjectsHandler(s).RemoveTechnologyTag)
+    engine.POST(target, NewProjectsHandler(s).RemoveTag)
     var recorder = httptest.NewRecorder()
     engine.ServeHTTP(recorder, request)
     assert.Equal(t, http.StatusInternalServerError, recorder.Code)

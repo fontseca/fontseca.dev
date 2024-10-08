@@ -23,7 +23,7 @@ type articlesServiceMockAPI struct {
   errors    error
 }
 
-func (mock *articlesServiceMockAPI) Get(_ context.Context, filter *transfer.ArticleFilter) (articles []*transfer.Article, err error) {
+func (mock *articlesServiceMockAPI) List(_ context.Context, filter *transfer.ArticleFilter) (articles []*transfer.Article, err error) {
   if nil != mock.t {
     require.Equal(mock.t, mock.arguments[1], filter)
   }
@@ -48,7 +48,7 @@ func TestArticlesHandler_Get(t *testing.T) {
     s := &articlesServiceMockAPI{t: t, arguments: []any{context.Background(), filter}, returns: []any{articles}}
 
     engine := gin.Default()
-    engine.GET(target, NewArticlesHandler(s).Get)
+    engine.GET(target, NewArticlesHandler(s).List)
 
     recorder := httptest.NewRecorder()
 
@@ -70,7 +70,7 @@ func TestArticlesHandler_Get(t *testing.T) {
     s := &articlesServiceMockAPI{returns: []any{[]*transfer.Article(nil)}, errors: expected}
 
     engine := gin.Default()
-    engine.GET(target, NewArticlesHandler(s).Get)
+    engine.GET(target, NewArticlesHandler(s).List)
 
     recorder := httptest.NewRecorder()
 
@@ -90,7 +90,7 @@ func TestArticlesHandler_Get(t *testing.T) {
     s := &articlesServiceMockAPI{returns: []any{[]*transfer.Article(nil)}, errors: unexpected}
 
     engine := gin.Default()
-    engine.GET(target, NewArticlesHandler(s).Get)
+    engine.GET(target, NewArticlesHandler(s).List)
 
     recorder := httptest.NewRecorder()
 
@@ -103,7 +103,7 @@ func TestArticlesHandler_Get(t *testing.T) {
   })
 }
 
-func (mock *articlesServiceMockAPI) GetHidden(_ context.Context, filter *transfer.ArticleFilter) (articles []*transfer.Article, err error) {
+func (mock *articlesServiceMockAPI) ListHidden(_ context.Context, filter *transfer.ArticleFilter) (articles []*transfer.Article, err error) {
   if nil != mock.t {
     require.Equal(mock.t, mock.arguments[1], filter)
   }
@@ -128,7 +128,7 @@ func TestArticlesHandler_GetHidden(t *testing.T) {
     s := &articlesServiceMockAPI{t: t, arguments: []any{context.Background(), filter}, returns: []any{articles}}
 
     engine := gin.Default()
-    engine.GET(target, NewArticlesHandler(s).GetHidden)
+    engine.GET(target, NewArticlesHandler(s).ListHidden)
 
     recorder := httptest.NewRecorder()
 
@@ -150,7 +150,7 @@ func TestArticlesHandler_GetHidden(t *testing.T) {
     s := &articlesServiceMockAPI{returns: []any{[]*transfer.Article(nil)}, errors: expected}
 
     engine := gin.Default()
-    engine.GET(target, NewArticlesHandler(s).GetHidden)
+    engine.GET(target, NewArticlesHandler(s).ListHidden)
 
     recorder := httptest.NewRecorder()
 
@@ -170,7 +170,7 @@ func TestArticlesHandler_GetHidden(t *testing.T) {
     s := &articlesServiceMockAPI{returns: []any{[]*transfer.Article(nil)}, errors: unexpected}
 
     engine := gin.Default()
-    engine.GET(target, NewArticlesHandler(s).GetHidden)
+    engine.GET(target, NewArticlesHandler(s).ListHidden)
 
     recorder := httptest.NewRecorder()
 
@@ -213,7 +213,7 @@ func TestArticlesHandler_GetByID(t *testing.T) {
     s := &articlesServiceMockAPI{t: t, arguments: []any{context.Background(), id}, returns: []any{article}}
 
     engine := gin.Default()
-    engine.GET(target, NewArticlesHandler(s).GetByID)
+    engine.GET(target, NewArticlesHandler(s).Get)
 
     recorder := httptest.NewRecorder()
 
@@ -235,7 +235,7 @@ func TestArticlesHandler_GetByID(t *testing.T) {
     s := &articlesServiceMockAPI{returns: []any{(*model.Article)(nil)}, errors: expected}
 
     engine := gin.Default()
-    engine.GET(target, NewArticlesHandler(s).GetByID)
+    engine.GET(target, NewArticlesHandler(s).Get)
 
     recorder := httptest.NewRecorder()
 
@@ -255,7 +255,7 @@ func TestArticlesHandler_GetByID(t *testing.T) {
     s := &articlesServiceMockAPI{returns: []any{(*model.Article)(nil)}, errors: unexpected}
 
     engine := gin.Default()
-    engine.GET(target, NewArticlesHandler(s).GetByID)
+    engine.GET(target, NewArticlesHandler(s).Get)
 
     recorder := httptest.NewRecorder()
 

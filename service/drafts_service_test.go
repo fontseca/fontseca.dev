@@ -101,7 +101,7 @@ func TestDraftsService_Publish(t *testing.T) {
   })
 }
 
-func (mock *archiveRepositoryMockAPIForDrafts) Get(_ context.Context, filter *transfer.ArticleFilter, hidden, draftsOnly bool) (drafts []*transfer.Article, err error) {
+func (mock *archiveRepositoryMockAPIForDrafts) List(_ context.Context, filter *transfer.ArticleFilter, hidden, draftsOnly bool) (drafts []*transfer.Article, err error) {
   mock.called = true
 
   if nil != mock.t {
@@ -120,7 +120,7 @@ func TestDraftsService_Get(t *testing.T) {
   t.Run("success", func(t *testing.T) {
     expectedDrafts := []*transfer.Article{{}, {}, {}}
     r := &archiveRepositoryMockAPIForDrafts{t: t, arguments: []any{ctx, filter, false, true}, returns: []any{expectedDrafts}}
-    drafts, err := NewDraftsService(r).Get(ctx, filter)
+    drafts, err := NewDraftsService(r).List(ctx, filter)
     assert.Equal(t, expectedDrafts, drafts)
     assert.NoError(t, err)
   })
@@ -128,7 +128,7 @@ func TestDraftsService_Get(t *testing.T) {
   t.Run("gets a repository failure", func(t *testing.T) {
     unexpected := errors.New("unexpected error")
     r := &archiveRepositoryMockAPIForDrafts{returns: []any{([]*transfer.Article)(nil)}, errors: unexpected}
-    _, err := NewDraftsService(r).Get(ctx, filter)
+    _, err := NewDraftsService(r).List(ctx, filter)
     assert.ErrorIs(t, err, unexpected)
   })
 }
@@ -151,7 +151,7 @@ func TestDraftsService_GetByID(t *testing.T) {
   t.Run("success", func(t *testing.T) {
     expectedDraft := &model.Article{}
     r := &archiveRepositoryMockAPIForDrafts{t: t, arguments: []any{ctx, id, true}, returns: []any{expectedDraft}}
-    draft, err := NewDraftsService(r).GetByID(ctx, id)
+    draft, err := NewDraftsService(r).Get(ctx, id)
     assert.Equal(t, expectedDraft, draft)
     assert.NoError(t, err)
   })
@@ -159,7 +159,7 @@ func TestDraftsService_GetByID(t *testing.T) {
   t.Run("gets a repository failure", func(t *testing.T) {
     unexpected := errors.New("unexpected error")
     r := &archiveRepositoryMockAPIForDrafts{returns: []any{(*model.Article)(nil)}, errors: unexpected}
-    draft, err := NewDraftsService(r).GetByID(ctx, id)
+    draft, err := NewDraftsService(r).Get(ctx, id)
     assert.Nil(t, draft)
     assert.ErrorIs(t, err, unexpected)
   })
@@ -168,7 +168,7 @@ func TestDraftsService_GetByID(t *testing.T) {
     id = "e4d06ba7-f086-47dc-9f5e"
 
     r := &archiveRepositoryMockAPIForDrafts{}
-    _, err := NewDraftsService(r).GetByID(ctx, id)
+    _, err := NewDraftsService(r).Get(ctx, id)
     require.False(t, r.called)
     assert.Error(t, err)
   })

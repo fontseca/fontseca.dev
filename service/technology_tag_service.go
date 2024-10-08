@@ -11,11 +11,11 @@ import (
 )
 
 type technologyTagRepositoryAPI interface {
-  Get(context.Context) ([]*model.TechnologyTag, error)
-  Add(context.Context, *transfer.TechnologyTagCreation) (string, error)
-  Exists(context.Context, string) error
-  Update(context.Context, string, *transfer.TechnologyTagUpdate) (bool, error)
-  Remove(context.Context, string) error
+  List(ctx context.Context) ([]*model.TechnologyTag, error)
+  Create(ctx context.Context, creation *transfer.TechnologyTagCreation) (string, error)
+  Exists(ctx context.Context, id string) error
+  Update(ctx context.Context, id string, update *transfer.TechnologyTagUpdate) (bool, error)
+  Remove(ctx context.Context, id string) error
 }
 
 // TechnologyTagService provides methods for interacting with technology
@@ -28,13 +28,13 @@ func NewTechnologyTagService(repository technologyTagRepositoryAPI) *TechnologyT
   return &TechnologyTagService{repository}
 }
 
-// Get retrieves a slice of technology tags.
-func (s *TechnologyTagService) Get(ctx context.Context) (technologies []*model.TechnologyTag, err error) {
-  return s.r.Get(ctx)
+// List retrieves a slice of technology tags.
+func (s *TechnologyTagService) List(ctx context.Context) (technologies []*model.TechnologyTag, err error) {
+  return s.r.List(ctx)
 }
 
-// Add creates a new technology tag record with the provided creation data.
-func (s *TechnologyTagService) Add(ctx context.Context, creation *transfer.TechnologyTagCreation) (id string, err error) {
+// Create creates a new technology tag record with the provided creation data.
+func (s *TechnologyTagService) Create(ctx context.Context, creation *transfer.TechnologyTagCreation) (id string, err error) {
   if nil == creation {
     err = errors.New("nil value for parameter: creation")
     slog.Error(err.Error())
@@ -44,7 +44,7 @@ func (s *TechnologyTagService) Add(ctx context.Context, creation *transfer.Techn
   if 64 < len(creation.Name) {
     return "", problem.NewValidation([3]string{"name", "max", "64"})
   }
-  return s.r.Add(ctx, creation)
+  return s.r.Create(ctx, creation)
 }
 
 // Exists checks whether a technology tag exists in the database.
