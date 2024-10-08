@@ -4,38 +4,36 @@ import (
   "context"
   "errors"
   "fontseca.dev/model"
-  "fontseca.dev/repository"
   "fontseca.dev/transfer"
   "log/slog"
   "strings"
 )
 
+type meRepositoryAPI interface {
+  Get(context.Context) (*model.Me, error)
+  Update(context.Context, *transfer.MeUpdate) (bool, error)
+}
+
 // MeService defines the interface for managing user profile related operations.
-type MeService interface {
-  // Get retrieves the information of my profile.
-  // It returns client-friendly errors when they occur.
-  Get(ctx context.Context) (me *model.Me, err error)
-
-  // Update updates the user profile information with the provided data.
-  // It handles validations for the update and returns client-friendly
-  // errors when they occur. Returns true if the profile was successfully
-  // updated, otherwise false.
-  Update(ctx context.Context, update *transfer.MeUpdate) (updated bool, err error)
+type MeService struct {
+  r meRepositoryAPI
 }
 
-type meService struct {
-  r repository.MeRepository
+func NewMeService(r meRepositoryAPI) *MeService {
+  return &MeService{r}
 }
 
-func NewMeService(r repository.MeRepository) MeService {
-  return &meService{r}
-}
-
-func (m *meService) Get(ctx context.Context) (me *model.Me, err error) {
+// Get retrieves the information of my profile.
+// It returns client-friendly errors when they occur.
+func (m *MeService) Get(ctx context.Context) (me *model.Me, err error) {
   return m.r.Get(ctx)
 }
 
-func (m *meService) Update(ctx context.Context, update *transfer.MeUpdate) (updated bool, err error) {
+// Update updates the user profile information with the provided data.
+// It handles validations for the update and returns client-friendly
+// errors when they occur. Returns true if the profile was successfully
+// updated, otherwise false.
+func (m *MeService) Update(ctx context.Context, update *transfer.MeUpdate) (updated bool, err error) {
   if nil == update {
     err = errors.New("nil value for parameter: update")
     slog.Error(err.Error())

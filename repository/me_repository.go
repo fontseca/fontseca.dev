@@ -12,30 +12,19 @@ import (
 
 // MeRepository is an abstraction of the database that provides
 // actions for model.Me management.
-type MeRepository interface {
-  // Register creates my profile record. It ensures that the record is
-  // created only once.
-  Register(ctx context.Context)
-
-  // Get retrieves the information of my profile.
-  Get(ctx context.Context) (me *model.Me, err error)
-
-  // Update updates the information of my profile.
-  Update(ctx context.Context, update *transfer.MeUpdate) (ok bool, err error)
-}
-
-type meRepositoryImpl struct {
+type MeRepository struct {
   cached *model.Me
   db     *sql.DB
   mu     sync.RWMutex
 }
 
 // NewMeRepository creates a new MeRepository instance associating db as its database.
-func NewMeRepository(db *sql.DB) MeRepository {
-  return &meRepositoryImpl{nil, db, sync.RWMutex{}}
+func NewMeRepository(db *sql.DB) *MeRepository {
+  return &MeRepository{nil, db, sync.RWMutex{}}
 }
 
-func (r *meRepositoryImpl) registered(ctx context.Context) bool {
+// registered checks if the sole record in the table "me"."me" is already set.
+func (r *MeRepository) registered(ctx context.Context) bool {
   var exists bool
   ctx, cancel := context.WithTimeout(ctx, time.Second)
   defer cancel()
@@ -49,7 +38,9 @@ func (r *meRepositoryImpl) registered(ctx context.Context) bool {
   return exists
 }
 
-func (r *meRepositoryImpl) Register(ctx context.Context) {
+// Register creates my profile record. It ensures that the record is
+// created only once.
+func (r *MeRepository) Register(ctx context.Context) {
   if r.registered(ctx) {
     return
   }
@@ -78,7 +69,8 @@ func (r *meRepositoryImpl) Register(ctx context.Context) {
   r.cache(ctx)
 }
 
-func (r *meRepositoryImpl) Get(ctx context.Context) (me *model.Me, err error) {
+// Get retrieves the information of my profile.
+func (r *MeRepository) Get(ctx context.Context) (me *model.Me, err error) {
   r.mu.RLock()
   if nil != r.cached {
     r.mu.RUnlock()
@@ -144,7 +136,7 @@ func (r *meRepositoryImpl) Get(ctx context.Context) (me *model.Me, err error) {
   return me, nil
 }
 
-func (r *meRepositoryImpl) updatable(current *model.Me, update *transfer.MeUpdate) bool {
+func (r *MeRepository) updatable(current *model.Me, update *transfer.MeUpdate) bool {
   if ("" == update.Summary || update.Summary == current.Summary) &&
     ("" == update.JobTitle || update.JobTitle == current.JobTitle) &&
     ("" == update.Email || update.Email == current.Email) &&
@@ -162,7 +154,8 @@ func (r *meRepositoryImpl) updatable(current *model.Me, update *transfer.MeUpdat
   return true
 }
 
-func (r *meRepositoryImpl) Update(ctx context.Context, update *transfer.MeUpdate) (ok bool, err error) {
+// Update updates the information of my profile.
+func (r *MeRepository) Update(ctx context.Context, update *transfer.MeUpdate) (ok bool, err error) {
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
 
   if nil != err {
@@ -240,7 +233,7 @@ func (r *meRepositoryImpl) Update(ctx context.Context, update *transfer.MeUpdate
   return true, nil
 }
 
-func (r *meRepositoryImpl) cache(ctx context.Context) {
+func (r *MeRepository) cache(ctx context.Context) {
   r.mu.Lock()
   r.cached = nil
   r.mu.Unlock()

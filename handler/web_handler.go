@@ -20,7 +20,7 @@ import (
 )
 
 type WebHandler struct {
-  meService         service.MeService
+  meService         meServiceAPI
   experienceService service.ExperienceService
   projectsService   service.ProjectsService
   drafts            service.DraftsService
@@ -30,7 +30,7 @@ type WebHandler struct {
 }
 
 func NewWebHandler(
-  meService service.MeService,
+  meService meServiceAPI,
   experienceService service.ExperienceService,
   projectsService service.ProjectsService,
   drafts service.DraftsService,

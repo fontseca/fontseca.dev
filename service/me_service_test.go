@@ -3,19 +3,28 @@ package service
 import (
   "context"
   "errors"
-  "fontseca.dev/mocks"
   "fontseca.dev/model"
+  "fontseca.dev/repository"
   "fontseca.dev/transfer"
   "github.com/stretchr/testify/assert"
-  "github.com/stretchr/testify/mock"
   "github.com/stretchr/testify/require"
   "testing"
   "time"
 )
 
-func TestMeService_Get(t *testing.T) {
-  const routine = "Get"
+type meRepositoryMockAPI struct {
+  repository.MeRepository
+  returns []any
+  errors  error
+  called  bool
+}
 
+func (mock *meRepositoryMockAPI) Get(context.Context) (*model.Me, error) {
+  mock.called = true
+  return mock.returns[0].(*model.Me), mock.errors
+}
+
+func TestMeService_Get(t *testing.T) {
   t.Run("success", func(t *testing.T) {
     var me = model.Me{
       Username:     "Username",
@@ -39,9 +48,8 @@ func TestMeService_Get(t *testing.T) {
       UpdatedAt:    time.Now(),
     }
     var expected = me
-    var r = mocks.NewMeRepository()
+    var r = &meRepositoryMockAPI{returns: []any{&me}}
     var ctx = context.Background()
-    r.On(routine, ctx).Return(&me, nil)
     res, err := NewMeService(r).Get(ctx)
     require.NotNil(t, res)
     assert.NoError(t, err)
@@ -50,18 +58,20 @@ func TestMeService_Get(t *testing.T) {
 
   t.Run("got an error", func(t *testing.T) {
     var unexpected = errors.New("unexpected error")
-    var r = mocks.NewMeRepository()
+    var r = &meRepositoryMockAPI{returns: []any{(*model.Me)(nil)}, errors: unexpected}
     var ctx = context.Background()
-    r.On(routine, mock.Anything).Return(nil, unexpected)
     res, err := NewMeService(r).Get(ctx)
     assert.ErrorIs(t, err, unexpected)
     assert.Nil(t, res)
   })
 }
 
-func TestMeService_Update(t *testing.T) {
-  const routine = "Update"
+func (mock *meRepositoryMockAPI) Update(context.Context, *transfer.MeUpdate) (bool, error) {
+  mock.called = true
+  return mock.returns[0].(bool), mock.errors
+}
 
+func TestMeService_Update(t *testing.T) {
   t.Run("success", func(t *testing.T) {
     var expected = transfer.MeUpdate{
       Summary:      "Summary",
@@ -93,28 +103,26 @@ func TestMeService_Update(t *testing.T) {
       TwitterURL:   " \n\t " + expected.TwitterURL + " \n\t ",
       InstagramURL: " \n\t " + expected.InstagramURL + " \n\t ",
     }
-    var r = mocks.NewMeRepository()
+    var r = &meRepositoryMockAPI{returns: []any{true}}
     var ctx = context.Background()
-    r.On(routine, ctx, &expected).Return(true, nil)
     res, err := NewMeService(r).Update(ctx, &dirty)
     assert.NoError(t, err)
     assert.True(t, res)
   })
 
   t.Run("error on nil update", func(t *testing.T) {
-    var r = mocks.NewMeRepository()
+    var r = &meRepositoryMockAPI{}
     var ctx = context.Background()
-    r.AssertNotCalled(t, routine)
     res, err := NewMeService(r).Update(ctx, nil)
+    assert.False(t, r.called)
     assert.ErrorContains(t, err, "nil value for parameter: update")
     assert.False(t, res)
   })
 
   t.Run("got an error", func(t *testing.T) {
     var unexpected = errors.New("unexpected error")
-    var r = mocks.NewMeRepository()
+    var r = &meRepositoryMockAPI{returns: []any{false}, errors: unexpected}
     var ctx = context.Background()
-    r.On(routine, mock.Anything, mock.Anything).Return(false, unexpected)
     res, err := NewMeService(r).Update(ctx, new(transfer.MeUpdate))
     assert.ErrorIs(t, err, unexpected)
     assert.False(t, res)

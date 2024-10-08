@@ -1,9 +1,10 @@
 package handler
 
 import (
+  "context"
   "errors"
+  "fontseca.dev/model"
   "fontseca.dev/problem"
-  "fontseca.dev/service"
   "fontseca.dev/transfer"
   "github.com/gin-gonic/gin"
   "net/http"
@@ -11,11 +12,16 @@ import (
   "strings"
 )
 
-type MeHandler struct {
-  s service.MeService
+type meServiceAPI interface {
+  Get(context.Context) (*model.Me, error)
+  Update(context.Context, *transfer.MeUpdate) (bool, error)
 }
 
-func NewMeHandler(s service.MeService) *MeHandler {
+type MeHandler struct {
+  s meServiceAPI
+}
+
+func NewMeHandler(s meServiceAPI) *MeHandler {
   return &MeHandler{s}
 }
 

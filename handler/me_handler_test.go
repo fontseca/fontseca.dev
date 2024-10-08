@@ -2,12 +2,12 @@ package handler
 
 import (
   "bytes"
-  "fontseca.dev/mocks"
+  "context"
   "fontseca.dev/model"
   "fontseca.dev/transfer"
   "github.com/gin-gonic/gin"
   "github.com/stretchr/testify/assert"
-  "github.com/stretchr/testify/mock"
+  "github.com/stretchr/testify/require"
   "net/http"
   "net/http/httptest"
   "strings"
@@ -15,8 +15,24 @@ import (
   "time"
 )
 
+type meServiceMockAPI struct {
+  meServiceAPI
+  returns []any
+  errors  error
+  called  bool
+}
+
+func (mock *meServiceMockAPI) Get(context.Context) (*model.Me, error) {
+  mock.called = true
+  return mock.returns[0].(*model.Me), mock.errors
+}
+
+func (mock *meServiceMockAPI) Update(context.Context, *transfer.MeUpdate) (bool, error) {
+  mock.called = true
+  return mock.returns[0].(bool), mock.errors
+}
+
 func TestMeHandler_Get(t *testing.T) {
-  const routine = "Get"
   const method = http.MethodGet
   const target = "/me.get"
 
@@ -42,8 +58,7 @@ func TestMeHandler_Get(t *testing.T) {
       CreatedAt:    time.Now(),
       UpdatedAt:    time.Now(),
     }
-    var s = mocks.NewMeService()
-    s.On(routine, mock.AnythingOfType("*gin.Context")).Return(&me, nil)
+    var s = &meServiceMockAPI{returns: []any{&me}}
     var engine = gin.Default()
     engine.GET(target, NewMeHandler(s).Get)
     var recorder = httptest.NewRecorder()
@@ -55,7 +70,6 @@ func TestMeHandler_Get(t *testing.T) {
 }
 
 func TestMeHandler_SetPhoto(t *testing.T) {
-  const routine = "Update"
   const method = http.MethodPost
   const target = "/me.setPhoto"
 
@@ -68,10 +82,7 @@ func TestMeHandler_SetPhoto(t *testing.T) {
 
     for _, url := range urls {
       url = strings.TrimSpace(url)
-      var expected = transfer.MeUpdate{PhotoURL: url}
-
-      var s = mocks.NewMeService()
-      s.On(routine, mock.AnythingOfType("*gin.Context"), &expected).Return(true, nil)
+      var s = &meServiceMockAPI{returns: []any{true}}
 
       var request = httptest.NewRequest(method, target, nil)
       _ = request.ParseForm()
@@ -90,7 +101,6 @@ func TestMeHandler_SetPhoto(t *testing.T) {
 }
 
 func TestMeHandler_SetResume(t *testing.T) {
-  const routine = "Update"
   const method = http.MethodPost
   const target = "/me.setResume"
 
@@ -103,11 +113,7 @@ func TestMeHandler_SetResume(t *testing.T) {
 
     for _, url := range urls {
       url = strings.TrimSpace(url)
-      var expected = transfer.MeUpdate{ResumeURL: url}
-
-      var s = mocks.NewMeService()
-      s.On(routine, mock.AnythingOfType("*gin.Context"), &expected).Return(true, nil)
-
+      var s = &meServiceMockAPI{returns: []any{true}}
       var request = httptest.NewRequest(method, target, nil)
       _ = request.ParseForm()
       request.PostForm.Set("resume_url", url)
@@ -125,15 +131,11 @@ func TestMeHandler_SetResume(t *testing.T) {
 }
 
 func TestMeHandler_SetHireable(t *testing.T) {
-  const routine = "Update"
   const method = http.MethodPost
   const target = "/me.setHireable"
 
   t.Run("success", func(t *testing.T) {
-    var s = mocks.NewMeService()
-    var expected = transfer.MeUpdate{Hireable: true}
-    s.On(routine, mock.AnythingOfType("*gin.Context"), &expected).Return(true, nil)
-
+    var s = &meServiceMockAPI{returns: []any{true}}
     var request = httptest.NewRequest(method, target, nil)
     _ = request.ParseForm()
     request.PostForm.Set("hireable", "true")
@@ -149,9 +151,7 @@ func TestMeHandler_SetHireable(t *testing.T) {
   })
 
   t.Run("could not parse", func(t *testing.T) {
-    var s = mocks.NewMeService()
-    s.AssertNotCalled(t, routine)
-
+    var s = &meServiceMockAPI{}
     var request = httptest.NewRequest(method, target, nil)
     _ = request.ParseForm()
     request.PostForm.Set("hireable", "unparsable format")
@@ -161,6 +161,7 @@ func TestMeHandler_SetHireable(t *testing.T) {
     var recorder = httptest.NewRecorder()
     engine.ServeHTTP(recorder, request)
 
+    require.False(t, s.called)
     assert.Equal(t, http.StatusUnprocessableEntity, recorder.Code)
     assert.NotEmpty(t, recorder.Body.String())
     assert.Contains(t, recorder.Body.String(), "Failure when parsing boolean value.")
@@ -169,9 +170,8 @@ func TestMeHandler_SetHireable(t *testing.T) {
 
 func TestMeHandler_Update(t *testing.T) {
   const (
-    routine = "Update"
-    method  = http.MethodPost
-    target  = "/me.update"
+    method = http.MethodPost
+    target = "/me.update"
   )
 
   t.Run("success", func(t *testing.T) {
@@ -187,8 +187,7 @@ func TestMeHandler_Update(t *testing.T) {
       TwitterURL:   "TwitterURL",
       InstagramURL: "InstagramURL",
     }
-    var s = mocks.NewMeService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), &update).Return(true, nil)
+    var s = &meServiceMockAPI{returns: []any{true}}
     gin.SetMode(gin.ReleaseMode)
     var engine = gin.Default()
     engine.POST(target, NewMeHandler(s).Update)
