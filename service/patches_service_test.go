@@ -3,26 +3,35 @@ package service
 import (
   "context"
   "errors"
-  "fontseca.dev/mocks"
   "fontseca.dev/model"
   "fontseca.dev/transfer"
   "github.com/google/uuid"
   "github.com/stretchr/testify/assert"
-  "github.com/stretchr/testify/mock"
+  "github.com/stretchr/testify/require"
   "strings"
   "testing"
 )
 
-func TestPatchesService_Get(t *testing.T) {
-  const routine = "GetPatches"
+type archiveRepositoryMockAPIForPatches struct {
+  archiveRepositoryAPIForPatches
+  t         *testing.T
+  returns   []any
+  arguments []any
+  errors    error
+  called    bool
+}
 
+func (mock *archiveRepositoryMockAPIForPatches) GetPatches(context.Context) ([]*model.ArticlePatch, error) {
+  return mock.returns[0].([]*model.ArticlePatch), mock.errors
+}
+
+func TestPatchesService_Get(t *testing.T) {
   ctx := context.TODO()
 
   t.Run("success", func(t *testing.T) {
     expectedPatches := make([]*model.ArticlePatch, 3)
 
-    r := mocks.NewArchiveRepository()
-    r.On(routine, ctx).Return(expectedPatches, nil)
+    r := &archiveRepositoryMockAPIForPatches{returns: []any{expectedPatches}}
 
     articles, err := NewPatchesService(r).Get(ctx)
 
@@ -33,8 +42,7 @@ func TestPatchesService_Get(t *testing.T) {
   t.Run("gets a repository failure", func(t *testing.T) {
     unexpected := errors.New("unexpected error")
 
-    r := mocks.NewArchiveRepository()
-    r.On(routine, ctx).Return(nil, unexpected)
+    r := &archiveRepositoryMockAPIForPatches{returns: []any{[]*model.ArticlePatch(nil)}, errors: unexpected}
 
     articles, err := NewPatchesService(r).Get(ctx)
 
@@ -43,8 +51,18 @@ func TestPatchesService_Get(t *testing.T) {
   })
 }
 
+func (mock *archiveRepositoryMockAPIForPatches) Revise(_ context.Context, patchID string, revision *transfer.ArticleRevision) error {
+  mock.called = true
+
+  if nil != mock.t {
+    require.Equal(mock.t, mock.arguments[1], patchID)
+    require.Equal(mock.t, mock.arguments[2], revision)
+  }
+
+  return mock.errors
+}
+
 func TestPatchesService_Revise(t *testing.T) {
-  const routine = "Revise"
   ctx := context.TODO()
   id := uuid.NewString()
 
@@ -61,9 +79,7 @@ func TestPatchesService_Revise(t *testing.T) {
       Content: " \t\n " + revision.Content + " \t\n ",
     }
 
-    r := mocks.NewArchiveRepository()
-    r.On(routine, ctx, id, revision).Return(nil)
-
+    r := &archiveRepositoryMockAPIForPatches{t: t, arguments: []any{ctx, id, revision}}
     assert.NoError(t, NewPatchesService(r).Revise(ctx, id, dirty))
   })
 
@@ -78,9 +94,7 @@ func TestPatchesService_Revise(t *testing.T) {
       Title: " \t\n " + revision.Title + " \t\n ",
     }
 
-    r := mocks.NewArchiveRepository()
-    r.On(routine, mock.Anything, mock.Anything, revision).Return(nil)
-
+    r := &archiveRepositoryMockAPIForPatches{t: t, arguments: []any{ctx, id, revision}}
     assert.NoError(t, NewPatchesService(r).Revise(ctx, id, dirty))
   })
 
@@ -94,46 +108,47 @@ func TestPatchesService_Revise(t *testing.T) {
       Content: " \t\n " + revision.Content + " \t\n ",
     }
 
-    r := mocks.NewArchiveRepository()
-    r.On(routine, mock.Anything, mock.Anything, revision).Return(nil)
-
+    r := &archiveRepositoryMockAPIForPatches{t: t, arguments: []any{ctx, id, revision}}
     assert.NoError(t, NewPatchesService(r).Revise(ctx, id, dirty))
   })
 
   t.Run("nil parameter: revision", func(t *testing.T) {
-    r := mocks.NewArchiveRepository()
-    r.AssertNotCalled(t, routine)
+    r := &archiveRepositoryMockAPIForPatches{}
     assert.ErrorContains(t, NewPatchesService(r).Revise(ctx, id, nil), "nil value")
+    assert.False(t, r.called)
   })
 
   t.Run("wrong uuid: id", func(t *testing.T) {
-    r := mocks.NewArchiveRepository()
-    r.AssertNotCalled(t, routine)
+    r := &archiveRepositoryMockAPIForPatches{}
     assert.Error(t, NewPatchesService(r).Revise(ctx, "x", &transfer.ArticleRevision{}))
   })
 
   t.Run("gets a repository failure", func(t *testing.T) {
     unexpected := errors.New("unexpected error")
 
-    r := mocks.NewArchiveRepository()
-    r.On(routine, mock.Anything, mock.Anything, mock.Anything).Return(unexpected)
-
+    r := &archiveRepositoryMockAPIForPatches{errors: unexpected}
     assert.ErrorIs(t, NewPatchesService(r).Revise(ctx, id, &transfer.ArticleRevision{}), unexpected)
   })
 }
 
-func TestPatchesService_Share(t *testing.T) {
-  const routine = "Share"
+func (mock *archiveRepositoryMockAPIForPatches) Share(_ context.Context, patchID string) (string, error) {
+  mock.called = true
 
+  if nil != mock.t {
+    require.Equal(mock.t, mock.arguments[1], patchID)
+  }
+
+  return mock.returns[0].(string), mock.errors
+}
+
+func TestPatchesService_Share(t *testing.T) {
   ctx := context.TODO()
   id := uuid.NewString()
 
   t.Run("success", func(t *testing.T) {
     expectedLink := "link-to-resource"
 
-    r := mocks.NewArchiveRepository()
-    r.On(routine, ctx, id).Return(expectedLink, nil)
-
+    r := &archiveRepositoryMockAPIForPatches{t: t, arguments: []any{ctx, id}, returns: []any{expectedLink}}
     link, err := NewPatchesService(r).Share(ctx, id)
 
     assert.Equal(t, expectedLink, link)
@@ -143,11 +158,10 @@ func TestPatchesService_Share(t *testing.T) {
   t.Run("wrong patch uuid", func(t *testing.T) {
     id = "e4d06ba7-f086-47dc-9f5e"
 
-    r := mocks.NewArchiveRepository()
-    r.AssertNotCalled(t, routine)
+    r := &archiveRepositoryMockAPIForPatches{}
 
     link, err := NewPatchesService(r).Share(ctx, id)
-
+    require.False(t, r.called)
     assert.Error(t, err)
     assert.Equal(t, "about:blank", link)
   })
@@ -155,25 +169,29 @@ func TestPatchesService_Share(t *testing.T) {
   t.Run("gets a repository failure", func(t *testing.T) {
     unexpected := errors.New("unexpected error")
 
-    r := mocks.NewArchiveRepository()
-    r.On(routine, mock.Anything, mock.Anything, mock.Anything).Return("", unexpected)
-
+    r := &archiveRepositoryMockAPIForPatches{returns: []any{""}, errors: unexpected}
     link, err := NewPatchesService(r).Share(ctx, uuid.NewString())
-
     assert.Equal(t, "about:blank", link)
     assert.ErrorIs(t, err, unexpected)
   })
 }
 
-func TestPatchesService_Discard(t *testing.T) {
-  const routine = "Discard"
+func (mock *archiveRepositoryMockAPIForPatches) Discard(_ context.Context, patchID string) error {
+  mock.called = true
 
+  if nil != mock.t {
+    require.Equal(mock.t, mock.arguments[1], patchID)
+  }
+
+  return mock.errors
+}
+
+func TestPatchesService_Discard(t *testing.T) {
   ctx := context.TODO()
   id := uuid.NewString()
 
   t.Run("success", func(t *testing.T) {
-    r := mocks.NewArchiveRepository()
-    r.On(routine, ctx, id).Return(nil)
+    r := &archiveRepositoryMockAPIForPatches{t: t, arguments: []any{ctx, id}}
 
     assert.NoError(t, NewPatchesService(r).Discard(ctx, id))
   })
@@ -181,31 +199,35 @@ func TestPatchesService_Discard(t *testing.T) {
   t.Run("gets a repository failure", func(t *testing.T) {
     unexpected := errors.New("unexpected error")
 
-    r := mocks.NewArchiveRepository()
-    r.On(routine, mock.Anything, mock.Anything).Return(unexpected)
-
+    r := &archiveRepositoryMockAPIForPatches{errors: unexpected}
     assert.ErrorIs(t, NewPatchesService(r).Discard(ctx, id), unexpected)
   })
 
   t.Run("wrong uuid", func(t *testing.T) {
     id = "e4d06ba7-f086-47dc-9f5e"
 
-    r := mocks.NewArchiveRepository()
-    r.AssertNotCalled(t, routine)
-
+    r := &archiveRepositoryMockAPIForPatches{}
     assert.Error(t, NewPatchesService(r).Discard(ctx, id))
+    assert.False(t, r.called)
   })
 }
 
-func TestPatchesService_Release(t *testing.T) {
-  const routine = "Release"
+func (mock *archiveRepositoryMockAPIForPatches) Release(_ context.Context, patchID string) error {
+  mock.called = true
 
+  if nil != mock.t {
+    require.Equal(mock.t, mock.arguments[1], patchID)
+  }
+
+  return mock.errors
+}
+
+func TestPatchesService_Release(t *testing.T) {
   ctx := context.TODO()
   id := uuid.NewString()
 
   t.Run("success", func(t *testing.T) {
-    r := mocks.NewArchiveRepository()
-    r.On(routine, ctx, id).Return(nil)
+    r := &archiveRepositoryMockAPIForPatches{t: t, arguments: []any{ctx, id}}
 
     assert.NoError(t, NewPatchesService(r).Release(ctx, id))
   })
@@ -213,18 +235,15 @@ func TestPatchesService_Release(t *testing.T) {
   t.Run("gets a repository failure", func(t *testing.T) {
     unexpected := errors.New("unexpected error")
 
-    r := mocks.NewArchiveRepository()
-    r.On(routine, mock.Anything, mock.Anything).Return(unexpected)
-
+    r := &archiveRepositoryMockAPIForPatches{errors: unexpected}
     assert.ErrorIs(t, NewPatchesService(r).Release(ctx, id), unexpected)
   })
 
   t.Run("wrong uuid", func(t *testing.T) {
     id = "e4d06ba7-f086-47dc-9f5e"
 
-    r := mocks.NewArchiveRepository()
-    r.AssertNotCalled(t, routine)
-
+    r := &archiveRepositoryMockAPIForPatches{}
     assert.Error(t, NewPatchesService(r).Release(ctx, id))
+    assert.False(t, r.called)
   })
 }

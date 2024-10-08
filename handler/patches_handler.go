@@ -1,18 +1,27 @@
 package handler
 
 import (
+  "context"
+  "fontseca.dev/model"
   "fontseca.dev/problem"
-  "fontseca.dev/service"
   "fontseca.dev/transfer"
   "github.com/gin-gonic/gin"
   "net/http"
 )
 
-type PatchesHandler struct {
-  patches service.PatchesService
+type patchesServiceAPI interface {
+  Get(ctx context.Context) (patches []*model.ArticlePatch, err error)
+  Revise(ctx context.Context, patchID string, revision *transfer.ArticleRevision) error
+  Share(ctx context.Context, patchID string) (link string, err error)
+  Discard(ctx context.Context, patchID string) error
+  Release(ctx context.Context, patchID string) error
 }
 
-func NewPatchesHandler(patches service.PatchesService) *PatchesHandler {
+type PatchesHandler struct {
+  patches patchesServiceAPI
+}
+
+func NewPatchesHandler(patches patchesServiceAPI) *PatchesHandler {
   return &PatchesHandler{patches}
 }
 

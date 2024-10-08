@@ -1,25 +1,36 @@
 package handler
 
 import (
+  "context"
   "errors"
-  "fontseca.dev/mocks"
   "fontseca.dev/model"
   "fontseca.dev/problem"
   "fontseca.dev/transfer"
   "github.com/gin-gonic/gin"
   "github.com/google/uuid"
   "github.com/stretchr/testify/assert"
-  "github.com/stretchr/testify/mock"
+  "github.com/stretchr/testify/require"
   "net/http"
   "net/http/httptest"
   "testing"
 )
 
+type patchesServiceMockAPI struct {
+  patchesServiceAPI
+  t         *testing.T
+  returns   []any
+  arguments []any
+  errors    error
+}
+
+func (mock *patchesServiceMockAPI) Get(context.Context) (patches []*model.ArticlePatch, err error) {
+  return mock.returns[0].([]*model.ArticlePatch), mock.errors
+}
+
 func TestPatchesHandler_Get(t *testing.T) {
   const (
-    routine = "Get"
-    method  = http.MethodGet
-    target  = "/archive.articles.patches.list"
+    method = http.MethodGet
+    target = "/archive.articles.patches.list"
   )
 
   request := httptest.NewRequest(method, target, nil)
@@ -29,8 +40,7 @@ func TestPatchesHandler_Get(t *testing.T) {
     expectedStatusCode := http.StatusOK
     expectedBody := string(marshal(t, patches))
 
-    s := mocks.NewPatchesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context")).Return(patches, nil)
+    s := &patchesServiceMockAPI{returns: []any{patches}}
 
     engine := gin.Default()
     engine.GET(target, NewPatchesHandler(s).Get)
@@ -52,8 +62,7 @@ func TestPatchesHandler_Get(t *testing.T) {
     expected.Status(expectedStatusCode)
     expected.Detail(expectBodyContains)
 
-    s := mocks.NewPatchesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context")).Return(nil, expected)
+    s := &patchesServiceMockAPI{returns: []any{[]*model.ArticlePatch(nil)}, errors: expected}
 
     engine := gin.Default()
     engine.GET(target, NewPatchesHandler(s).Get)
@@ -73,8 +82,7 @@ func TestPatchesHandler_Get(t *testing.T) {
     expectedStatusCode := http.StatusInternalServerError
     expectBodyContains := "An unexpected error occurred while processing your request"
 
-    s := mocks.NewPatchesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context")).Return(nil, unexpected)
+    s := &patchesServiceMockAPI{returns: []any{[]*model.ArticlePatch(nil)}, errors: unexpected}
 
     engine := gin.Default()
     engine.GET(target, NewPatchesHandler(s).Get)
@@ -90,11 +98,19 @@ func TestPatchesHandler_Get(t *testing.T) {
   })
 }
 
+func (mock *patchesServiceMockAPI) Revise(_ context.Context, patchID string, revision *transfer.ArticleRevision) error {
+  if nil != mock.t {
+    require.Equal(mock.t, mock.arguments[1], patchID)
+    require.Equal(mock.t, mock.arguments[2], revision)
+  }
+
+  return mock.errors
+}
+
 func TestPatchesHandler_Revise(t *testing.T) {
   const (
-    routine = "Revise"
-    method  = http.MethodPost
-    target  = "/archive.articles.revise"
+    method = http.MethodPost
+    target = "/archive.articles.revise"
   )
 
   revision := &transfer.ArticleRevision{
@@ -114,8 +130,7 @@ func TestPatchesHandler_Revise(t *testing.T) {
   t.Run("success", func(t *testing.T) {
     expectedStatusCode := http.StatusNoContent
 
-    s := mocks.NewPatchesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id, revision).Return(nil)
+    s := &patchesServiceMockAPI{t: t, arguments: []any{context.Background(), id, revision}}
 
     engine := gin.Default()
     engine.POST(target, NewPatchesHandler(s).Revise)
@@ -137,8 +152,7 @@ func TestPatchesHandler_Revise(t *testing.T) {
     expected.Status(expectedStatusCode)
     expected.Detail(expectBodyContains)
 
-    s := mocks.NewPatchesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id, revision).Return(expected)
+    s := &patchesServiceMockAPI{errors: expected}
 
     engine := gin.Default()
     engine.POST(target, NewPatchesHandler(s).Revise)
@@ -158,8 +172,7 @@ func TestPatchesHandler_Revise(t *testing.T) {
     expectedStatusCode := http.StatusInternalServerError
     expectBodyContains := "An unexpected error occurred while processing your request"
 
-    s := mocks.NewPatchesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id, revision).Return(unexpected)
+    s := &patchesServiceMockAPI{errors: unexpected}
 
     engine := gin.Default()
     engine.POST(target, NewPatchesHandler(s).Revise)
@@ -175,12 +188,19 @@ func TestPatchesHandler_Revise(t *testing.T) {
   })
 }
 
+func (mock *patchesServiceMockAPI) Share(_ context.Context, patchID string) (link string, err error) {
+  if nil != mock.t {
+    require.Equal(mock.t, mock.arguments[1], patchID)
+  }
+
+  return mock.returns[0].(string), mock.errors
+}
+
 func TestPatchesHandler_Share(t *testing.T) {
   const (
-    routine = "Share"
-    method  = http.MethodPost
-    target  = "/archive.articles.patches.share"
-    link    = "/link/to/draft"
+    method = http.MethodPost
+    target = "/archive.articles.patches.share"
+    link   = "/link/to/draft"
   )
 
   request := httptest.NewRequest(method, target, nil)
@@ -194,8 +214,7 @@ func TestPatchesHandler_Share(t *testing.T) {
     expectedStatusCode := http.StatusOK
     expectedBody := string(marshal(t, gin.H{"shareable_link": link}))
 
-    s := mocks.NewPatchesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id).Return(link, nil)
+    s := &patchesServiceMockAPI{t: t, arguments: []any{context.Background(), id}, returns: []any{link}}
 
     engine := gin.Default()
     engine.POST(target, NewPatchesHandler(s).Share)
@@ -217,8 +236,7 @@ func TestPatchesHandler_Share(t *testing.T) {
     expected.Status(expectedStatusCode)
     expected.Detail(expectBodyContains)
 
-    s := mocks.NewPatchesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id).Return("about:blank", expected)
+    s := &patchesServiceMockAPI{returns: []any{"about:blank"}, errors: expected}
 
     engine := gin.Default()
     engine.POST(target, NewPatchesHandler(s).Share)
@@ -238,8 +256,7 @@ func TestPatchesHandler_Share(t *testing.T) {
     expectedStatusCode := http.StatusInternalServerError
     expectBodyContains := "An unexpected error occurred while processing your request"
 
-    s := mocks.NewPatchesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id).Return("about:blank", unexpected)
+    s := &patchesServiceMockAPI{returns: []any{"about:blank"}, errors: unexpected}
 
     engine := gin.Default()
     engine.POST(target, NewPatchesHandler(s).Share)
@@ -253,13 +270,20 @@ func TestPatchesHandler_Share(t *testing.T) {
     assert.Empty(t, recorder.Result().Cookies())
     assert.Contains(t, recorder.Result().Header.Get("Content-Type"), "application/problem+json")
   })
+}
+
+func (mock *patchesServiceMockAPI) Discard(_ context.Context, patchID string) error {
+  if nil != mock.t {
+    require.Equal(mock.t, mock.arguments[1], patchID)
+  }
+
+  return mock.errors
 }
 
 func TestPatchesHandler_Discard(t *testing.T) {
   const (
-    routine = "Discard"
-    method  = http.MethodPost
-    target  = "/archive.articles.patches.discard"
+    method = http.MethodPost
+    target = "/archive.articles.patches.discard"
   )
 
   request := httptest.NewRequest(method, target, nil)
@@ -272,8 +296,7 @@ func TestPatchesHandler_Discard(t *testing.T) {
   t.Run("success", func(t *testing.T) {
     expectedStatusCode := http.StatusNoContent
 
-    s := mocks.NewPatchesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id).Return(nil)
+    s := &patchesServiceMockAPI{t: t, arguments: []any{context.Background(), id}}
 
     engine := gin.Default()
     engine.POST(target, NewPatchesHandler(s).Discard)
@@ -295,8 +318,7 @@ func TestPatchesHandler_Discard(t *testing.T) {
     expected.Status(expectedStatusCode)
     expected.Detail(expectBodyContains)
 
-    s := mocks.NewPatchesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id).Return(expected)
+    s := &patchesServiceMockAPI{errors: expected}
 
     engine := gin.Default()
     engine.POST(target, NewPatchesHandler(s).Discard)
@@ -316,8 +338,7 @@ func TestPatchesHandler_Discard(t *testing.T) {
     expectedStatusCode := http.StatusInternalServerError
     expectBodyContains := "An unexpected error occurred while processing your request"
 
-    s := mocks.NewPatchesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id).Return(unexpected)
+    s := &patchesServiceMockAPI{errors: unexpected}
 
     engine := gin.Default()
     engine.POST(target, NewPatchesHandler(s).Discard)
@@ -333,11 +354,18 @@ func TestPatchesHandler_Discard(t *testing.T) {
   })
 }
 
+func (mock *patchesServiceMockAPI) Release(_ context.Context, patchID string) error {
+  if nil != mock.t {
+    require.Equal(mock.t, mock.arguments[1], patchID)
+  }
+
+  return mock.errors
+}
+
 func TestPatchesHandler_Release(t *testing.T) {
   const (
-    routine = "Release"
-    method  = http.MethodPost
-    target  = "/archive.articles.patches.release"
+    method = http.MethodPost
+    target = "/archive.articles.patches.release"
   )
 
   request := httptest.NewRequest(method, target, nil)
@@ -350,8 +378,7 @@ func TestPatchesHandler_Release(t *testing.T) {
   t.Run("success", func(t *testing.T) {
     expectedStatusCode := http.StatusNoContent
 
-    s := mocks.NewPatchesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id).Return(nil)
+    s := &patchesServiceMockAPI{t: t, arguments: []any{context.Background(), id}}
 
     engine := gin.Default()
     engine.POST(target, NewPatchesHandler(s).Release)
@@ -373,8 +400,7 @@ func TestPatchesHandler_Release(t *testing.T) {
     expected.Status(expectedStatusCode)
     expected.Detail(expectBodyContains)
 
-    s := mocks.NewPatchesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id).Return(expected)
+    s := &patchesServiceMockAPI{errors: expected}
 
     engine := gin.Default()
     engine.POST(target, NewPatchesHandler(s).Release)
@@ -394,8 +420,7 @@ func TestPatchesHandler_Release(t *testing.T) {
     expectedStatusCode := http.StatusInternalServerError
     expectBodyContains := "An unexpected error occurred while processing your request"
 
-    s := mocks.NewPatchesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id).Return(unexpected)
+    s := &patchesServiceMockAPI{errors: unexpected}
 
     engine := gin.Default()
     engine.POST(target, NewPatchesHandler(s).Release)

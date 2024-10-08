@@ -5,50 +5,36 @@ import (
   "errors"
   "fontseca.dev/model"
   "fontseca.dev/problem"
-  "fontseca.dev/repository"
   "fontseca.dev/transfer"
   "log/slog"
   "strings"
 )
 
+type archiveRepositoryAPIForPatches interface {
+  GetPatches(ctx context.Context) (patches []*model.ArticlePatch, err error)
+  Revise(ctx context.Context, patchID string, revision *transfer.ArticleRevision) error
+  Share(ctx context.Context, patchID string) (link string, err error)
+  Discard(ctx context.Context, patchID string) error
+  Release(ctx context.Context, patchID string) error
+}
+
 // PatchesService is a high level provider for article patches.
-type PatchesService interface {
-  // Get retrieves all the ongoing article patches.
-  Get(ctx context.Context) (patches []*model.ArticlePatch, err error)
-
-  // Revise adds a correction or inclusion to an article patch in order
-  // to correct or improve it.
-  Revise(ctx context.Context, id string, revision *transfer.ArticleRevision) error
-
-  // Share creates a shareable link for an article patch. Only users
-  // with that link can see the progress and provide feedback.
-  //
-  // A shareable link does not make an article public. This link will
-  // eventually expire after a certain amount of time.
-  Share(ctx context.Context, id string) (link string, err error)
-
-  // Discard completely drops an article patch but keeps the original
-  // article.
-  Discard(ctx context.Context, id string) error
-
-  // Release merges a patch into the original article and published the
-  // update immediately after merging.
-  Release(ctx context.Context, id string) error
+type PatchesService struct {
+  r archiveRepositoryAPIForPatches
 }
 
-type patchesService struct {
-  r repository.ArchiveRepository
+func NewPatchesService(r archiveRepositoryAPIForPatches) *PatchesService {
+  return &PatchesService{r}
 }
 
-func NewPatchesService(r repository.ArchiveRepository) PatchesService {
-  return &patchesService{r}
-}
-
-func (s *patchesService) Get(ctx context.Context) (patches []*model.ArticlePatch, err error) {
+// Get retrieves all the ongoing article patches.
+func (s *PatchesService) Get(ctx context.Context) (patches []*model.ArticlePatch, err error) {
   return s.r.GetPatches(ctx)
 }
 
-func (s *patchesService) Revise(ctx context.Context, id string, revision *transfer.ArticleRevision) error {
+// Revise adds a correction or inclusion to an article patch in order
+// to correct or improve it.
+func (s *PatchesService) Revise(ctx context.Context, id string, revision *transfer.ArticleRevision) error {
   if nil == revision {
     err := errors.New("nil value for parameter: revision")
     slog.Error(err.Error())
@@ -96,7 +82,12 @@ func (s *patchesService) Revise(ctx context.Context, id string, revision *transf
   return s.r.Revise(ctx, id, revision)
 }
 
-func (s *patchesService) Share(ctx context.Context, id string) (link string, err error) {
+// Share creates a shareable link for an article patch. Only users
+// with that link can see the progress and provide feedback.
+//
+// A shareable link does not make an article public. This link will
+// eventually expire after a certain amount of time.
+func (s *PatchesService) Share(ctx context.Context, id string) (link string, err error) {
   if err = validateUUID(&id); nil != err {
     return "about:blank", err
   }
@@ -110,7 +101,9 @@ func (s *patchesService) Share(ctx context.Context, id string) (link string, err
   return link, nil
 }
 
-func (s *patchesService) Discard(ctx context.Context, id string) error {
+// Discard completely drops an article patch but keeps the original
+// article.
+func (s *PatchesService) Discard(ctx context.Context, id string) error {
   if err := validateUUID(&id); nil != err {
     return err
   }
@@ -118,7 +111,9 @@ func (s *patchesService) Discard(ctx context.Context, id string) error {
   return s.r.Discard(ctx, id)
 }
 
-func (s *patchesService) Release(ctx context.Context, id string) error {
+// Release merges a patch into the original article and published the
+// update immediately after merging.
+func (s *PatchesService) Release(ctx context.Context, id string) error {
   if err := validateUUID(&id); nil != err {
     return err
   }
