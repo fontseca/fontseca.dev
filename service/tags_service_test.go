@@ -3,17 +3,40 @@ package service
 import (
   "context"
   "errors"
-  "fontseca.dev/mocks"
   "fontseca.dev/model"
   "fontseca.dev/transfer"
   "github.com/stretchr/testify/assert"
-  "github.com/stretchr/testify/mock"
+  "github.com/stretchr/testify/require"
   "testing"
 )
 
-func TestTagsService_Add(t *testing.T) {
-  const routine = "Add"
+type tagsRepositoryMockAPI struct {
+  tagsRepositoryAPI
+  t         *testing.T
+  arguments []any
+  returns   []any
+  errors    error
+  called    bool
+}
 
+type tagsRepositoryThenGetMock struct {
+  tagsRepositoryMockAPI
+}
+
+func (mock *tagsRepositoryThenGetMock) Get(context.Context) ([]*model.Tag, error) {
+  return make([]*model.Tag, 2), nil
+}
+
+func (mock *tagsRepositoryThenGetMock) Add(_ context.Context, t *transfer.TagCreation) error {
+  if nil != mock.errors {
+    return mock.errors
+  }
+
+  require.Equal(mock.t, mock.arguments[1], t)
+  return nil
+}
+
+func TestTagsService_Add(t *testing.T) {
   ctx := context.TODO()
   creation := &transfer.TagCreation{
     Name: "Consectetur! Adipiscing... Quis nostrud: ELIT?",
@@ -25,39 +48,34 @@ func TestTagsService_Add(t *testing.T) {
       Name: " \n\t " + creation.Name + " \n\t ",
     }
 
-    r := mocks.NewTagsRepository()
-
-    r.On(routine, ctx, creation).Return(nil)
-    r.On("Get", ctx).Return([]*model.Tag{{}, {}}, nil)
-
+    r := &tagsRepositoryThenGetMock{
+      tagsRepositoryMockAPI{t: t, arguments: []any{nil, creation}},
+    }
     err := NewTagsService(r).Add(ctx, dirty)
-
     assert.NoError(t, err)
   })
 
   t.Run("gets a repository failure", func(t *testing.T) {
     unexpected := errors.New("unexpected error")
-    r := mocks.NewTagsRepository()
-    r.On(routine, ctx, mock.Anything).Return(unexpected)
-
+    r := &tagsRepositoryThenGetMock{tagsRepositoryMockAPI{errors: unexpected}}
     err := NewTagsService(r).Add(ctx, creation)
     assert.ErrorIs(t, err, unexpected)
   })
 }
 
-func TestTagsService_Get(t *testing.T) {
-  const routine = "Get"
+func (mock *tagsRepositoryMockAPI) Get(_ context.Context) ([]*model.Tag, error) {
+  mock.called = true
+  return mock.returns[0].([]*model.Tag), mock.errors
+}
 
+func TestTagsService_Get(t *testing.T) {
   ctx := context.TODO()
 
   t.Run("success without cache", func(t *testing.T) {
     expectedTags := []*model.Tag{{}, {}, {}}
 
-    r := mocks.NewTagsRepository()
-    r.On(routine, ctx).Return(expectedTags, nil)
-
-    s := NewTagsService(r).(*tagsService)
-
+    r := &tagsRepositoryMockAPI{returns: []any{expectedTags}}
+    s := NewTagsService(r)
     s.cache = nil
 
     tags, err := s.Get(ctx)
@@ -69,25 +87,21 @@ func TestTagsService_Get(t *testing.T) {
   t.Run("success with cache", func(t *testing.T) {
     expectedTags := []*model.Tag{{}, {}, {}}
 
-    r := mocks.NewTagsRepository()
-    r.AssertNotCalled(t, routine)
-
-    s := NewTagsService(r).(*tagsService)
+    r := &tagsRepositoryMockAPI{}
+    s := NewTagsService(r)
 
     s.cache = expectedTags
 
     tags, err := s.Get(ctx)
 
+    require.False(t, r.called)
     assert.Equal(t, expectedTags, tags)
     assert.NoError(t, err)
   })
 
   t.Run("gets a repository failure", func(t *testing.T) {
     unexpected := errors.New("unexpected error")
-
-    r := mocks.NewTagsRepository()
-    r.On(routine, ctx).Return(nil, unexpected)
-
+    r := &tagsRepositoryMockAPI{returns: []any{([]*model.Tag)(nil)}, errors: unexpected}
     tags, err := NewTagsService(r).Get(ctx)
 
     assert.Nil(t, tags)
@@ -95,9 +109,17 @@ func TestTagsService_Get(t *testing.T) {
   })
 }
 
-func TestTagsService_Update(t *testing.T) {
-  const routine = "Update"
+func (mock *tagsRepositoryThenGetMock) Update(_ context.Context, id string, t *transfer.TagUpdate) error {
+  if nil != mock.errors {
+    return mock.errors
+  }
 
+  require.Equal(mock.t, mock.arguments[1], id)
+  require.Equal(mock.t, mock.arguments[2], t)
+  return nil
+}
+
+func TestTagsService_Update(t *testing.T) {
   ctx := context.TODO()
   id := "consectetur-adipiscing-quis-nostrud-elit"
 
@@ -111,11 +133,7 @@ func TestTagsService_Update(t *testing.T) {
       Name: " \n\t " + update.Name + " \n\t ",
     }
 
-    r := mocks.NewTagsRepository()
-
-    r.On(routine, ctx, id, update).Return(nil)
-    r.On("Get", ctx).Return([]*model.Tag{{}, {}}, nil)
-
+    r := &tagsRepositoryThenGetMock{tagsRepositoryMockAPI{t: t, arguments: []any{nil, id, update}}}
     err := NewTagsService(r).Update(ctx, id, dirty)
 
     assert.NoError(t, err)
@@ -123,34 +141,33 @@ func TestTagsService_Update(t *testing.T) {
 
   t.Run("gets a repository failure", func(t *testing.T) {
     unexpected := errors.New("unexpected error")
-    r := mocks.NewTagsRepository()
-    r.On(routine, ctx, mock.Anything, mock.Anything).Return(unexpected)
-
+    r := &tagsRepositoryThenGetMock{tagsRepositoryMockAPI{errors: unexpected}}
     err := NewTagsService(r).Update(ctx, id, update)
     assert.ErrorIs(t, err, unexpected)
   })
 }
 
-func TestTagsService_Remove(t *testing.T) {
-  const routine = "Remove"
+func (mock *tagsRepositoryThenGetMock) Remove(_ context.Context, id string) error {
+  if nil != mock.errors {
+    return mock.errors
+  }
 
+  require.Equal(mock.t, mock.arguments[1], id)
+  return nil
+}
+
+func TestTagsService_Remove(t *testing.T) {
   ctx := context.TODO()
   id := "id"
 
   t.Run("success", func(t *testing.T) {
-    r := mocks.NewTagsRepository()
-    r.On(routine, ctx, id).Return(nil)
-    r.On("Get", ctx).Return([]*model.Tag{{}, {}}, nil)
-
+    r := &tagsRepositoryThenGetMock{tagsRepositoryMockAPI{t: t, arguments: []any{ctx, id}}}
     assert.NoError(t, NewTagsService(r).Remove(ctx, id))
   })
 
   t.Run("gets a repository failure", func(t *testing.T) {
     unexpected := errors.New("unexpected error")
-
-    r := mocks.NewTagsRepository()
-    r.On(routine, ctx, id).Return(unexpected)
-
+    r := &tagsRepositoryThenGetMock{tagsRepositoryMockAPI{errors: unexpected}}
     assert.ErrorIs(t, NewTagsService(r).Remove(ctx, id), unexpected)
   })
 }

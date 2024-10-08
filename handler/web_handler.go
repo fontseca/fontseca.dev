@@ -8,7 +8,6 @@ import (
   "fontseca.dev/components/ui"
   "fontseca.dev/model"
   "fontseca.dev/repository"
-  "fontseca.dev/service"
   "fontseca.dev/transfer"
   "github.com/gin-gonic/gin"
   "golang.org/x/sync/errgroup"
@@ -26,7 +25,7 @@ type WebHandler struct {
   drafts     draftsServiceAPI
   articles   articlesServiceAPI
   topics     topicsServiceAPI
-  tags       service.TagsService
+  tags       tagsServiceAPI
 }
 
 func NewWebHandler(
@@ -36,7 +35,7 @@ func NewWebHandler(
   drafts draftsServiceAPI,
   articles articlesServiceAPI,
   topics topicsServiceAPI,
-  tags service.TagsService,
+  tags tagsServiceAPI,
 ) *WebHandler {
   return &WebHandler{
     meService:  meService,

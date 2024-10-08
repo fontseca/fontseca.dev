@@ -1,18 +1,26 @@
 package handler
 
 import (
+  "context"
+  "fontseca.dev/model"
   "fontseca.dev/problem"
-  "fontseca.dev/service"
   "fontseca.dev/transfer"
   "github.com/gin-gonic/gin"
   "net/http"
 )
 
-type TagsHandler struct {
-  tags service.TagsService
+type tagsServiceAPI interface {
+  Add(context.Context, *transfer.TagCreation) error
+  Get(context.Context) ([]*model.Tag, error)
+  Update(context.Context, string, *transfer.TagUpdate) error
+  Remove(context.Context, string) error
 }
 
-func NewTagsHandler(tags service.TagsService) *TagsHandler {
+type TagsHandler struct {
+  tags tagsServiceAPI
+}
+
+func NewTagsHandler(tags tagsServiceAPI) *TagsHandler {
   return &TagsHandler{tags: tags}
 }
 

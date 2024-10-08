@@ -4,41 +4,33 @@ import (
   "context"
   "errors"
   "fontseca.dev/model"
-  "fontseca.dev/repository"
   "fontseca.dev/transfer"
   "log/slog"
   "strings"
 )
 
+type tagsRepositoryAPI interface {
+  Add(context.Context, *transfer.TagCreation) error
+  Get(context.Context) ([]*model.Tag, error)
+  Update(context.Context, string, *transfer.TagUpdate) error
+  Remove(context.Context, string) error
+}
+
 // TagsService is a high level provider for tags.
-type TagsService interface {
-  // Add adds a new tag.
-  Add(ctx context.Context, creation *transfer.TagCreation) error
-
-  // Get retrieves all the tags.
-  Get(ctx context.Context) (tags []*model.Tag, err error)
-
-  // Update updates an existing tag.
-  Update(ctx context.Context, id string, update *transfer.TagUpdate) error
-
-  // Remove removes a tag and detaches it from any
-  // article that currently uses it.
-  Remove(ctx context.Context, id string) error
-}
-
-type tagsService struct {
+type TagsService struct {
   cache []*model.Tag
-  r     repository.TagsRepository
+  r     tagsRepositoryAPI
 }
 
-func NewTagsService(r repository.TagsRepository) TagsService {
-  return &tagsService{
+func NewTagsService(r tagsRepositoryAPI) *TagsService {
+  return &TagsService{
     cache: nil,
     r:     r,
   }
 }
 
-func (s *tagsService) Add(ctx context.Context, creation *transfer.TagCreation) error {
+// Add adds a new tag.
+func (s *TagsService) Add(ctx context.Context, creation *transfer.TagCreation) error {
   if nil == creation {
     err := errors.New("nil value for parameter: creation")
     slog.Error(err.Error())
@@ -60,7 +52,8 @@ func (s *tagsService) Add(ctx context.Context, creation *transfer.TagCreation) e
   return nil
 }
 
-func (s *tagsService) Get(ctx context.Context) (tags []*model.Tag, err error) {
+// Get retrieves all the tags.
+func (s *TagsService) Get(ctx context.Context) (tags []*model.Tag, err error) {
   if s.hasCache() {
     return s.cache, nil
   }
@@ -76,7 +69,8 @@ func (s *tagsService) Get(ctx context.Context) (tags []*model.Tag, err error) {
   return tags, err
 }
 
-func (s *tagsService) Update(ctx context.Context, id string, update *transfer.TagUpdate) error {
+// Update updates an existing tag.
+func (s *TagsService) Update(ctx context.Context, id string, update *transfer.TagUpdate) error {
   if nil == update {
     err := errors.New("nil value for parameter: creation")
     slog.Error(err.Error())
@@ -98,7 +92,9 @@ func (s *tagsService) Update(ctx context.Context, id string, update *transfer.Ta
   return nil
 }
 
-func (s *tagsService) Remove(ctx context.Context, id string) error {
+// Remove removes a tag and detaches it from any
+// article that currently uses it.
+func (s *TagsService) Remove(ctx context.Context, id string) error {
   err := s.r.Remove(ctx, id)
 
   if nil != err {
@@ -110,11 +106,11 @@ func (s *tagsService) Remove(ctx context.Context, id string) error {
   return nil
 }
 
-func (s *tagsService) setCache(ctx context.Context) {
+func (s *TagsService) setCache(ctx context.Context) {
   s.cache = nil
   s.cache, _ = s.Get(ctx)
 }
 
-func (s *tagsService) hasCache() bool {
+func (s *TagsService) hasCache() bool {
   return 0 < len(s.cache)
 }

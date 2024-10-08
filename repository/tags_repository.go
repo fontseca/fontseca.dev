@@ -13,29 +13,16 @@ import (
 
 // TagsRepository is a low level API that provides methods for interacting
 // with tags in the database.
-type TagsRepository interface {
-  // Add adds a new tag.
-  Add(ctx context.Context, creation *transfer.TagCreation) error
-
-  // Get retrieves all the tags.
-  Get(ctx context.Context) (tags []*model.Tag, err error)
-
-  // Update updates an existing tag.
-  Update(ctx context.Context, id string, update *transfer.TagUpdate) error
-
-  // Remove removes a tag and detaches it from any article that uses it.
-  Remove(ctx context.Context, id string) error
-}
-
-type tagsRepository struct {
+type TagsRepository struct {
   db *sql.DB
 }
 
-func NewTagsRepository(db *sql.DB) TagsRepository {
-  return &tagsRepository{db}
+func NewTagsRepository(db *sql.DB) *TagsRepository {
+  return &TagsRepository{db}
 }
 
-func (r *tagsRepository) Add(ctx context.Context, creation *transfer.TagCreation) error {
+// Add adds a new tag.
+func (r *TagsRepository) Add(ctx context.Context, creation *transfer.TagCreation) error {
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
   if nil != err {
     return err
@@ -77,7 +64,8 @@ func (r *tagsRepository) Add(ctx context.Context, creation *transfer.TagCreation
   return nil
 }
 
-func (r *tagsRepository) Get(ctx context.Context) (tags []*model.Tag, err error) {
+// Get retrieves all the tags.
+func (r *TagsRepository) Get(ctx context.Context) (tags []*model.Tag, err error) {
   getTagsQuery := `
   SELECT "id",
          "name",
@@ -120,7 +108,8 @@ ORDER BY lower("name");`
   return tags, nil
 }
 
-func (r *tagsRepository) Update(ctx context.Context, id string, update *transfer.TagUpdate) error {
+// Update updates an existing tag.
+func (r *TagsRepository) Update(ctx context.Context, id string, update *transfer.TagUpdate) error {
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
   if nil != err {
     slog.Error(err.Error())
@@ -180,7 +169,8 @@ func (r *tagsRepository) Update(ctx context.Context, id string, update *transfer
   return nil
 }
 
-func (r *tagsRepository) Remove(ctx context.Context, id string) error {
+// Remove removes a tag and detaches it from any article that uses it.
+func (r *TagsRepository) Remove(ctx context.Context, id string) error {
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
   if nil != err {
     slog.Error(err.Error())
