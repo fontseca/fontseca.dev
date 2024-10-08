@@ -1,22 +1,36 @@
 package handler
 
 import (
+  "context"
   "errors"
-  "fontseca.dev/mocks"
   "fontseca.dev/model"
   "fontseca.dev/problem"
+  "fontseca.dev/service"
   "fontseca.dev/transfer"
   "github.com/gin-gonic/gin"
   "github.com/google/uuid"
   "github.com/stretchr/testify/assert"
-  "github.com/stretchr/testify/mock"
+  "github.com/stretchr/testify/require"
   "net/http"
   "net/http/httptest"
   "testing"
 )
 
+type technologyTagServiceMockAPI struct {
+  service.TechnologyTagService
+  t         *testing.T
+  returns   []any
+  arguments []any
+  errors    error
+  called    bool
+}
+
+func (mock *technologyTagServiceMockAPI) Get(context.Context) ([]*model.TechnologyTag, error) {
+  mock.called = true
+  return mock.returns[0].([]*model.TechnologyTag), mock.errors
+}
+
 func TestTechnologyTagHandler_Get(t *testing.T) {
-  const routine = "Get"
   const method = http.MethodGet
   const target = "/technologies.list"
 
@@ -26,8 +40,7 @@ func TestTechnologyTagHandler_Get(t *testing.T) {
       new(model.TechnologyTag),
       new(model.TechnologyTag),
     }
-    var s = mocks.NewTechnologyTagService()
-    s.On(routine, mock.AnythingOfType("*gin.Context")).Return(technologies, nil)
+    var s = &technologyTagServiceMockAPI{returns: []any{technologies}}
     var engine = gin.Default()
     engine.GET(target, NewTechnologyTagHandler(s).Get)
     var request = httptest.NewRequest(method, target, nil)
@@ -38,8 +51,17 @@ func TestTechnologyTagHandler_Get(t *testing.T) {
   })
 }
 
+func (mock *technologyTagServiceMockAPI) Add(_ context.Context, t *transfer.TechnologyTagCreation) (string, error) {
+  mock.called = true
+
+  if nil != mock.t {
+    require.Equal(mock.t, mock.arguments[1], t)
+  }
+
+  return mock.returns[0].(string), mock.errors
+}
+
 func TestTechnologyTagHandler_Add(t *testing.T) {
-  const routine = "Add"
   const method = http.MethodPost
   const target = "/technologies.add"
   var id = uuid.New().String()
@@ -49,8 +71,11 @@ func TestTechnologyTagHandler_Add(t *testing.T) {
   request.PostForm.Add("name", creation.Name)
 
   t.Run("success", func(t *testing.T) {
-    var s = mocks.NewTechnologyTagService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), creation).Return(id, nil)
+    var s = &technologyTagServiceMockAPI{
+      t:         t,
+      arguments: []any{context.Background(), creation},
+      returns:   []any{id},
+    }
     var engine = gin.Default()
     engine.POST(target, NewTechnologyTagHandler(s).Add)
     var recorder = httptest.NewRecorder()
@@ -63,8 +88,12 @@ func TestTechnologyTagHandler_Add(t *testing.T) {
     var expected = &problem.Problem{}
     expected.Status(http.StatusGone)
     expected.Detail("Expected problem detail.")
-    var s = mocks.NewTechnologyTagService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), creation).Return("", expected)
+    var s = &technologyTagServiceMockAPI{
+      t:         t,
+      arguments: []any{context.Background(), creation},
+      returns:   []any{""},
+      errors:    expected,
+    }
     var engine = gin.Default()
     engine.POST(target, NewTechnologyTagHandler(s).Add)
     var recorder = httptest.NewRecorder()
@@ -75,8 +104,12 @@ func TestTechnologyTagHandler_Add(t *testing.T) {
 
   t.Run("unexpected error", func(t *testing.T) {
     var unexpected = errors.New("unexpected error")
-    var s = mocks.NewTechnologyTagService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), creation).Return("", unexpected)
+    var s = &technologyTagServiceMockAPI{
+      t:         t,
+      arguments: []any{context.Background(), creation},
+      returns:   []any{""},
+      errors:    unexpected,
+    }
     var engine = gin.Default()
     engine.POST(target, NewTechnologyTagHandler(s).Add)
     var recorder = httptest.NewRecorder()
@@ -86,8 +119,18 @@ func TestTechnologyTagHandler_Add(t *testing.T) {
   })
 }
 
+func (mock *technologyTagServiceMockAPI) Update(_ context.Context, id string, t *transfer.TechnologyTagUpdate) (bool, error) {
+  mock.called = true
+
+  if nil != mock.t {
+    require.Equal(mock.t, mock.arguments[1], id)
+    require.Equal(mock.t, mock.arguments[2], t)
+  }
+
+  return mock.returns[0].(bool), mock.errors
+}
+
 func TestTechnologyTagHandler_Set(t *testing.T) {
-  const routine = "Update"
   const method = http.MethodPost
   const target = "/technologies.set"
   var update = &transfer.TechnologyTagUpdate{Name: "Name"}
@@ -96,12 +139,12 @@ func TestTechnologyTagHandler_Set(t *testing.T) {
   request.PostForm.Add("name", update.Name)
 
   t.Run("missing 'id' parameter", func(t *testing.T) {
-    var s = mocks.NewTechnologyTagService()
-    s.AssertNotCalled(t, routine)
+    var s = &technologyTagServiceMockAPI{}
     var engine = gin.Default()
     engine.POST(target, NewTechnologyTagHandler(s).Set)
     var recorder = httptest.NewRecorder()
     engine.ServeHTTP(recorder, request)
+    require.False(t, s.called)
     assert.Equal(t, http.StatusBadRequest, recorder.Code)
     assert.Contains(t, recorder.Body.String(), "The 'id' parameter is required but was not found in the request form data.")
   })
@@ -110,8 +153,11 @@ func TestTechnologyTagHandler_Set(t *testing.T) {
   request.PostForm.Add("id", id)
 
   t.Run("success", func(t *testing.T) {
-    var s = mocks.NewTechnologyTagService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id, update).Return(true, nil)
+    var s = &technologyTagServiceMockAPI{
+      t:         t,
+      arguments: []any{context.Background(), id, update},
+      returns:   []any{true},
+    }
     var engine = gin.Default()
     engine.POST(target, NewTechnologyTagHandler(s).Set)
     var recorder = httptest.NewRecorder()
@@ -121,8 +167,11 @@ func TestTechnologyTagHandler_Set(t *testing.T) {
   })
 
   t.Run("failed update without error", func(t *testing.T) {
-    var s = mocks.NewTechnologyTagService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id, update).Return(false, nil)
+    var s = &technologyTagServiceMockAPI{
+      t:         t,
+      arguments: []any{context.Background(), id, update},
+      returns:   []any{false},
+    }
     var engine = gin.Default()
     engine.POST(target, NewTechnologyTagHandler(s).Set)
     var recorder = httptest.NewRecorder()
@@ -135,8 +184,10 @@ func TestTechnologyTagHandler_Set(t *testing.T) {
     var expected = &problem.Problem{}
     expected.Status(http.StatusGone)
     expected.Detail("Expected problem detail.")
-    var s = mocks.NewTechnologyTagService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), mock.Anything, mock.Anything).Return(false, expected)
+    var s = &technologyTagServiceMockAPI{
+      returns: []any{false},
+      errors:  expected,
+    }
     var engine = gin.Default()
     engine.POST(target, NewTechnologyTagHandler(s).Set)
     var recorder = httptest.NewRecorder()
@@ -147,8 +198,10 @@ func TestTechnologyTagHandler_Set(t *testing.T) {
 
   t.Run("unexpected error", func(t *testing.T) {
     var unexpected = errors.New("unexpected error")
-    var s = mocks.NewTechnologyTagService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), mock.Anything, mock.Anything).Return(false, unexpected)
+    var s = &technologyTagServiceMockAPI{
+      returns: []any{false},
+      errors:  unexpected,
+    }
     var engine = gin.Default()
     engine.POST(target, NewTechnologyTagHandler(s).Set)
     var recorder = httptest.NewRecorder()
@@ -158,19 +211,28 @@ func TestTechnologyTagHandler_Set(t *testing.T) {
   })
 }
 
+func (mock *technologyTagServiceMockAPI) Remove(_ context.Context, id string) error {
+  mock.called = true
+
+  if nil != mock.t {
+    require.Equal(mock.t, mock.arguments[1], id)
+  }
+
+  return mock.errors
+}
+
 func TestTechnologyTagHandler_Remove(t *testing.T) {
-  const routine = "Remove"
   const method = http.MethodPost
   const target = "/technologies.remove"
   var request = httptest.NewRequest(method, target, nil)
 
   t.Run("missing 'id' parameter", func(t *testing.T) {
-    var s = mocks.NewTechnologyTagService()
-    s.AssertNotCalled(t, routine)
+    var s = &technologyTagServiceMockAPI{}
     var engine = gin.Default()
     engine.POST(target, NewTechnologyTagHandler(s).Remove)
     var recorder = httptest.NewRecorder()
     engine.ServeHTTP(recorder, request)
+    require.False(t, s.called)
     assert.Equal(t, http.StatusBadRequest, recorder.Code)
     assert.Contains(t, recorder.Body.String(), "The 'id' parameter is required but was not found in the request form data.")
   })
@@ -180,8 +242,11 @@ func TestTechnologyTagHandler_Remove(t *testing.T) {
   request.PostForm.Add("id", id)
 
   t.Run("success", func(t *testing.T) {
-    var s = mocks.NewTechnologyTagService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id).Return(nil)
+    var s = &technologyTagServiceMockAPI{
+      t:         t,
+      arguments: []any{context.Background(), id},
+      errors:    nil,
+    }
     var engine = gin.Default()
     engine.POST(target, NewTechnologyTagHandler(s).Remove)
     var recorder = httptest.NewRecorder()
@@ -194,8 +259,7 @@ func TestTechnologyTagHandler_Remove(t *testing.T) {
     var expected = &problem.Problem{}
     expected.Status(http.StatusGone)
     expected.Detail("Expected problem detail.")
-    var s = mocks.NewTechnologyTagService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), mock.Anything).Return(expected)
+    var s = &technologyTagServiceMockAPI{errors: expected}
     var engine = gin.Default()
     engine.POST(target, NewTechnologyTagHandler(s).Remove)
     var recorder = httptest.NewRecorder()
@@ -206,8 +270,7 @@ func TestTechnologyTagHandler_Remove(t *testing.T) {
 
   t.Run("unexpected error", func(t *testing.T) {
     var unexpected = errors.New("unexpected error")
-    var s = mocks.NewTechnologyTagService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), mock.Anything).Return(unexpected)
+    var s = &technologyTagServiceMockAPI{errors: unexpected}
     var engine = gin.Default()
     engine.POST(target, NewTechnologyTagHandler(s).Remove)
     var recorder = httptest.NewRecorder()

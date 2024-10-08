@@ -12,33 +12,16 @@ import (
 )
 
 // TechnologyTagRepository provides methods for interacting with technology tags data in the database.
-type TechnologyTagRepository interface {
-  // Get retrieves a slice of technology tags.
-  Get(ctx context.Context) (technologies []*model.TechnologyTag, err error)
-
-  // Add creates a new technology tag record with the provided creation data.
-  Add(ctx context.Context, creation *transfer.TechnologyTagCreation) (id string, err error)
-
-  // Exists checks whether a technology tag exists in the database.
-  // If it does, it returns nil; otherwise a not found error.
-  Exists(ctx context.Context, id string) (err error)
-
-  // Update modifies an existing technology tag record with the provided update data.
-  Update(ctx context.Context, id string, update *transfer.TechnologyTagUpdate) (updated bool, err error)
-
-  // Remove deletes an existing technology tag. If not found, returns a not found error.
-  Remove(ctx context.Context, id string) (err error)
-}
-
-type technologyTagRepository struct {
+type TechnologyTagRepository struct {
   db *sql.DB
 }
 
-func NewTechnologyTagRepository(db *sql.DB) TechnologyTagRepository {
-  return &technologyTagRepository{db}
+func NewTechnologyTagRepository(db *sql.DB) *TechnologyTagRepository {
+  return &TechnologyTagRepository{db}
 }
 
-func (r *technologyTagRepository) Get(ctx context.Context) (technologies []*model.TechnologyTag, err error) {
+// Get retrieves a slice of technology tags.
+func (r *TechnologyTagRepository) Get(ctx context.Context) (technologies []*model.TechnologyTag, err error) {
   var getTagsQuery = `
   SELECT *
     FROM "projects"."tag"
@@ -63,7 +46,8 @@ ORDER BY "created_at" DESC;`
   return
 }
 
-func (r *technologyTagRepository) Add(ctx context.Context, creation *transfer.TechnologyTagCreation) (id string, err error) {
+// Add creates a new technology tag record with the provided creation data.
+func (r *TechnologyTagRepository) Add(ctx context.Context, creation *transfer.TechnologyTagCreation) (id string, err error) {
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
   if nil != err {
     slog.Error(err.Error())
@@ -88,7 +72,9 @@ func (r *technologyTagRepository) Add(ctx context.Context, creation *transfer.Te
   return id, nil
 }
 
-func (r *technologyTagRepository) Exists(ctx context.Context, id string) (err error) {
+// Exists checks whether a technology tag exists in the database.
+// If it does, it returns nil; otherwise a not found error.
+func (r *TechnologyTagRepository) Exists(ctx context.Context, id string) (err error) {
   var existsTagQuery = `
   SELECT count (1)
     FROM "projects"."tag"
@@ -108,7 +94,8 @@ func (r *technologyTagRepository) Exists(ctx context.Context, id string) (err er
   return nil
 }
 
-func (r *technologyTagRepository) Update(ctx context.Context, id string, update *transfer.TechnologyTagUpdate) (updated bool, err error) {
+// Update modifies an existing technology tag record with the provided update data.
+func (r *TechnologyTagRepository) Update(ctx context.Context, id string, update *transfer.TechnologyTagUpdate) (updated bool, err error) {
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
   if nil != err {
     slog.Error(err.Error())
@@ -154,7 +141,8 @@ func (r *technologyTagRepository) Update(ctx context.Context, id string, update 
   return true, nil
 }
 
-func (r *technologyTagRepository) Remove(ctx context.Context, id string) (err error) {
+// Remove deletes an existing technology tag. If not found, returns a not found error.
+func (r *TechnologyTagRepository) Remove(ctx context.Context, id string) (err error) {
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
   if nil != err {
     slog.Error(err.Error())

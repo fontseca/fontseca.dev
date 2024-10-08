@@ -1,18 +1,27 @@
 package handler
 
 import (
+  "context"
+  "fontseca.dev/model"
   "fontseca.dev/problem"
-  "fontseca.dev/service"
   "fontseca.dev/transfer"
   "github.com/gin-gonic/gin"
   "net/http"
 )
 
-type TechnologyTagHandler struct {
-  s service.TechnologyTagService
+type technologyTagServiceAPI interface {
+  Get(context.Context) ([]*model.TechnologyTag, error)
+  Add(context.Context, *transfer.TechnologyTagCreation) (string, error)
+  Exists(context.Context, string) error
+  Update(context.Context, string, *transfer.TechnologyTagUpdate) (bool, error)
+  Remove(context.Context, string) error
 }
 
-func NewTechnologyTagHandler(service service.TechnologyTagService) *TechnologyTagHandler {
+type TechnologyTagHandler struct {
+  s technologyTagServiceAPI
+}
+
+func NewTechnologyTagHandler(service technologyTagServiceAPI) *TechnologyTagHandler {
   return &TechnologyTagHandler{s: service}
 }
 
