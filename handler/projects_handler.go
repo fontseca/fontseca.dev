@@ -93,7 +93,7 @@ func (h *ProjectsHandler) Set(c *gin.Context) {
   if updated {
     c.Status(http.StatusNoContent)
   } else {
-    c.Redirect(http.StatusSeeOther, "/me.projects.info?id="+id)
+    c.Redirect(http.StatusSeeOther, "/me.projects.get?id="+id)
   }
 }
 
@@ -123,7 +123,7 @@ func (h *ProjectsHandler) Unarchive(c *gin.Context) {
   if unarchived {
     c.Status(http.StatusNoContent)
   } else {
-    c.Redirect(http.StatusSeeOther, "/me.projects.info?id="+id)
+    c.Redirect(http.StatusSeeOther, "/me.projects.get?id="+id)
   }
 }
 
@@ -140,7 +140,7 @@ func (h *ProjectsHandler) Finish(c *gin.Context) {
   if updated {
     c.Status(http.StatusNoContent)
   } else {
-    c.Redirect(http.StatusSeeOther, "/me.projects.info?id="+id)
+    c.Redirect(http.StatusSeeOther, "/me.projects.get?id="+id)
   }
 }
 
@@ -157,7 +157,7 @@ func (h *ProjectsHandler) Unfinish(c *gin.Context) {
   if updated {
     c.Status(http.StatusNoContent)
   } else {
-    c.Redirect(http.StatusSeeOther, "/me.projects.info?id="+id)
+    c.Redirect(http.StatusSeeOther, "/me.projects.get?id="+id)
   }
 }
 

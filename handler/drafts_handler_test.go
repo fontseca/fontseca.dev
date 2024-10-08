@@ -285,7 +285,7 @@ func (mock *draftsServiceMockAPI) Get(_ context.Context, draftUUID string) (draf
 func TestDraftsHandler_GetByID(t *testing.T) {
   const (
     method = http.MethodGet
-    target = "/archive.drafts.info"
+    target = "/archive.drafts.get"
   )
 
   request := httptest.NewRequest(method, target, nil)

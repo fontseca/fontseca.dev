@@ -55,7 +55,7 @@ func (h *MeHandler) SetPhoto(c *gin.Context) {
   if ok {
     c.Status(http.StatusNoContent)
   } else {
-    c.Redirect(http.StatusSeeOther, "/me.info")
+    c.Redirect(http.StatusSeeOther, "/me.get")
   }
 }
 
@@ -75,7 +75,7 @@ func (h *MeHandler) SetResume(c *gin.Context) {
   if ok {
     c.Status(http.StatusNoContent)
   } else {
-    c.Redirect(http.StatusSeeOther, "/me.info")
+    c.Redirect(http.StatusSeeOther, "/me.get")
   }
 }
 
@@ -110,7 +110,7 @@ func (h *MeHandler) SetHireable(c *gin.Context) {
   if ok {
     c.Status(http.StatusNoContent)
   } else {
-    c.Redirect(http.StatusSeeOther, "/me.info")
+    c.Redirect(http.StatusSeeOther, "/me.get")
   }
 }
 
@@ -135,6 +135,6 @@ func (h *MeHandler) Set(c *gin.Context) {
   if ok {
     c.Status(http.StatusNoContent)
   } else {
-    c.Redirect(http.StatusSeeOther, "/me.info")
+    c.Redirect(http.StatusSeeOther, "/me.get")
   }
 }

@@ -79,7 +79,7 @@ func (mock *projectsServiceMockAPI) Get(context.Context, string) (*model.Project
 
 func TestProjectsHandler_GetByID(t *testing.T) {
   const method = http.MethodGet
-  const target = "/me.projects.info"
+  const target = "/me.projects.get"
 
   t.Run("success", func(t *testing.T) {
     var language = "Go"

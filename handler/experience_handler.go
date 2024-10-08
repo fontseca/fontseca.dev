@@ -118,7 +118,7 @@ func (h *ExperienceHandler) Set(c *gin.Context) {
   if updated {
     c.Status(http.StatusNoContent)
   } else {
-    c.Redirect(http.StatusSeeOther, "/experience.info?experience_uuid="+id)
+    c.Redirect(http.StatusSeeOther, "/experience.get?experience_uuid="+id)
   }
 }
 
@@ -137,7 +137,7 @@ func (h *ExperienceHandler) Hide(c *gin.Context) {
   if updated {
     c.Status(http.StatusNoContent)
   } else {
-    c.Redirect(http.StatusSeeOther, "/experience.info?experience_uuid="+id)
+    c.Redirect(http.StatusSeeOther, "/experience.get?experience_uuid="+id)
   }
 }
 
@@ -156,7 +156,7 @@ func (h *ExperienceHandler) Show(c *gin.Context) {
   if updated {
     c.Status(http.StatusNoContent)
   } else {
-    c.Redirect(http.StatusSeeOther, "/experience.info?experience_uuid="+id)
+    c.Redirect(http.StatusSeeOther, "/experience.get?experience_uuid="+id)
   }
 }
 
@@ -179,7 +179,7 @@ func (h *ExperienceHandler) Quit(c *gin.Context) {
   if updated {
     c.Status(http.StatusNoContent)
   } else {
-    c.Redirect(http.StatusSeeOther, "/experience.info?experience_uuid="+id)
+    c.Redirect(http.StatusSeeOther, "/experience.get?experience_uuid="+id)
   }
 }
 

@@ -70,7 +70,7 @@ func (mock *experienceServiceMockAPI) Get(context.Context, string) (*model.Exper
 
 func TestExperienceHandler_GetByID(t *testing.T) {
   const method = http.MethodGet
-  const target = "/experience.info"
+  const target = "/experience.get"
 
   t.Run("success", func(t *testing.T) {
     var i = 2023

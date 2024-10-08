@@ -26,7 +26,7 @@ templ ProjectDetails(project *model.Project) {
               <h1 class="name">
                 { project.Name }
                 <a class="api-endpoint"
-                   href={ templ.URL( fmt.Sprint("/playground?target=", url.QueryEscape("/me.projects.info?project_uuid=" + project.UUID.String()))) }
+                   href={ templ.URL( fmt.Sprint("/playground?target=", url.QueryEscape("/me.projects.get?project_uuid=" + project.UUID.String()))) }
                    target="_blank"
                    title="Try out request in Playground">
                   <i class="fa fa-external-link"></i>

@@ -194,7 +194,7 @@ func (mock *articlesServiceMockAPI) GetByID(_ context.Context, articleUUID strin
 func TestArticlesHandler_GetByID(t *testing.T) {
   const (
     method = http.MethodGet
-    target = "/archive.articles.info"
+    target = "/archive.articles.get"
   )
 
   request := httptest.NewRequest(method, target, nil)
