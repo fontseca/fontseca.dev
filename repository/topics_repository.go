@@ -13,29 +13,16 @@ import (
 
 // TopicsRepository is a low level API that provides methods for interacting
 // with topics in the database.
-type TopicsRepository interface {
-  // Add adds a new topic.
-  Add(ctx context.Context, creation *transfer.TopicCreation) error
-
-  // Get retrieves all the topics.
-  Get(ctx context.Context) (topics []*model.Topic, err error)
-
-  // Update updates an existing topic.
-  Update(ctx context.Context, id string, update *transfer.TopicUpdate) error
-
-  // Remove removes a topic and detaches it from any article that uses it.
-  Remove(ctx context.Context, id string) error
-}
-
-type topicsRepository struct {
+type TopicsRepository struct {
   db *sql.DB
 }
 
-func NewTopicsRepository(db *sql.DB) TopicsRepository {
-  return &topicsRepository{db}
+func NewTopicsRepository(db *sql.DB) *TopicsRepository {
+  return &TopicsRepository{db}
 }
 
-func (r *topicsRepository) Add(ctx context.Context, creation *transfer.TopicCreation) error {
+// Add adds a new topic.
+func (r *TopicsRepository) Add(ctx context.Context, creation *transfer.TopicCreation) error {
   slog.Info("adding new article topic",
     slog.String("id", creation.ID),
     slog.String("name", creation.Name))
@@ -96,7 +83,8 @@ func (r *topicsRepository) Add(ctx context.Context, creation *transfer.TopicCrea
   return nil
 }
 
-func (r *topicsRepository) Get(ctx context.Context) (topics []*model.Topic, err error) {
+// Get retrieves all the topics.
+func (r *TopicsRepository) Get(ctx context.Context) (topics []*model.Topic, err error) {
   getTopicsQuery := `
   SELECT "id",
          "name",
@@ -139,7 +127,8 @@ ORDER BY lower("name");`
   return topics, nil
 }
 
-func (r *topicsRepository) Update(ctx context.Context, id string, update *transfer.TopicUpdate) error {
+// Update updates an existing topic.
+func (r *TopicsRepository) Update(ctx context.Context, id string, update *transfer.TopicUpdate) error {
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
   if nil != err {
     slog.Error(err.Error())
@@ -196,7 +185,8 @@ func (r *topicsRepository) Update(ctx context.Context, id string, update *transf
   return nil
 }
 
-func (r *topicsRepository) Remove(ctx context.Context, id string) error {
+// Remove removes a topic and detaches it from any article that uses it.
+func (r *TopicsRepository) Remove(ctx context.Context, id string) error {
   slog.Info("removing article topic", slog.String("id", id))
 
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})

@@ -3,17 +3,40 @@ package service
 import (
   "context"
   "errors"
-  "fontseca.dev/mocks"
   "fontseca.dev/model"
   "fontseca.dev/transfer"
   "github.com/stretchr/testify/assert"
-  "github.com/stretchr/testify/mock"
+  "github.com/stretchr/testify/require"
   "testing"
 )
 
-func TestTopicsService_Add(t *testing.T) {
-  const routine = "Add"
+type topicsRepositoryMockAPI struct {
+  topicsRepositoryAPI
+  t         *testing.T
+  arguments []any
+  returns   []any
+  errors    error
+  called    bool
+}
 
+type topicsRepositoryThenGetMock struct {
+  topicsRepositoryMockAPI
+}
+
+func (mock *topicsRepositoryThenGetMock) Get(context.Context) ([]*model.Topic, error) {
+  return make([]*model.Topic, 2), nil
+}
+
+func (mock *topicsRepositoryThenGetMock) Add(_ context.Context, t *transfer.TopicCreation) error {
+  if nil != mock.errors {
+    return mock.errors
+  }
+
+  require.Equal(mock.t, mock.arguments[1], t)
+  return nil
+}
+
+func TestTopicsService_Add(t *testing.T) {
   ctx := context.TODO()
   creation := &transfer.TopicCreation{
     Name: "Consectetur! Adipiscing... Quis nostrud: ELIT?",
@@ -25,11 +48,12 @@ func TestTopicsService_Add(t *testing.T) {
       Name: " \n\t " + creation.Name + " \n\t ",
     }
 
-    r := mocks.NewTopicsRepository()
-
-    r.On(routine, ctx, creation).Return(nil)
-    r.On("Get", ctx).Return([]*model.Topic{{}, {}}, nil)
-
+    r := &topicsRepositoryThenGetMock{
+      topicsRepositoryMockAPI{
+        t:         t,
+        arguments: []any{ctx, creation},
+      },
+    }
     err := NewTopicsService(r).Add(ctx, dirty)
 
     assert.NoError(t, err)
@@ -37,29 +61,29 @@ func TestTopicsService_Add(t *testing.T) {
 
   t.Run("gets a repository failure", func(t *testing.T) {
     unexpected := errors.New("unexpected error")
-    r := mocks.NewTopicsRepository()
-    r.On(routine, ctx, mock.Anything).Return(unexpected)
-
+    r := &topicsRepositoryThenGetMock{
+      topicsRepositoryMockAPI{
+        errors: unexpected,
+      },
+    }
     err := NewTopicsService(r).Add(ctx, creation)
     assert.ErrorIs(t, err, unexpected)
   })
 }
 
-func TestTopicsService_Get(t *testing.T) {
-  const routine = "Get"
+func (mock *topicsRepositoryMockAPI) Get(context.Context) ([]*model.Topic, error) {
+  mock.called = true
+  return mock.returns[0].([]*model.Topic), mock.errors
+}
 
+func TestTopicsService_Get(t *testing.T) {
   ctx := context.TODO()
 
   t.Run("success without cache", func(t *testing.T) {
     expectedTopics := []*model.Topic{{}, {}, {}}
-
-    r := mocks.NewTopicsRepository()
-    r.On(routine, ctx).Return(expectedTopics, nil)
-
-    s := NewTopicsService(r).(*topicsService)
-
+    r := &topicsRepositoryMockAPI{returns: []any{expectedTopics}}
+    s := NewTopicsService(r)
     s.cache = nil
-
     topics, err := s.Get(ctx)
 
     assert.Equal(t, expectedTopics, topics)
@@ -69,15 +93,12 @@ func TestTopicsService_Get(t *testing.T) {
   t.Run("success with cache", func(t *testing.T) {
     expectedTopics := []*model.Topic{{}, {}, {}}
 
-    r := mocks.NewTopicsRepository()
-    r.AssertNotCalled(t, routine)
-
-    s := NewTopicsService(r).(*topicsService)
-
+    r := &topicsRepositoryMockAPI{}
+    s := NewTopicsService(r)
     s.cache = expectedTopics
-
     topics, err := s.Get(ctx)
 
+    require.False(t, r.called)
     assert.Equal(t, expectedTopics, topics)
     assert.NoError(t, err)
   })
@@ -85,9 +106,7 @@ func TestTopicsService_Get(t *testing.T) {
   t.Run("gets a repository failure", func(t *testing.T) {
     unexpected := errors.New("unexpected error")
 
-    r := mocks.NewTopicsRepository()
-    r.On(routine, ctx).Return(nil, unexpected)
-
+    r := &topicsRepositoryMockAPI{returns: []any{([]*model.Topic)(nil)}, errors: unexpected}
     topics, err := NewTopicsService(r).Get(ctx)
 
     assert.Nil(t, topics)
@@ -95,9 +114,17 @@ func TestTopicsService_Get(t *testing.T) {
   })
 }
 
-func TestTopicsService_Update(t *testing.T) {
-  const routine = "Update"
+func (mock *topicsRepositoryThenGetMock) Update(_ context.Context, id string, t *transfer.TopicUpdate) error {
+  if nil != mock.errors {
+    return mock.errors
+  }
 
+  require.Equal(mock.t, mock.arguments[1], id)
+  require.Equal(mock.t, mock.arguments[2], t)
+  return nil
+}
+
+func TestTopicsService_Update(t *testing.T) {
   ctx := context.TODO()
   id := "consectetur-adipiscing-quis-nostrud-elit"
 
@@ -111,11 +138,12 @@ func TestTopicsService_Update(t *testing.T) {
       Name: " \n\t " + update.Name + " \n\t ",
     }
 
-    r := mocks.NewTopicsRepository()
-
-    r.On(routine, ctx, id, update).Return(nil)
-    r.On("Get", ctx).Return([]*model.Topic{{}, {}}, nil)
-
+    r := &topicsRepositoryThenGetMock{
+      topicsRepositoryMockAPI{
+        t:         t,
+        arguments: []any{ctx, id, update},
+      },
+    }
     err := NewTopicsService(r).Update(ctx, id, dirty)
 
     assert.NoError(t, err)
@@ -123,34 +151,39 @@ func TestTopicsService_Update(t *testing.T) {
 
   t.Run("gets a repository failure", func(t *testing.T) {
     unexpected := errors.New("unexpected error")
-    r := mocks.NewTopicsRepository()
-    r.On(routine, ctx, mock.Anything, mock.Anything).Return(unexpected)
-
+    r := &topicsRepositoryThenGetMock{
+      topicsRepositoryMockAPI{
+        t:         t,
+        arguments: []any{ctx, id, update},
+        errors:    unexpected,
+      },
+    }
     err := NewTopicsService(r).Update(ctx, id, update)
     assert.ErrorIs(t, err, unexpected)
   })
 }
 
-func TestTopicsService_Remove(t *testing.T) {
-  const routine = "Remove"
+func (mock *topicsRepositoryThenGetMock) Remove(_ context.Context, id string) error {
+  if nil != mock.errors {
+    return mock.errors
+  }
 
+  require.Equal(mock.t, mock.arguments[1], id)
+  return nil
+}
+
+func TestTopicsService_Remove(t *testing.T) {
   ctx := context.TODO()
   id := "id"
 
   t.Run("success", func(t *testing.T) {
-    r := mocks.NewTopicsRepository()
-    r.On(routine, ctx, id).Return(nil)
-    r.On("Get", ctx).Return([]*model.Topic{{}, {}}, nil)
-
+    r := &topicsRepositoryThenGetMock{topicsRepositoryMockAPI{t: t, arguments: []any{ctx, id}}}
     assert.NoError(t, NewTopicsService(r).Remove(ctx, id))
   })
 
   t.Run("gets a repository failure", func(t *testing.T) {
     unexpected := errors.New("unexpected error")
-
-    r := mocks.NewTopicsRepository()
-    r.On(routine, ctx, id).Return(unexpected)
-
+    r := &topicsRepositoryThenGetMock{topicsRepositoryMockAPI{errors: unexpected}}
     assert.ErrorIs(t, NewTopicsService(r).Remove(ctx, id), unexpected)
   })
 }

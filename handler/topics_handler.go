@@ -1,18 +1,26 @@
 package handler
 
 import (
+  "context"
+  "fontseca.dev/model"
   "fontseca.dev/problem"
-  "fontseca.dev/service"
   "fontseca.dev/transfer"
   "github.com/gin-gonic/gin"
   "net/http"
 )
 
-type TopicsHandler struct {
-  topics service.TopicsService
+type topicsServiceAPI interface {
+  Add(context.Context, *transfer.TopicCreation) error
+  Get(context.Context) ([]*model.Topic, error)
+  Update(context.Context, string, *transfer.TopicUpdate) error
+  Remove(context.Context, string) error
 }
 
-func NewTopicsHandler(topics service.TopicsService) *TopicsHandler {
+type TopicsHandler struct {
+  topics topicsServiceAPI
+}
+
+func NewTopicsHandler(topics topicsServiceAPI) *TopicsHandler {
   return &TopicsHandler{topics: topics}
 }
 

@@ -25,7 +25,7 @@ type WebHandler struct {
   projects   projectsServiceAPI
   drafts     draftsServiceAPI
   articles   articlesServiceAPI
-  topics     service.TopicsService
+  topics     topicsServiceAPI
   tags       service.TagsService
 }
 
@@ -35,7 +35,7 @@ func NewWebHandler(
   projects projectsServiceAPI,
   drafts draftsServiceAPI,
   articles articlesServiceAPI,
-  topics service.TopicsService,
+  topics topicsServiceAPI,
   tags service.TagsService,
 ) *WebHandler {
   return &WebHandler{

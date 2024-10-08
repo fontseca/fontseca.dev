@@ -4,41 +4,33 @@ import (
   "context"
   "errors"
   "fontseca.dev/model"
-  "fontseca.dev/repository"
   "fontseca.dev/transfer"
   "log/slog"
   "strings"
 )
 
-// TopicsService is a high level provider for topics.
-type TopicsService interface {
-  // Add adds a new topic.
+type topicsRepositoryAPI interface {
   Add(ctx context.Context, creation *transfer.TopicCreation) error
-
-  // Get retrieves all the topics.
   Get(ctx context.Context) (topics []*model.Topic, err error)
-
-  // Update updates an existing topic.
   Update(ctx context.Context, id string, update *transfer.TopicUpdate) error
-
-  // Remove removes a topic and detaches it from any
-  // article that currently uses it.
   Remove(ctx context.Context, id string) error
 }
 
-type topicsService struct {
+// TopicsService is a high level provider for topics.
+type TopicsService struct {
   cache []*model.Topic
-  r     repository.TopicsRepository
+  r     topicsRepositoryAPI
 }
 
-func NewTopicsService(r repository.TopicsRepository) TopicsService {
-  return &topicsService{
+func NewTopicsService(r topicsRepositoryAPI) *TopicsService {
+  return &TopicsService{
     cache: nil,
     r:     r,
   }
 }
 
-func (s *topicsService) Add(ctx context.Context, creation *transfer.TopicCreation) error {
+// Add adds a new topic.
+func (s *TopicsService) Add(ctx context.Context, creation *transfer.TopicCreation) error {
   if nil == creation {
     err := errors.New("nil value for parameter: creation")
     slog.Error(err.Error())
@@ -60,7 +52,8 @@ func (s *topicsService) Add(ctx context.Context, creation *transfer.TopicCreatio
   return nil
 }
 
-func (s *topicsService) Get(ctx context.Context) (topics []*model.Topic, err error) {
+// Get retrieves all the topics.
+func (s *TopicsService) Get(ctx context.Context) (topics []*model.Topic, err error) {
   if s.hasCache() {
     return s.cache, nil
   }
@@ -76,7 +69,8 @@ func (s *topicsService) Get(ctx context.Context) (topics []*model.Topic, err err
   return topics, err
 }
 
-func (s *topicsService) Update(ctx context.Context, id string, update *transfer.TopicUpdate) error {
+// Update updates an existing topic.
+func (s *TopicsService) Update(ctx context.Context, id string, update *transfer.TopicUpdate) error {
   if nil == update {
     err := errors.New("nil value for parameter: creation")
     slog.Error(err.Error())
@@ -98,7 +92,9 @@ func (s *topicsService) Update(ctx context.Context, id string, update *transfer.
   return nil
 }
 
-func (s *topicsService) Remove(ctx context.Context, id string) error {
+// Remove removes a topic and detaches it from any
+// article that currently uses it.
+func (s *TopicsService) Remove(ctx context.Context, id string) error {
   err := s.r.Remove(ctx, id)
 
   if nil != err {
@@ -110,11 +106,11 @@ func (s *topicsService) Remove(ctx context.Context, id string) error {
   return nil
 }
 
-func (s *topicsService) setCache(ctx context.Context) {
+func (s *TopicsService) setCache(ctx context.Context) {
   s.cache = nil
   s.cache, _ = s.Get(ctx)
 }
 
-func (s *topicsService) hasCache() bool {
+func (s *TopicsService) hasCache() bool {
   return 0 < len(s.cache)
 }
