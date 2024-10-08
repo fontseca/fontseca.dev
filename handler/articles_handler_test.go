@@ -1,25 +1,40 @@
 package handler
 
 import (
+  "context"
   "errors"
-  "fontseca.dev/mocks"
   "fontseca.dev/model"
   "fontseca.dev/problem"
   "fontseca.dev/transfer"
   "github.com/gin-gonic/gin"
   "github.com/google/uuid"
   "github.com/stretchr/testify/assert"
-  "github.com/stretchr/testify/mock"
+  "github.com/stretchr/testify/require"
   "net/http"
   "net/http/httptest"
   "testing"
 )
 
+type articlesServiceMockAPI struct {
+  articlesServiceAPI
+  t         *testing.T
+  returns   []any
+  arguments []any
+  errors    error
+}
+
+func (mock *articlesServiceMockAPI) Get(_ context.Context, filter *transfer.ArticleFilter) (articles []*transfer.Article, err error) {
+  if nil != mock.t {
+    require.Equal(mock.t, mock.arguments[1], filter)
+  }
+
+  return mock.returns[0].([]*transfer.Article), mock.errors
+}
+
 func TestArticlesHandler_Get(t *testing.T) {
   const (
-    routine = "Get"
-    method  = http.MethodGet
-    target  = "/archive.articles.list"
+    method = http.MethodGet
+    target = "/archive.articles.list"
   )
 
   request := httptest.NewRequest(method, target, nil)
@@ -28,9 +43,9 @@ func TestArticlesHandler_Get(t *testing.T) {
   t.Run("success", func(t *testing.T) {
     expectedStatusCode := http.StatusOK
     expectedBody := string(marshal(t, articles))
+    filter := &transfer.ArticleFilter{Page: 1, RPP: 20}
 
-    s := mocks.NewArticlesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("*transfer.ArticleFilter")).Return(articles, nil)
+    s := &articlesServiceMockAPI{t: t, arguments: []any{context.Background(), filter}, returns: []any{articles}}
 
     engine := gin.Default()
     engine.GET(target, NewArticlesHandler(s).Get)
@@ -52,8 +67,7 @@ func TestArticlesHandler_Get(t *testing.T) {
     expected.Status(expectedStatusCode)
     expected.Detail(expectBodyContains)
 
-    s := mocks.NewArticlesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("*transfer.ArticleFilter")).Return(nil, expected)
+    s := &articlesServiceMockAPI{returns: []any{[]*transfer.Article(nil)}, errors: expected}
 
     engine := gin.Default()
     engine.GET(target, NewArticlesHandler(s).Get)
@@ -73,8 +87,7 @@ func TestArticlesHandler_Get(t *testing.T) {
     expectedStatusCode := http.StatusInternalServerError
     expectBodyContains := "An unexpected error occurred while processing your request"
 
-    s := mocks.NewArticlesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("*transfer.ArticleFilter")).Return(nil, unexpected)
+    s := &articlesServiceMockAPI{returns: []any{[]*transfer.Article(nil)}, errors: unexpected}
 
     engine := gin.Default()
     engine.GET(target, NewArticlesHandler(s).Get)
@@ -88,13 +101,20 @@ func TestArticlesHandler_Get(t *testing.T) {
     assert.Empty(t, recorder.Result().Cookies())
     assert.Contains(t, recorder.Result().Header.Get("Content-Type"), "application/problem+json")
   })
+}
+
+func (mock *articlesServiceMockAPI) GetHidden(_ context.Context, filter *transfer.ArticleFilter) (articles []*transfer.Article, err error) {
+  if nil != mock.t {
+    require.Equal(mock.t, mock.arguments[1], filter)
+  }
+
+  return mock.returns[0].([]*transfer.Article), mock.errors
 }
 
 func TestArticlesHandler_GetHidden(t *testing.T) {
   const (
-    routine = "GetHidden"
-    method  = http.MethodGet
-    target  = "/archive.articles.hidden.list"
+    method = http.MethodGet
+    target = "/archive.articles.hidden.list"
   )
 
   request := httptest.NewRequest(method, target, nil)
@@ -103,9 +123,9 @@ func TestArticlesHandler_GetHidden(t *testing.T) {
   t.Run("success", func(t *testing.T) {
     expectedStatusCode := http.StatusOK
     expectedBody := string(marshal(t, articles))
+    filter := &transfer.ArticleFilter{Page: 1, RPP: 20}
 
-    s := mocks.NewArticlesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("*transfer.ArticleFilter")).Return(articles, nil)
+    s := &articlesServiceMockAPI{t: t, arguments: []any{context.Background(), filter}, returns: []any{articles}}
 
     engine := gin.Default()
     engine.GET(target, NewArticlesHandler(s).GetHidden)
@@ -127,8 +147,7 @@ func TestArticlesHandler_GetHidden(t *testing.T) {
     expected.Status(expectedStatusCode)
     expected.Detail(expectBodyContains)
 
-    s := mocks.NewArticlesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("*transfer.ArticleFilter")).Return(nil, expected)
+    s := &articlesServiceMockAPI{returns: []any{[]*transfer.Article(nil)}, errors: expected}
 
     engine := gin.Default()
     engine.GET(target, NewArticlesHandler(s).GetHidden)
@@ -148,8 +167,7 @@ func TestArticlesHandler_GetHidden(t *testing.T) {
     expectedStatusCode := http.StatusInternalServerError
     expectBodyContains := "An unexpected error occurred while processing your request"
 
-    s := mocks.NewArticlesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("*transfer.ArticleFilter")).Return(nil, unexpected)
+    s := &articlesServiceMockAPI{returns: []any{[]*transfer.Article(nil)}, errors: unexpected}
 
     engine := gin.Default()
     engine.GET(target, NewArticlesHandler(s).GetHidden)
@@ -165,11 +183,18 @@ func TestArticlesHandler_GetHidden(t *testing.T) {
   })
 }
 
+func (mock *articlesServiceMockAPI) GetByID(_ context.Context, articleUUID string) (article *model.Article, err error) {
+  if nil != mock.t {
+    require.Equal(mock.t, mock.arguments[1], articleUUID)
+  }
+
+  return mock.returns[0].(*model.Article), mock.errors
+}
+
 func TestArticlesHandler_GetByID(t *testing.T) {
   const (
-    routine = "GetByID"
-    method  = http.MethodGet
-    target  = "/archive.articles.info"
+    method = http.MethodGet
+    target = "/archive.articles.info"
   )
 
   request := httptest.NewRequest(method, target, nil)
@@ -185,8 +210,7 @@ func TestArticlesHandler_GetByID(t *testing.T) {
     expectedStatusCode := http.StatusOK
     expectedBody := string(marshal(t, article))
 
-    s := mocks.NewArticlesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id).Return(article, nil)
+    s := &articlesServiceMockAPI{t: t, arguments: []any{context.Background(), id}, returns: []any{article}}
 
     engine := gin.Default()
     engine.GET(target, NewArticlesHandler(s).GetByID)
@@ -208,8 +232,7 @@ func TestArticlesHandler_GetByID(t *testing.T) {
     expected.Status(expectedStatusCode)
     expected.Detail(expectBodyContains)
 
-    s := mocks.NewArticlesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id).Return(nil, expected)
+    s := &articlesServiceMockAPI{returns: []any{(*model.Article)(nil)}, errors: expected}
 
     engine := gin.Default()
     engine.GET(target, NewArticlesHandler(s).GetByID)
@@ -229,8 +252,7 @@ func TestArticlesHandler_GetByID(t *testing.T) {
     expectedStatusCode := http.StatusInternalServerError
     expectBodyContains := "An unexpected error occurred while processing your request"
 
-    s := mocks.NewArticlesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id).Return(nil, unexpected)
+    s := &articlesServiceMockAPI{returns: []any{(*model.Article)(nil)}, errors: unexpected}
 
     engine := gin.Default()
     engine.GET(target, NewArticlesHandler(s).GetByID)
@@ -244,13 +266,20 @@ func TestArticlesHandler_GetByID(t *testing.T) {
     assert.Empty(t, recorder.Result().Cookies())
     assert.Contains(t, recorder.Result().Header.Get("Content-Type"), "application/problem+json")
   })
+}
+
+func (mock *articlesServiceMockAPI) Hide(_ context.Context, articleID string) error {
+  if nil != mock.t {
+    require.Equal(mock.t, mock.arguments[1], articleID)
+  }
+
+  return mock.errors
 }
 
 func TestArticlesHandler_Hide(t *testing.T) {
   const (
-    routine = "Hide"
-    method  = http.MethodPost
-    target  = "/archive.articles.hide"
+    method = http.MethodPost
+    target = "/archive.articles.hide"
   )
 
   request := httptest.NewRequest(method, target, nil)
@@ -263,8 +292,7 @@ func TestArticlesHandler_Hide(t *testing.T) {
   t.Run("success", func(t *testing.T) {
     expectedStatusCode := http.StatusNoContent
 
-    s := mocks.NewArticlesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id).Return(nil)
+    s := &articlesServiceMockAPI{t: t, arguments: []any{context.Background(), id}}
 
     engine := gin.Default()
     engine.POST(target, NewArticlesHandler(s).Hide)
@@ -286,8 +314,7 @@ func TestArticlesHandler_Hide(t *testing.T) {
     expected.Status(expectedStatusCode)
     expected.Detail(expectBodyContains)
 
-    s := mocks.NewArticlesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id).Return(expected)
+    s := &articlesServiceMockAPI{errors: expected}
 
     engine := gin.Default()
     engine.POST(target, NewArticlesHandler(s).Hide)
@@ -307,8 +334,7 @@ func TestArticlesHandler_Hide(t *testing.T) {
     expectedStatusCode := http.StatusInternalServerError
     expectBodyContains := "An unexpected error occurred while processing your request"
 
-    s := mocks.NewArticlesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id).Return(unexpected)
+    s := &articlesServiceMockAPI{errors: unexpected}
 
     engine := gin.Default()
     engine.POST(target, NewArticlesHandler(s).Hide)
@@ -322,13 +348,20 @@ func TestArticlesHandler_Hide(t *testing.T) {
     assert.Empty(t, recorder.Result().Cookies())
     assert.Contains(t, recorder.Result().Header.Get("Content-Type"), "application/problem+json")
   })
+}
+
+func (mock *articlesServiceMockAPI) Show(_ context.Context, articleID string) error {
+  if nil != mock.t {
+    require.Equal(mock.t, mock.arguments[1], articleID)
+  }
+
+  return mock.errors
 }
 
 func TestArticlesHandler_Show(t *testing.T) {
   const (
-    routine = "Show"
-    method  = http.MethodPost
-    target  = "/archive.articles.show"
+    method = http.MethodPost
+    target = "/archive.articles.show"
   )
 
   request := httptest.NewRequest(method, target, nil)
@@ -341,8 +374,7 @@ func TestArticlesHandler_Show(t *testing.T) {
   t.Run("success", func(t *testing.T) {
     expectedStatusCode := http.StatusNoContent
 
-    s := mocks.NewArticlesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id).Return(nil)
+    s := &articlesServiceMockAPI{t: t, arguments: []any{context.Background(), id}}
 
     engine := gin.Default()
     engine.POST(target, NewArticlesHandler(s).Show)
@@ -364,8 +396,7 @@ func TestArticlesHandler_Show(t *testing.T) {
     expected.Status(expectedStatusCode)
     expected.Detail(expectBodyContains)
 
-    s := mocks.NewArticlesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id).Return(expected)
+    s := &articlesServiceMockAPI{errors: expected}
 
     engine := gin.Default()
     engine.POST(target, NewArticlesHandler(s).Show)
@@ -385,8 +416,7 @@ func TestArticlesHandler_Show(t *testing.T) {
     expectedStatusCode := http.StatusInternalServerError
     expectBodyContains := "An unexpected error occurred while processing your request"
 
-    s := mocks.NewArticlesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id).Return(unexpected)
+    s := &articlesServiceMockAPI{errors: unexpected}
 
     engine := gin.Default()
     engine.POST(target, NewArticlesHandler(s).Show)
@@ -400,13 +430,20 @@ func TestArticlesHandler_Show(t *testing.T) {
     assert.Empty(t, recorder.Result().Cookies())
     assert.Contains(t, recorder.Result().Header.Get("Content-Type"), "application/problem+json")
   })
+}
+
+func (mock *articlesServiceMockAPI) Amend(_ context.Context, articleID string) error {
+  if nil != mock.t {
+    require.Equal(mock.t, mock.arguments[1], articleID)
+  }
+
+  return mock.errors
 }
 
 func TestArticlesHandler_Amend(t *testing.T) {
   const (
-    routine = "Amend"
-    method  = http.MethodPost
-    target  = "/archive.articles.amend"
+    method = http.MethodPost
+    target = "/archive.articles.amend"
   )
 
   request := httptest.NewRequest(method, target, nil)
@@ -419,8 +456,7 @@ func TestArticlesHandler_Amend(t *testing.T) {
   t.Run("success", func(t *testing.T) {
     expectedStatusCode := http.StatusNoContent
 
-    s := mocks.NewArticlesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id).Return(nil)
+    s := &articlesServiceMockAPI{t: t, arguments: []any{context.Background(), id}}
 
     engine := gin.Default()
     engine.POST(target, NewArticlesHandler(s).Amend)
@@ -442,8 +478,7 @@ func TestArticlesHandler_Amend(t *testing.T) {
     expected.Status(expectedStatusCode)
     expected.Detail(expectBodyContains)
 
-    s := mocks.NewArticlesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id).Return(expected)
+    s := &articlesServiceMockAPI{errors: expected}
 
     engine := gin.Default()
     engine.POST(target, NewArticlesHandler(s).Amend)
@@ -463,8 +498,7 @@ func TestArticlesHandler_Amend(t *testing.T) {
     expectedStatusCode := http.StatusInternalServerError
     expectBodyContains := "An unexpected error occurred while processing your request"
 
-    s := mocks.NewArticlesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id).Return(unexpected)
+    s := &articlesServiceMockAPI{errors: unexpected}
 
     engine := gin.Default()
     engine.POST(target, NewArticlesHandler(s).Amend)
@@ -478,13 +512,20 @@ func TestArticlesHandler_Amend(t *testing.T) {
     assert.Empty(t, recorder.Result().Cookies())
     assert.Contains(t, recorder.Result().Header.Get("Content-Type"), "application/problem+json")
   })
+}
+
+func (mock *articlesServiceMockAPI) Remove(_ context.Context, articleID string) error {
+  if nil != mock.t {
+    require.Equal(mock.t, mock.arguments[1], articleID)
+  }
+
+  return mock.errors
 }
 
 func TestArticlesHandler_Remove(t *testing.T) {
   const (
-    routine = "Remove"
-    method  = http.MethodPost
-    target  = "/archive.articles.remove"
+    method = http.MethodPost
+    target = "/archive.articles.remove"
   )
 
   request := httptest.NewRequest(method, target, nil)
@@ -497,8 +538,7 @@ func TestArticlesHandler_Remove(t *testing.T) {
   t.Run("success", func(t *testing.T) {
     expectedStatusCode := http.StatusNoContent
 
-    s := mocks.NewArticlesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id).Return(nil)
+    s := &articlesServiceMockAPI{t: t, arguments: []any{context.Background(), id}}
 
     engine := gin.Default()
     engine.POST(target, NewArticlesHandler(s).Remove)
@@ -520,8 +560,7 @@ func TestArticlesHandler_Remove(t *testing.T) {
     expected.Status(expectedStatusCode)
     expected.Detail(expectBodyContains)
 
-    s := mocks.NewArticlesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id).Return(expected)
+    s := &articlesServiceMockAPI{errors: expected}
 
     engine := gin.Default()
     engine.POST(target, NewArticlesHandler(s).Remove)
@@ -541,8 +580,7 @@ func TestArticlesHandler_Remove(t *testing.T) {
     expectedStatusCode := http.StatusInternalServerError
     expectBodyContains := "An unexpected error occurred while processing your request"
 
-    s := mocks.NewArticlesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id).Return(unexpected)
+    s := &articlesServiceMockAPI{errors: unexpected}
 
     engine := gin.Default()
     engine.POST(target, NewArticlesHandler(s).Remove)
@@ -556,13 +594,20 @@ func TestArticlesHandler_Remove(t *testing.T) {
     assert.Empty(t, recorder.Result().Cookies())
     assert.Contains(t, recorder.Result().Header.Get("Content-Type"), "application/problem+json")
   })
+}
+
+func (mock *articlesServiceMockAPI) Pin(_ context.Context, articleID string) error {
+  if nil != mock.t {
+    require.Equal(mock.t, mock.arguments[1], articleID)
+  }
+
+  return mock.errors
 }
 
 func TestArticlesHandler_Pin(t *testing.T) {
   const (
-    routine = "Pin"
-    method  = http.MethodPost
-    target  = "/archive.articles.pin"
+    method = http.MethodPost
+    target = "/archive.articles.pin"
   )
 
   request := httptest.NewRequest(method, target, nil)
@@ -575,8 +620,7 @@ func TestArticlesHandler_Pin(t *testing.T) {
   t.Run("success", func(t *testing.T) {
     expectedStatusCode := http.StatusNoContent
 
-    s := mocks.NewArticlesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id).Return(nil)
+    s := &articlesServiceMockAPI{t: t, arguments: []any{context.Background(), id}}
 
     engine := gin.Default()
     engine.POST(target, NewArticlesHandler(s).Pin)
@@ -598,8 +642,7 @@ func TestArticlesHandler_Pin(t *testing.T) {
     expected.Status(expectedStatusCode)
     expected.Detail(expectBodyContains)
 
-    s := mocks.NewArticlesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id).Return(expected)
+    s := &articlesServiceMockAPI{errors: expected}
 
     engine := gin.Default()
     engine.POST(target, NewArticlesHandler(s).Pin)
@@ -619,8 +662,7 @@ func TestArticlesHandler_Pin(t *testing.T) {
     expectedStatusCode := http.StatusInternalServerError
     expectBodyContains := "An unexpected error occurred while processing your request"
 
-    s := mocks.NewArticlesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id).Return(unexpected)
+    s := &articlesServiceMockAPI{errors: unexpected}
 
     engine := gin.Default()
     engine.POST(target, NewArticlesHandler(s).Pin)
@@ -635,11 +677,19 @@ func TestArticlesHandler_Pin(t *testing.T) {
     assert.Contains(t, recorder.Result().Header.Get("Content-Type"), "application/problem+json")
   })
 }
+
+func (mock *articlesServiceMockAPI) Unpin(_ context.Context, articleID string) error {
+  if nil != mock.t {
+    require.Equal(mock.t, mock.arguments[1], articleID)
+  }
+
+  return mock.errors
+}
+
 func TestArticlesHandler_Unpin(t *testing.T) {
   const (
-    routine = "Unpin"
-    method  = http.MethodPost
-    target  = "/archive.articles.unpin"
+    method = http.MethodPost
+    target = "/archive.articles.unpin"
   )
 
   request := httptest.NewRequest(method, target, nil)
@@ -652,8 +702,7 @@ func TestArticlesHandler_Unpin(t *testing.T) {
   t.Run("success", func(t *testing.T) {
     expectedStatusCode := http.StatusNoContent
 
-    s := mocks.NewArticlesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id).Return(nil)
+    s := &articlesServiceMockAPI{t: t, arguments: []any{context.Background(), id}}
 
     engine := gin.Default()
     engine.POST(target, NewArticlesHandler(s).Unpin)
@@ -675,8 +724,7 @@ func TestArticlesHandler_Unpin(t *testing.T) {
     expected.Status(expectedStatusCode)
     expected.Detail(expectBodyContains)
 
-    s := mocks.NewArticlesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id).Return(expected)
+    s := &articlesServiceMockAPI{errors: expected}
 
     engine := gin.Default()
     engine.POST(target, NewArticlesHandler(s).Unpin)
@@ -696,8 +744,7 @@ func TestArticlesHandler_Unpin(t *testing.T) {
     expectedStatusCode := http.StatusInternalServerError
     expectBodyContains := "An unexpected error occurred while processing your request"
 
-    s := mocks.NewArticlesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id).Return(unexpected)
+    s := &articlesServiceMockAPI{errors: unexpected}
 
     engine := gin.Default()
     engine.POST(target, NewArticlesHandler(s).Unpin)
@@ -711,13 +758,21 @@ func TestArticlesHandler_Unpin(t *testing.T) {
     assert.Empty(t, recorder.Result().Cookies())
     assert.Contains(t, recorder.Result().Header.Get("Content-Type"), "application/problem+json")
   })
+}
+
+func (mock *articlesServiceMockAPI) AddTag(_ context.Context, articleUUID, tagID string) error {
+  if nil != mock.t {
+    require.Equal(mock.t, mock.arguments[1], articleUUID)
+    require.Equal(mock.t, mock.arguments[2], tagID)
+  }
+
+  return mock.errors
 }
 
 func TestArticlesHandler_AddTag(t *testing.T) {
   const (
-    routine = "AddTag"
-    method  = http.MethodPost
-    target  = "/archive.articles.tags.add"
+    method = http.MethodPost
+    target = "/archive.articles.tags.add"
   )
 
   request := httptest.NewRequest(method, target, nil)
@@ -732,8 +787,7 @@ func TestArticlesHandler_AddTag(t *testing.T) {
   t.Run("success", func(t *testing.T) {
     expectedStatusCode := http.StatusNoContent
 
-    s := mocks.NewArticlesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), articleUUID, tagID).Return(nil)
+    s := &articlesServiceMockAPI{t: t, arguments: []any{context.Background(), articleUUID, tagID}}
 
     engine := gin.Default()
     engine.POST(target, NewArticlesHandler(s).AddTag)
@@ -755,8 +809,7 @@ func TestArticlesHandler_AddTag(t *testing.T) {
     expected.Status(expectedStatusCode)
     expected.Detail(expectBodyContains)
 
-    s := mocks.NewArticlesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), articleUUID, tagID).Return(expected)
+    s := &articlesServiceMockAPI{errors: expected}
 
     engine := gin.Default()
     engine.POST(target, NewArticlesHandler(s).AddTag)
@@ -776,8 +829,7 @@ func TestArticlesHandler_AddTag(t *testing.T) {
     expectedStatusCode := http.StatusInternalServerError
     expectBodyContains := "An unexpected error occurred while processing your request"
 
-    s := mocks.NewArticlesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), articleUUID, tagID).Return(unexpected)
+    s := &articlesServiceMockAPI{errors: unexpected}
 
     engine := gin.Default()
     engine.POST(target, NewArticlesHandler(s).AddTag)
@@ -793,27 +845,34 @@ func TestArticlesHandler_AddTag(t *testing.T) {
   })
 }
 
+func (mock *articlesServiceMockAPI) RemoveTag(_ context.Context, articleUUID, tagID string) error {
+  if nil != mock.t {
+    require.Equal(mock.t, mock.arguments[1], articleUUID)
+    require.Equal(mock.t, mock.arguments[2], tagID)
+  }
+
+  return mock.errors
+}
+
 func TestArticlesHandler_RemoveTag(t *testing.T) {
   const (
-    routine = "RemoveTag"
-    method  = http.MethodPost
-    target  = "/archive.articles.tags.remove"
+    method = http.MethodPost
+    target = "/archive.articles.tags.remove"
   )
 
   request := httptest.NewRequest(method, target, nil)
-  articlesUUID := uuid.NewString()
+  articleUUID := uuid.NewString()
   tagID := uuid.NewString()
 
   _ = request.ParseForm()
 
-  request.PostForm.Add("article_uuid", articlesUUID)
+  request.PostForm.Add("article_uuid", articleUUID)
   request.PostForm.Add("tag_id", tagID)
 
   t.Run("success", func(t *testing.T) {
     expectedStatusCode := http.StatusNoContent
 
-    s := mocks.NewArticlesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), articlesUUID, tagID).Return(nil)
+    s := &articlesServiceMockAPI{t: t, arguments: []any{context.Background(), articleUUID, tagID}}
 
     engine := gin.Default()
     engine.POST(target, NewArticlesHandler(s).RemoveTag)
@@ -835,8 +894,7 @@ func TestArticlesHandler_RemoveTag(t *testing.T) {
     expected.Status(expectedStatusCode)
     expected.Detail(expectBodyContains)
 
-    s := mocks.NewArticlesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), articlesUUID, tagID).Return(expected)
+    s := &articlesServiceMockAPI{errors: expected}
 
     engine := gin.Default()
     engine.POST(target, NewArticlesHandler(s).RemoveTag)
@@ -856,8 +914,7 @@ func TestArticlesHandler_RemoveTag(t *testing.T) {
     expectedStatusCode := http.StatusInternalServerError
     expectBodyContains := "An unexpected error occurred while processing your request"
 
-    s := mocks.NewArticlesService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), articlesUUID, tagID).Return(unexpected)
+    s := &articlesServiceMockAPI{errors: unexpected}
 
     engine := gin.Default()
     engine.POST(target, NewArticlesHandler(s).RemoveTag)

@@ -24,7 +24,7 @@ type WebHandler struct {
   experience experienceServiceAPI
   projects   projectsServiceAPI
   drafts     draftsServiceAPI
-  articles   service.ArticlesService
+  articles   articlesServiceAPI
   topics     service.TopicsService
   tags       service.TagsService
 }
@@ -34,7 +34,7 @@ func NewWebHandler(
   experience experienceServiceAPI,
   projects projectsServiceAPI,
   drafts draftsServiceAPI,
-  articles service.ArticlesService,
+  articles articlesServiceAPI,
   topics service.TopicsService,
   tags service.TagsService,
 ) *WebHandler {

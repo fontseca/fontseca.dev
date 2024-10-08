@@ -1,17 +1,36 @@
 package handler
 
 import (
+  "context"
+  "fontseca.dev/model"
   "fontseca.dev/problem"
-  "fontseca.dev/service"
+  "fontseca.dev/transfer"
   "github.com/gin-gonic/gin"
   "net/http"
 )
 
-type ArticlesHandler struct {
-  articles service.ArticlesService
+type articlesServiceAPI interface {
+  Get(ctx context.Context, filter *transfer.ArticleFilter) (articles []*transfer.Article, err error)
+  Publications(ctx context.Context) (publications []*transfer.Publication, err error)
+  GetHidden(ctx context.Context, filter *transfer.ArticleFilter) (articles []*transfer.Article, err error)
+  GetOne(ctx context.Context, request *transfer.ArticleRequest) (article *model.Article, err error)
+  GetByID(ctx context.Context, articleUUID string) (article *model.Article, err error)
+  Hide(ctx context.Context, articleID string) error
+  Show(ctx context.Context, articleID string) error
+  Amend(ctx context.Context, articleID string) error
+  SetSlug(ctx context.Context, articleID, slug string) error
+  Remove(ctx context.Context, articleID string) error
+  Pin(ctx context.Context, articleID string) error
+  Unpin(ctx context.Context, articleID string) error
+  AddTag(ctx context.Context, articleUUID, tagID string) error
+  RemoveTag(ctx context.Context, articleUUID, tagID string) error
 }
 
-func NewArticlesHandler(articles service.ArticlesService) *ArticlesHandler {
+type ArticlesHandler struct {
+  articles articlesServiceAPI
+}
+
+func NewArticlesHandler(articles articlesServiceAPI) *ArticlesHandler {
   return &ArticlesHandler{articles}
 }
 
