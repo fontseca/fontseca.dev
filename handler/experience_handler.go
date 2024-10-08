@@ -1,20 +1,29 @@
 package handler
 
 import (
+  "context"
   "errors"
+  "fontseca.dev/model"
   "fontseca.dev/problem"
-  "fontseca.dev/service"
   "fontseca.dev/transfer"
   "github.com/gin-gonic/gin"
   "net/http"
   "time"
 )
 
-type ExperienceHandler struct {
-  s service.ExperienceService
+type experienceServiceAPI interface {
+  Get(context.Context, ...bool) ([]*model.Experience, error)
+  GetByID(context.Context, string) (*model.Experience, error)
+  Save(context.Context, *transfer.ExperienceCreation) (bool, error)
+  Update(context.Context, string, *transfer.ExperienceUpdate) (bool, error)
+  Remove(context.Context, string) error
 }
 
-func NewExperienceHandler(s service.ExperienceService) *ExperienceHandler {
+type ExperienceHandler struct {
+  s experienceServiceAPI
+}
+
+func NewExperienceHandler(s experienceServiceAPI) *ExperienceHandler {
   return &ExperienceHandler{s}
 }
 

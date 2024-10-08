@@ -20,18 +20,18 @@ import (
 )
 
 type WebHandler struct {
-  meService         meServiceAPI
-  experienceService service.ExperienceService
-  projectsService   service.ProjectsService
-  drafts            service.DraftsService
-  articles          service.ArticlesService
-  topics            service.TopicsService
-  tags              service.TagsService
+  meService       meServiceAPI
+  experience      experienceServiceAPI
+  projectsService service.ProjectsService
+  drafts          service.DraftsService
+  articles        service.ArticlesService
+  topics          service.TopicsService
+  tags            service.TagsService
 }
 
 func NewWebHandler(
   meService meServiceAPI,
-  experienceService service.ExperienceService,
+  experience experienceServiceAPI,
   projectsService service.ProjectsService,
   drafts service.DraftsService,
   articles service.ArticlesService,
@@ -39,13 +39,13 @@ func NewWebHandler(
   tags service.TagsService,
 ) *WebHandler {
   return &WebHandler{
-    meService:         meService,
-    experienceService: experienceService,
-    projectsService:   projectsService,
-    drafts:            drafts,
-    articles:          articles,
-    topics:            topics,
-    tags:              tags,
+    meService:       meService,
+    experience:      experience,
+    projectsService: projectsService,
+    drafts:          drafts,
+    articles:        articles,
+    topics:          topics,
+    tags:            tags,
   }
 }
 
@@ -63,7 +63,7 @@ func (h *WebHandler) RenderMe(c *gin.Context) {
 }
 
 func (h *WebHandler) RenderExperience(c *gin.Context) {
-  var exp, err = h.experienceService.Get(c)
+  var exp, err = h.experience.Get(c)
   if nil != err {
     return
   }

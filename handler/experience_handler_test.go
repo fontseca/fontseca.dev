@@ -1,15 +1,15 @@
 package handler
 
 import (
+  "context"
   "errors"
-  "fontseca.dev/mocks"
   "fontseca.dev/model"
   "fontseca.dev/problem"
   "fontseca.dev/transfer"
   "github.com/gin-gonic/gin"
   "github.com/google/uuid"
   "github.com/stretchr/testify/assert"
-  "github.com/stretchr/testify/mock"
+  "github.com/stretchr/testify/require"
   "net/http"
   "net/http/httptest"
   "net/url"
@@ -17,15 +17,24 @@ import (
   "time"
 )
 
+type experienceServiceMockAPI struct {
+  experienceServiceAPI
+  returns []any
+  errors  error
+  called  bool
+}
+
+func (mock *experienceServiceMockAPI) Get(context.Context, ...bool) (experience []*model.Experience, err error) {
+  return mock.returns[0].([]*model.Experience), mock.errors
+}
+
 func TestExperienceHandler_Get(t *testing.T) {
-  const routine = "Get"
   const method = http.MethodGet
   const target = "/experience.list"
 
   t.Run("success", func(t *testing.T) {
     var e = make([]*model.Experience, 1)
-    var s = mocks.NewExperienceService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), []bool(nil)).Return(e, nil)
+    var s = &experienceServiceMockAPI{returns: []any{e}}
     gin.SetMode(gin.ReleaseMode)
     var engine = gin.Default()
     engine.GET(target, NewExperienceHandler(s).Get)
@@ -38,14 +47,12 @@ func TestExperienceHandler_Get(t *testing.T) {
 }
 
 func TestExperienceHandler_GetHidden(t *testing.T) {
-  const routine = "Get"
   const method = http.MethodGet
   const target = "/experience.hidden.list"
 
   t.Run("success", func(t *testing.T) {
     var e = make([]*model.Experience, 1)
-    var s = mocks.NewExperienceService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), []bool{true}).Return(e, nil)
+    var s = &experienceServiceMockAPI{returns: []any{e}}
     gin.SetMode(gin.ReleaseMode)
     var engine = gin.Default()
     engine.GET(target, NewExperienceHandler(s).GetHidden)
@@ -57,8 +64,11 @@ func TestExperienceHandler_GetHidden(t *testing.T) {
   })
 }
 
+func (mock *experienceServiceMockAPI) GetByID(context.Context, string) (*model.Experience, error) {
+  return mock.returns[0].(*model.Experience), mock.errors
+}
+
 func TestExperienceHandler_GetByID(t *testing.T) {
-  const routine = "GetByID"
   const method = http.MethodGet
   const target = "/experience.info"
 
@@ -78,8 +88,7 @@ func TestExperienceHandler_GetByID(t *testing.T) {
       UpdatedAt: time.Now(),
     }
     var id = e.UUID.String()
-    var s = mocks.NewExperienceService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id).Return(e, nil)
+    var s = &experienceServiceMockAPI{returns: []any{e}}
     gin.SetMode(gin.ReleaseMode)
     var engine = gin.Default()
     engine.GET(target, NewExperienceHandler(s).GetByID)
@@ -94,19 +103,13 @@ func TestExperienceHandler_GetByID(t *testing.T) {
   })
 }
 
+func (mock *experienceServiceMockAPI) Save(context.Context, *transfer.ExperienceCreation) (bool, error) {
+  return mock.returns[0].(bool), mock.errors
+}
+
 func TestExperienceHandler_Add(t *testing.T) {
-  const routine = "Save"
   const method = http.MethodPost
   const target = "/experience.add"
-
-  var e = &transfer.ExperienceCreation{
-    Starts:   2028,
-    Ends:     2030,
-    JobTitle: "JobTitle",
-    Company:  "Company",
-    Country:  "Country",
-    Summary:  "Summary",
-  }
 
   var request = httptest.NewRequest(method, target, nil)
   _ = request.ParseForm()
@@ -118,8 +121,7 @@ func TestExperienceHandler_Add(t *testing.T) {
   request.PostForm.Add("summary", "Summary")
 
   t.Run("success", func(t *testing.T) {
-    var s = mocks.NewExperienceService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), e).Return(true, nil)
+    var s = &experienceServiceMockAPI{returns: []any{true}}
     var engine = gin.Default()
     engine.POST(target, NewExperienceHandler(s).Add)
     var recorder = httptest.NewRecorder()
@@ -132,8 +134,7 @@ func TestExperienceHandler_Add(t *testing.T) {
     var expected = &problem.Problem{}
     expected.Status(http.StatusGone)
     expected.Detail("Expected problem detail.")
-    var s = mocks.NewExperienceService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), e).Return(false, expected)
+    var s = &experienceServiceMockAPI{returns: []any{false}, errors: expected}
     var engine = gin.Default()
     engine.POST(target, NewExperienceHandler(s).Add)
     var recorder = httptest.NewRecorder()
@@ -144,8 +145,7 @@ func TestExperienceHandler_Add(t *testing.T) {
 
   t.Run("unexpected error", func(t *testing.T) {
     var unexpected = errors.New("unexpected error")
-    var s = mocks.NewExperienceService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), e).Return(false, unexpected)
+    var s = &experienceServiceMockAPI{returns: []any{false}, errors: unexpected}
     var engine = gin.Default()
     engine.POST(target, NewExperienceHandler(s).Add)
     var recorder = httptest.NewRecorder()
@@ -155,19 +155,13 @@ func TestExperienceHandler_Add(t *testing.T) {
   })
 }
 
+func (mock *experienceServiceMockAPI) Update(context.Context, string, *transfer.ExperienceUpdate) (bool, error) {
+  return mock.returns[0].(bool), mock.errors
+}
+
 func TestExperienceHandler_Set(t *testing.T) {
-  const routine = "Update"
   const method = http.MethodPost
   const target = "/experience.set"
-
-  var update = &transfer.ExperienceUpdate{
-    Starts:   2028,
-    Ends:     2030,
-    JobTitle: "JobTitle",
-    Company:  "Company",
-    Country:  "Country",
-    Summary:  "Summary",
-  }
 
   var request = httptest.NewRequest(method, target, nil)
   _ = request.ParseForm()
@@ -182,12 +176,12 @@ func TestExperienceHandler_Set(t *testing.T) {
   request.PostForm.Add("summary", "Summary")
 
   t.Run("missing 'experience_uuid' parameter", func(t *testing.T) {
-    var s = mocks.NewExperienceService()
-    s.AssertNotCalled(t, routine)
+    var s = &experienceServiceMockAPI{}
     var engine = gin.Default()
     engine.POST(target, NewExperienceHandler(s).Set)
     var recorder = httptest.NewRecorder()
     engine.ServeHTTP(recorder, request)
+    require.False(t, s.called)
     assert.Equal(t, http.StatusBadRequest, recorder.Code)
     assert.Contains(t, recorder.Body.String(), "The 'experience_uuid' parameter is required but was not found in the request form data.")
   })
@@ -195,8 +189,7 @@ func TestExperienceHandler_Set(t *testing.T) {
   request.PostForm.Add("experience_uuid", id)
 
   t.Run("success", func(t *testing.T) {
-    var s = mocks.NewExperienceService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id, update).Return(true, nil)
+    var s = &experienceServiceMockAPI{returns: []any{true}}
     var engine = gin.Default()
     engine.POST(target, NewExperienceHandler(s).Set)
     var recorder = httptest.NewRecorder()
@@ -206,8 +199,7 @@ func TestExperienceHandler_Set(t *testing.T) {
   })
 
   t.Run("redirects when there's nothing new", func(t *testing.T) {
-    var s = mocks.NewExperienceService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id, update).Return(false, nil)
+    var s = &experienceServiceMockAPI{returns: []any{false}}
     var engine = gin.Default()
     engine.POST(target, NewExperienceHandler(s).Set)
     var recorder = httptest.NewRecorder()
@@ -220,8 +212,7 @@ func TestExperienceHandler_Set(t *testing.T) {
     var expected = &problem.Problem{}
     expected.Status(http.StatusGone)
     expected.Detail("Expected problem detail.")
-    var s = mocks.NewExperienceService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id, update).Return(false, expected)
+    var s = &experienceServiceMockAPI{returns: []any{false}, errors: expected}
     var engine = gin.Default()
     engine.POST(target, NewExperienceHandler(s).Set)
     var recorder = httptest.NewRecorder()
@@ -232,8 +223,7 @@ func TestExperienceHandler_Set(t *testing.T) {
 
   t.Run("unexpected error", func(t *testing.T) {
     var unexpected = errors.New("unexpected error")
-    var s = mocks.NewExperienceService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id, update).Return(false, unexpected)
+    var s = &experienceServiceMockAPI{returns: []any{false}, errors: unexpected}
     var engine = gin.Default()
     engine.POST(target, NewExperienceHandler(s).Set)
     var recorder = httptest.NewRecorder()
@@ -244,7 +234,6 @@ func TestExperienceHandler_Set(t *testing.T) {
 }
 
 func TestExperienceHandler_Hide(t *testing.T) {
-  const routine = "Update"
   const method = http.MethodPost
   const target = "/experience.hide"
 
@@ -252,23 +241,21 @@ func TestExperienceHandler_Hide(t *testing.T) {
   var request = httptest.NewRequest(method, target, nil)
 
   t.Run("missing 'experience_uuid' parameter", func(t *testing.T) {
-    var s = mocks.NewExperienceService()
-    s.AssertNotCalled(t, routine)
+    var s = &experienceServiceMockAPI{}
     var engine = gin.Default()
     engine.POST(target, NewExperienceHandler(s).Hide)
     var recorder = httptest.NewRecorder()
     engine.ServeHTTP(recorder, request)
+    require.False(t, s.called)
     assert.Equal(t, http.StatusBadRequest, recorder.Code)
     assert.Contains(t, recorder.Body.String(), "The 'experience_uuid' parameter is required but was not found in the request form data.")
   })
 
   _ = request.ParseForm()
   request.PostForm.Add("experience_uuid", id)
-  var update = &transfer.ExperienceUpdate{Hidden: true}
 
   t.Run("success", func(t *testing.T) {
-    var s = mocks.NewExperienceService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id, update).Return(true, nil)
+    var s = &experienceServiceMockAPI{returns: []any{true}}
     var engine = gin.Default()
     engine.POST(target, NewExperienceHandler(s).Hide)
     var recorder = httptest.NewRecorder()
@@ -278,8 +265,7 @@ func TestExperienceHandler_Hide(t *testing.T) {
   })
 
   t.Run("redirects when there's nothing new", func(t *testing.T) {
-    var s = mocks.NewExperienceService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id, update).Return(false, nil)
+    var s = &experienceServiceMockAPI{returns: []any{false}}
     var engine = gin.Default()
     engine.POST(target, NewExperienceHandler(s).Hide)
     var recorder = httptest.NewRecorder()
@@ -292,8 +278,7 @@ func TestExperienceHandler_Hide(t *testing.T) {
     var expected = &problem.Problem{}
     expected.Status(http.StatusGone)
     expected.Detail("Expected problem detail.")
-    var s = mocks.NewExperienceService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id, update).Return(false, expected)
+    var s = &experienceServiceMockAPI{returns: []any{false}, errors: expected}
     var engine = gin.Default()
     engine.POST(target, NewExperienceHandler(s).Hide)
     var recorder = httptest.NewRecorder()
@@ -304,8 +289,7 @@ func TestExperienceHandler_Hide(t *testing.T) {
 
   t.Run("unexpected error", func(t *testing.T) {
     var unexpected = errors.New("unexpected error")
-    var s = mocks.NewExperienceService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id, update).Return(false, unexpected)
+    var s = &experienceServiceMockAPI{returns: []any{false}, errors: unexpected}
     var engine = gin.Default()
     engine.POST(target, NewExperienceHandler(s).Hide)
     var recorder = httptest.NewRecorder()
@@ -316,7 +300,6 @@ func TestExperienceHandler_Hide(t *testing.T) {
 }
 
 func TestExperienceHandler_Show(t *testing.T) {
-  const routine = "Update"
   const method = http.MethodPost
   const target = "/experience.show"
 
@@ -324,23 +307,21 @@ func TestExperienceHandler_Show(t *testing.T) {
   var request = httptest.NewRequest(method, target, nil)
 
   t.Run("missing 'experience_uuid' parameter", func(t *testing.T) {
-    var s = mocks.NewExperienceService()
-    s.AssertNotCalled(t, routine)
+    var s = &experienceServiceMockAPI{}
     var engine = gin.Default()
     engine.POST(target, NewExperienceHandler(s).Show)
     var recorder = httptest.NewRecorder()
     engine.ServeHTTP(recorder, request)
+    require.False(t, s.called)
     assert.Equal(t, http.StatusBadRequest, recorder.Code)
     assert.Contains(t, recorder.Body.String(), "The 'experience_uuid' parameter is required but was not found in the request form data.")
   })
 
   _ = request.ParseForm()
   request.PostForm.Add("experience_uuid", id)
-  var update = &transfer.ExperienceUpdate{Hidden: false}
 
   t.Run("success", func(t *testing.T) {
-    var s = mocks.NewExperienceService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id, update).Return(true, nil)
+    var s = &experienceServiceMockAPI{returns: []any{true}}
     var engine = gin.Default()
     engine.POST(target, NewExperienceHandler(s).Show)
     var recorder = httptest.NewRecorder()
@@ -350,8 +331,7 @@ func TestExperienceHandler_Show(t *testing.T) {
   })
 
   t.Run("redirects when there's nothing new", func(t *testing.T) {
-    var s = mocks.NewExperienceService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id, update).Return(false, nil)
+    var s = &experienceServiceMockAPI{returns: []any{false}}
     var engine = gin.Default()
     engine.POST(target, NewExperienceHandler(s).Show)
     var recorder = httptest.NewRecorder()
@@ -364,8 +344,7 @@ func TestExperienceHandler_Show(t *testing.T) {
     var expected = &problem.Problem{}
     expected.Status(http.StatusGone)
     expected.Detail("Expected problem detail.")
-    var s = mocks.NewExperienceService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id, update).Return(false, expected)
+    var s = &experienceServiceMockAPI{returns: []any{false}, errors: expected}
     var engine = gin.Default()
     engine.POST(target, NewExperienceHandler(s).Show)
     var recorder = httptest.NewRecorder()
@@ -376,8 +355,7 @@ func TestExperienceHandler_Show(t *testing.T) {
 
   t.Run("unexpected error", func(t *testing.T) {
     var unexpected = errors.New("unexpected error")
-    var s = mocks.NewExperienceService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id, update).Return(false, unexpected)
+    var s = &experienceServiceMockAPI{returns: []any{false}, errors: unexpected}
     var engine = gin.Default()
     engine.POST(target, NewExperienceHandler(s).Show)
     var recorder = httptest.NewRecorder()
@@ -388,7 +366,6 @@ func TestExperienceHandler_Show(t *testing.T) {
 }
 
 func TestExperienceHandler_Quit(t *testing.T) {
-  const routine = "Update"
   const method = http.MethodPost
   const target = "/experience.quit"
 
@@ -396,23 +373,21 @@ func TestExperienceHandler_Quit(t *testing.T) {
   var request = httptest.NewRequest(method, target, nil)
 
   t.Run("missing 'experience_uuid' parameter", func(t *testing.T) {
-    var s = mocks.NewExperienceService()
-    s.AssertNotCalled(t, routine)
+    var s = &experienceServiceMockAPI{}
     var engine = gin.Default()
     engine.POST(target, NewExperienceHandler(s).Quit)
     var recorder = httptest.NewRecorder()
     engine.ServeHTTP(recorder, request)
+    require.False(t, s.called)
     assert.Equal(t, http.StatusBadRequest, recorder.Code)
     assert.Contains(t, recorder.Body.String(), "The 'experience_uuid' parameter is required but was not found in the request form data.")
   })
 
   _ = request.ParseForm()
   request.PostForm.Add("experience_uuid", id)
-  var update = &transfer.ExperienceUpdate{Active: false, Ends: time.Now().Year()}
 
   t.Run("success", func(t *testing.T) {
-    var s = mocks.NewExperienceService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id, update).Return(true, nil)
+    var s = &experienceServiceMockAPI{returns: []any{true}}
     var engine = gin.Default()
     engine.POST(target, NewExperienceHandler(s).Quit)
     var recorder = httptest.NewRecorder()
@@ -422,8 +397,7 @@ func TestExperienceHandler_Quit(t *testing.T) {
   })
 
   t.Run("redirects when there's nothing new", func(t *testing.T) {
-    var s = mocks.NewExperienceService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id, update).Return(false, nil)
+    var s = &experienceServiceMockAPI{returns: []any{false}}
     var engine = gin.Default()
     engine.POST(target, NewExperienceHandler(s).Quit)
     var recorder = httptest.NewRecorder()
@@ -436,8 +410,7 @@ func TestExperienceHandler_Quit(t *testing.T) {
     var expected = &problem.Problem{}
     expected.Status(http.StatusGone)
     expected.Detail("Expected problem detail.")
-    var s = mocks.NewExperienceService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id, update).Return(false, expected)
+    var s = &experienceServiceMockAPI{returns: []any{false}, errors: expected}
     var engine = gin.Default()
     engine.POST(target, NewExperienceHandler(s).Quit)
     var recorder = httptest.NewRecorder()
@@ -448,8 +421,7 @@ func TestExperienceHandler_Quit(t *testing.T) {
 
   t.Run("unexpected error", func(t *testing.T) {
     var unexpected = errors.New("unexpected error")
-    var s = mocks.NewExperienceService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id, update).Return(false, unexpected)
+    var s = &experienceServiceMockAPI{returns: []any{false}, errors: unexpected}
     var engine = gin.Default()
     engine.POST(target, NewExperienceHandler(s).Quit)
     var recorder = httptest.NewRecorder()
@@ -459,8 +431,11 @@ func TestExperienceHandler_Quit(t *testing.T) {
   })
 }
 
+func (mock *experienceServiceMockAPI) Remove(_ context.Context, _ string) error {
+  return mock.errors
+}
+
 func TestExperienceHandler_Remove(t *testing.T) {
-  const routine = "Remove"
   const method = http.MethodPost
   const target = "/experience.remove"
 
@@ -468,12 +443,12 @@ func TestExperienceHandler_Remove(t *testing.T) {
   var request = httptest.NewRequest(method, target, nil)
 
   t.Run("missing 'experience_uuid' parameter", func(t *testing.T) {
-    var s = mocks.NewExperienceService()
-    s.AssertNotCalled(t, routine)
+    var s = &experienceServiceMockAPI{}
     var engine = gin.Default()
     engine.POST(target, NewExperienceHandler(s).Remove)
     var recorder = httptest.NewRecorder()
     engine.ServeHTTP(recorder, request)
+    require.False(t, s.called)
     assert.Equal(t, http.StatusBadRequest, recorder.Code)
     assert.Contains(t, recorder.Body.String(), "The 'experience_uuid' parameter is required but was not found in the request form data.")
   })
@@ -482,8 +457,7 @@ func TestExperienceHandler_Remove(t *testing.T) {
   request.PostForm.Add("experience_uuid", id)
 
   t.Run("success", func(t *testing.T) {
-    var s = mocks.NewExperienceService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id).Return(nil)
+    var s = &experienceServiceMockAPI{errors: nil}
     var engine = gin.Default()
     engine.POST(target, NewExperienceHandler(s).Remove)
     var recorder = httptest.NewRecorder()
@@ -496,8 +470,7 @@ func TestExperienceHandler_Remove(t *testing.T) {
     var expected = &problem.Problem{}
     expected.Status(http.StatusGone)
     expected.Detail("Expected problem detail.")
-    var s = mocks.NewExperienceService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id).Return(expected)
+    var s = &experienceServiceMockAPI{errors: expected}
     var engine = gin.Default()
     engine.POST(target, NewExperienceHandler(s).Remove)
     var recorder = httptest.NewRecorder()
@@ -508,8 +481,7 @@ func TestExperienceHandler_Remove(t *testing.T) {
 
   t.Run("unexpected error", func(t *testing.T) {
     var unexpected = errors.New("unexpected error")
-    var s = mocks.NewExperienceService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id).Return(unexpected)
+    var s = &experienceServiceMockAPI{errors: unexpected}
     var engine = gin.Default()
     engine.POST(target, NewExperienceHandler(s).Remove)
     var recorder = httptest.NewRecorder()

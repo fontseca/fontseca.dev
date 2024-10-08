@@ -14,34 +14,18 @@ import (
 )
 
 // ExperienceRepository provides methods for interacting with experience data in the database.
-type ExperienceRepository interface {
-  // Get retrieves a slice of experience. If hidden is true it returns all
-  // the hidden experience records.
-  Get(ctx context.Context, hidden bool) (experience []*model.Experience, err error)
-
-  // GetByID retrieves a single experience record by its UUID.
-  GetByID(ctx context.Context, id string) (experience *model.Experience, err error)
-
-  // Save creates a new experience record with the provided creation data.
-  Save(ctx context.Context, creation *transfer.ExperienceCreation) (saved bool, err error)
-
-  // Update modifies an existing experience record with the provided update data.
-  Update(ctx context.Context, id string, update *transfer.ExperienceUpdate) (updated bool, err error)
-
-  // Remove deletes an experience record by its UUID.
-  Remove(ctx context.Context, id string) error
-}
-
-type experienceRepository struct {
+type ExperienceRepository struct {
   db *sql.DB
 }
 
 // NewExperienceRepository creates a new ExperienceRepository instance associating db as its database.
-func NewExperienceRepository(db *sql.DB) ExperienceRepository {
-  return &experienceRepository{db}
+func NewExperienceRepository(db *sql.DB) *ExperienceRepository {
+  return &ExperienceRepository{db}
 }
 
-func (r *experienceRepository) Get(ctx context.Context, hidden bool) (experience []*model.Experience, err error) {
+// Get retrieves a slice of experience. If hidden is true it returns all
+// the hidden experience records.
+func (r *ExperienceRepository) Get(ctx context.Context, hidden bool) (experience []*model.Experience, err error) {
   getMyExperienceQuery := `
   SELECT "uuid",
          "starts",
@@ -95,7 +79,7 @@ ORDER BY "starts" DESC;`
   return experience, nil
 }
 
-func (r *experienceRepository) doGetByID(ctx context.Context, id string, strict bool) (experience *model.Experience, err error) {
+func (r *ExperienceRepository) doGetByID(ctx context.Context, id string, strict bool) (experience *model.Experience, err error) {
   getExperienceByIDQuery := `
   SELECT "uuid",
          "starts",
@@ -146,11 +130,13 @@ func (r *experienceRepository) doGetByID(ctx context.Context, id string, strict 
   return experience, nil
 }
 
-func (r *experienceRepository) GetByID(ctx context.Context, id string) (experience *model.Experience, err error) {
+// GetByID retrieves a single experience record by its UUID.
+func (r *ExperienceRepository) GetByID(ctx context.Context, id string) (experience *model.Experience, err error) {
   return r.doGetByID(ctx, id, true)
 }
 
-func (r *experienceRepository) Save(ctx context.Context, creation *transfer.ExperienceCreation) (saved bool, err error) {
+// Save creates a new experience record with the provided creation data.
+func (r *ExperienceRepository) Save(ctx context.Context, creation *transfer.ExperienceCreation) (saved bool, err error) {
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
 
   if nil != err {
@@ -199,7 +185,7 @@ func (r *experienceRepository) Save(ctx context.Context, creation *transfer.Expe
   return true, nil
 }
 
-func (r *experienceRepository) updatable(current *model.Experience, update *transfer.ExperienceUpdate) bool {
+func (r *ExperienceRepository) updatable(current *model.Experience, update *transfer.ExperienceUpdate) bool {
   if (0 == update.Starts || update.Starts == current.Starts) &&
     (0 == update.Ends || (nil != current.Ends && update.Ends == *current.Ends)) &&
     ("" == update.JobTitle || update.JobTitle == current.JobTitle) &&
@@ -213,7 +199,8 @@ func (r *experienceRepository) updatable(current *model.Experience, update *tran
   return true
 }
 
-func (r *experienceRepository) Update(ctx context.Context, id string, update *transfer.ExperienceUpdate) (updated bool, err error) {
+// Update modifies an existing experience record with the provided update data.
+func (r *ExperienceRepository) Update(ctx context.Context, id string, update *transfer.ExperienceUpdate) (updated bool, err error) {
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
 
   if nil != err {
@@ -284,7 +271,8 @@ func (r *experienceRepository) Update(ctx context.Context, id string, update *tr
   return true, nil
 }
 
-func (r *experienceRepository) Remove(ctx context.Context, id string) error {
+// Remove deletes an experience record by its UUID.
+func (r *ExperienceRepository) Remove(ctx context.Context, id string) error {
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
 
   if nil != err {
