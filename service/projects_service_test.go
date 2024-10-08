@@ -3,38 +3,44 @@ package service
 import (
   "context"
   "errors"
-  "fontseca.dev/mocks"
   "fontseca.dev/model"
   "fontseca.dev/problem"
   "fontseca.dev/transfer"
   "github.com/google/uuid"
   "github.com/stretchr/testify/assert"
-  "github.com/stretchr/testify/mock"
+  "github.com/stretchr/testify/require"
   "strings"
   "testing"
 )
 
+type projectsRepositoryMockAPI struct {
+  projectsRepositoryAPI
+  t         *testing.T
+  returns   []any
+  arguments []any
+  errors    error
+  called    bool
+}
+
+func (mock *projectsRepositoryMockAPI) Get(context.Context, bool) (projects []*model.Project, err error) {
+  return mock.returns[0].([]*model.Project), mock.errors
+}
+
 func TestProjectService_Get(t *testing.T) {
-  const routine = "Get"
   var ctx = context.Background()
 
   t.Run("success", func(t *testing.T) {
     var projects = make([]*model.Project, 0)
 
-    var r = mocks.NewProjectsRepository()
-    r.On(routine, ctx, true).Return(projects, nil)
+    var r = &projectsRepositoryMockAPI{returns: []any{projects}}
     res, err := NewProjectsService(r).Get(ctx, true)
     assert.NotNil(t, res)
     assert.NoError(t, err)
 
-    r = mocks.NewProjectsRepository()
-    r.On(routine, ctx, false).Return(projects, nil)
     res, err = NewProjectsService(r).Get(ctx, false)
     assert.NotNil(t, res)
     assert.NoError(t, err)
 
-    r = mocks.NewProjectsRepository()
-    r.On(routine, ctx, false).Return(projects, nil)
     res, err = NewProjectsService(r).Get(ctx)
     assert.NotNil(t, res)
     assert.NoError(t, err)
@@ -42,23 +48,24 @@ func TestProjectService_Get(t *testing.T) {
 
   t.Run("error", func(t *testing.T) {
     var unexpected = errors.New("unexpected error")
-    var r = mocks.NewProjectsRepository()
-    r.On(routine, ctx, false).Return(nil, unexpected)
+    var r = &projectsRepositoryMockAPI{returns: []any{([]*model.Project)(nil)}, errors: unexpected}
     res, err := NewProjectsService(r).Get(ctx)
     assert.Nil(t, res)
     assert.ErrorIs(t, err, unexpected)
   })
 }
 
+func (mock *projectsRepositoryMockAPI) GetByID(context.Context, string) (*model.Project, error) {
+  return mock.returns[0].(*model.Project), mock.errors
+}
+
 func TestProjectService_GetByID(t *testing.T) {
-  const routine = "GetByID"
   var id = uuid.New().String()
   var ctx = context.Background()
 
   t.Run("success", func(t *testing.T) {
     var project = new(model.Project)
-    var r = mocks.NewProjectsRepository()
-    r.On(routine, ctx, id).Return(project, nil)
+    var r = &projectsRepositoryMockAPI{returns: []any{project}}
     res, err := NewProjectsService(r).GetByID(ctx, id)
     assert.Equal(t, project, res)
     assert.NoError(t, err)
@@ -66,23 +73,24 @@ func TestProjectService_GetByID(t *testing.T) {
 
   t.Run("error", func(t *testing.T) {
     var unexpected = errors.New("unexpected error")
-    var r = mocks.NewProjectsRepository()
-    r.On(routine, ctx, id).Return(nil, unexpected)
+    var r = &projectsRepositoryMockAPI{returns: []any{(*model.Project)(nil)}, errors: unexpected}
     res, err := NewProjectsService(r).GetByID(ctx, id)
     assert.Nil(t, res)
     assert.ErrorIs(t, err, unexpected)
   })
 }
 
+func (mock *projectsRepositoryMockAPI) GetBySlug(context.Context, string) (*model.Project, error) {
+  return mock.returns[0].(*model.Project), mock.errors
+}
+
 func TestProjectService_GetBySlug(t *testing.T) {
-  const routine = "GetBySlug"
   var slug = "project-slug-name"
   var ctx = context.Background()
 
   t.Run("success", func(t *testing.T) {
     var project = new(model.Project)
-    var r = mocks.NewProjectsRepository()
-    r.On(routine, ctx, slug).Return(project, nil)
+    var r = &projectsRepositoryMockAPI{returns: []any{project}}
     res, err := NewProjectsService(r).GetBySlug(ctx, slug)
     assert.Equal(t, project, res)
     assert.NoError(t, err)
@@ -90,16 +98,24 @@ func TestProjectService_GetBySlug(t *testing.T) {
 
   t.Run("error", func(t *testing.T) {
     var unexpected = errors.New("unexpected error")
-    var r = mocks.NewProjectsRepository()
-    r.On(routine, ctx, slug).Return(nil, unexpected)
+    var r = &projectsRepositoryMockAPI{returns: []any{(*model.Project)(nil)}, errors: unexpected}
     res, err := NewProjectsService(r).GetBySlug(ctx, slug)
     assert.Nil(t, res)
     assert.ErrorIs(t, err, unexpected)
   })
 }
 
+func (mock *projectsRepositoryMockAPI) Add(_ context.Context, t *transfer.ProjectCreation) (string, error) {
+  mock.called = true
+
+  if nil != mock.t {
+    assert.Equal(mock.t, mock.arguments[1], t)
+  }
+
+  return mock.returns[0].(string), mock.errors
+}
+
 func TestProjectsService_Add(t *testing.T) {
-  const routine = "Add"
   var ctx = context.Background()
   var id = uuid.New().String()
 
@@ -128,8 +144,13 @@ func TestProjectsService_Add(t *testing.T) {
       GitHubURL:      " \n\t " + creation.GitHubURL + " \n\t ",
       CollectionURL:  " \n\t " + creation.CollectionURL + " \n\t ",
     }
-    var r = mocks.NewProjectsRepository()
-    r.On(routine, ctx, &creation).Return(id, nil)
+    var r = &projectsRepositoryMockAPI{
+      t:         t,
+      arguments: []any{ctx, &creation},
+      returns:   []any{id},
+      errors:    nil,
+    }
+
     res, err := NewProjectsService(r).Add(ctx, &dirty)
     assert.NoError(t, err)
     assert.Equal(t, id, res)
@@ -143,17 +164,21 @@ func TestProjectsService_Add(t *testing.T) {
     var dirty = transfer.ProjectCreation{
       Summary: " \n\t " + creation.Summary + " \n\t ",
     }
-    var r = mocks.NewProjectsRepository()
-    r.On(routine, ctx, &creation).Return(id, nil)
+    var r = &projectsRepositoryMockAPI{
+      t:         t,
+      arguments: []any{ctx, &creation},
+      returns:   []any{id},
+    }
+
     res, err := NewProjectsService(r).Add(ctx, &dirty)
     assert.NoError(t, err)
     assert.Equal(t, id, res)
   })
 
   t.Run("no nil parameter", func(t *testing.T) {
-    var r = mocks.NewProjectsRepository()
-    r.AssertNotCalled(t, routine)
+    var r = &projectsRepositoryMockAPI{}
     res, err := NewProjectsService(r).Add(ctx, nil)
+    require.False(t, r.called)
     assert.ErrorContains(t, err, "nil value for parameter: creation")
     assert.Empty(t, res)
   })
@@ -163,15 +188,24 @@ func TestProjectsService_Add(t *testing.T) {
       var creation = transfer.ProjectCreation{}
 
       creation.Name = strings.Repeat("x", 36)
-      var r = mocks.NewProjectsRepository()
-      r.On(routine, ctx, &creation).Return(id, nil)
+
+      var r = &projectsRepositoryMockAPI{
+        t:         t,
+        arguments: []any{ctx, &creation},
+        returns:   []any{id},
+      }
+
       res, err := NewProjectsService(r).Add(ctx, &creation)
       assert.NoError(t, err)
       assert.Equal(t, id, res)
 
       creation.Name = "https://" + strings.Repeat("x", 1+2036) + ".com"
-      r = mocks.NewProjectsRepository()
-      r.On(routine, ctx, &creation).Return(id, nil)
+      r = &projectsRepositoryMockAPI{
+        t:         t,
+        arguments: []any{ctx, &creation},
+        returns:   []any{id},
+      }
+
       res, err = NewProjectsService(r).Add(ctx, &creation)
       assert.Error(t, err)
       assert.Empty(t, res)
@@ -181,15 +215,23 @@ func TestProjectsService_Add(t *testing.T) {
       var creation = transfer.ProjectCreation{}
 
       creation.Homepage = "https://" + strings.Repeat("x", 2036) + ".com"
-      var r = mocks.NewProjectsRepository()
-      r.On(routine, ctx, &creation).Return(id, nil)
+      var r = &projectsRepositoryMockAPI{
+        t:         t,
+        arguments: []any{ctx, &creation},
+        returns:   []any{id},
+      }
+
       res, err := NewProjectsService(r).Add(ctx, &creation)
       assert.NoError(t, err)
       assert.Equal(t, id, res)
 
       creation.Homepage = "https://" + strings.Repeat("x", 1+2036) + ".com"
-      r = mocks.NewProjectsRepository()
-      r.On(routine, ctx, &creation).Return(id, nil)
+      r = &projectsRepositoryMockAPI{
+        t:         t,
+        arguments: []any{ctx, &creation},
+        returns:   []any{id},
+      }
+
       res, err = NewProjectsService(r).Add(ctx, &creation)
       assert.Error(t, err)
       assert.Empty(t, res)
@@ -199,15 +241,23 @@ func TestProjectsService_Add(t *testing.T) {
       var creation = transfer.ProjectCreation{}
 
       creation.Language = strings.Repeat("x", 64)
-      var r = mocks.NewProjectsRepository()
-      r.On(routine, ctx, &creation).Return(id, nil)
+      var r = &projectsRepositoryMockAPI{
+        t:         t,
+        arguments: []any{ctx, &creation},
+        returns:   []any{id},
+      }
+
       res, err := NewProjectsService(r).Add(ctx, &creation)
       assert.NoError(t, err)
       assert.Equal(t, id, res)
 
       creation.Language = strings.Repeat("x", 1+64)
-      r = mocks.NewProjectsRepository()
-      r.On(routine, ctx, &creation).Return(id, nil)
+      r = &projectsRepositoryMockAPI{
+        t:         t,
+        arguments: []any{ctx, &creation},
+        returns:   []any{id},
+      }
+
       res, err = NewProjectsService(r).Add(ctx, &creation)
       assert.Error(t, err)
       assert.Empty(t, res)
@@ -217,15 +267,24 @@ func TestProjectsService_Add(t *testing.T) {
       var creation = transfer.ProjectCreation{}
 
       creation.Summary = strings.Repeat("x", 1024)
-      var r = mocks.NewProjectsRepository()
-      r.On(routine, ctx, &creation).Return(id, nil)
+      var r = &projectsRepositoryMockAPI{
+        t:         t,
+        arguments: []any{ctx, &creation},
+        returns:   []any{id},
+      }
+
       res, err := NewProjectsService(r).Add(ctx, &creation)
       assert.NoError(t, err)
       assert.Equal(t, id, res)
 
       creation.Summary = strings.Repeat("x", 1+1024)
-      r = mocks.NewProjectsRepository()
-      r.On(routine, ctx, &creation).Return(id, nil)
+
+      r = &projectsRepositoryMockAPI{
+        t:         t,
+        arguments: []any{ctx, &creation},
+        returns:   []any{id},
+      }
+
       res, err = NewProjectsService(r).Add(ctx, &creation)
       assert.Error(t, err)
       assert.Empty(t, res)
@@ -235,15 +294,23 @@ func TestProjectsService_Add(t *testing.T) {
       var creation = transfer.ProjectCreation{}
 
       creation.Summary = strings.Repeat("word ", 60)
-      var r = mocks.NewProjectsRepository()
-      r.On(routine, ctx, &creation).Return(id, nil)
+      var r = &projectsRepositoryMockAPI{
+        t:         t,
+        arguments: []any{ctx, &creation},
+        returns:   []any{id},
+      }
+
       res, err := NewProjectsService(r).Add(ctx, &creation)
       assert.NoError(t, err)
       assert.Equal(t, id, res)
 
       creation.Summary = strings.Repeat("word ", 1+60)
-      r = mocks.NewProjectsRepository()
-      r.On(routine, ctx, &creation).Return(id, nil)
+      r = &projectsRepositoryMockAPI{
+        t:         t,
+        arguments: []any{ctx, &creation},
+        returns:   []any{id},
+      }
+
       res, err = NewProjectsService(r).Add(ctx, &creation)
       assert.Error(t, err)
       assert.Empty(t, res)
@@ -253,15 +320,23 @@ func TestProjectsService_Add(t *testing.T) {
       var creation = transfer.ProjectCreation{}
 
       creation.Content = strings.Repeat("x", 3145728)
-      var r = mocks.NewProjectsRepository()
-      r.On(routine, ctx, &creation).Return(id, nil)
+      var r = &projectsRepositoryMockAPI{
+        t:         t,
+        arguments: []any{ctx, &creation},
+        returns:   []any{id},
+      }
+
       res, err := NewProjectsService(r).Add(ctx, &creation)
       assert.NoError(t, err)
       assert.Equal(t, id, res)
 
       creation.Content = strings.Repeat("x", 1+3145728)
-      r = mocks.NewProjectsRepository()
-      r.On(routine, ctx, &creation).Return(id, nil)
+      r = &projectsRepositoryMockAPI{
+        t:         t,
+        arguments: []any{ctx, &creation},
+        returns:   []any{id},
+      }
+
       res, err = NewProjectsService(r).Add(ctx, &creation)
       assert.Error(t, err)
       assert.Empty(t, res)
@@ -271,15 +346,23 @@ func TestProjectsService_Add(t *testing.T) {
       var creation = transfer.ProjectCreation{}
 
       creation.FirstImageURL = "https://" + strings.Repeat("x", 2036) + ".com"
-      var r = mocks.NewProjectsRepository()
-      r.On(routine, ctx, &creation).Return(id, nil)
+      var r = &projectsRepositoryMockAPI{
+        t:         t,
+        arguments: []any{ctx, &creation},
+        returns:   []any{id},
+      }
+
       res, err := NewProjectsService(r).Add(ctx, &creation)
       assert.NoError(t, err)
       assert.Equal(t, id, res)
 
       creation.FirstImageURL = "https://" + strings.Repeat("x", 1+2036) + ".com"
-      r = mocks.NewProjectsRepository()
-      r.On(routine, ctx, &creation).Return(id, nil)
+      r = &projectsRepositoryMockAPI{
+        t:         t,
+        arguments: []any{ctx, &creation},
+        returns:   []any{id},
+      }
+
       res, err = NewProjectsService(r).Add(ctx, &creation)
       assert.Error(t, err)
       assert.Empty(t, res)
@@ -289,15 +372,23 @@ func TestProjectsService_Add(t *testing.T) {
       var creation = transfer.ProjectCreation{}
 
       creation.SecondImageURL = "https://" + strings.Repeat("x", 2036) + ".com"
-      var r = mocks.NewProjectsRepository()
-      r.On(routine, ctx, &creation).Return(id, nil)
+      var r = &projectsRepositoryMockAPI{
+        t:         t,
+        arguments: []any{ctx, &creation},
+        returns:   []any{id},
+      }
+
       res, err := NewProjectsService(r).Add(ctx, &creation)
       assert.NoError(t, err)
       assert.Equal(t, id, res)
 
       creation.SecondImageURL = "https://" + strings.Repeat("x", 1+2036) + ".com"
-      r = mocks.NewProjectsRepository()
-      r.On(routine, ctx, &creation).Return(id, nil)
+      r = &projectsRepositoryMockAPI{
+        t:         t,
+        arguments: []any{ctx, &creation},
+        returns:   []any{id},
+      }
+
       res, err = NewProjectsService(r).Add(ctx, &creation)
       assert.Error(t, err)
       assert.Empty(t, res)
@@ -307,15 +398,23 @@ func TestProjectsService_Add(t *testing.T) {
       var creation = transfer.ProjectCreation{}
 
       creation.GitHubURL = "https://" + strings.Repeat("x", 2036) + ".com"
-      var r = mocks.NewProjectsRepository()
-      r.On(routine, ctx, &creation).Return(id, nil)
+      var r = &projectsRepositoryMockAPI{
+        t:         t,
+        arguments: []any{ctx, &creation},
+        returns:   []any{id},
+      }
+
       res, err := NewProjectsService(r).Add(ctx, &creation)
       assert.NoError(t, err)
       assert.Equal(t, id, res)
 
       creation.GitHubURL = "https://" + strings.Repeat("x", 1+2036) + ".com"
-      r = mocks.NewProjectsRepository()
-      r.On(routine, ctx, &creation).Return(id, nil)
+      r = &projectsRepositoryMockAPI{
+        t:         t,
+        arguments: []any{ctx, &creation},
+        returns:   []any{id},
+      }
+
       res, err = NewProjectsService(r).Add(ctx, &creation)
       assert.Error(t, err)
       assert.Empty(t, res)
@@ -325,15 +424,23 @@ func TestProjectsService_Add(t *testing.T) {
       var creation = transfer.ProjectCreation{}
 
       creation.CollectionURL = "https://" + strings.Repeat("x", 2036) + ".com"
-      var r = mocks.NewProjectsRepository()
-      r.On(routine, ctx, &creation).Return(id, nil)
+      var r = &projectsRepositoryMockAPI{
+        t:         t,
+        arguments: []any{ctx, &creation},
+        returns:   []any{id},
+      }
+
       res, err := NewProjectsService(r).Add(ctx, &creation)
       assert.NoError(t, err)
       assert.Equal(t, id, res)
 
       creation.CollectionURL = "https://" + strings.Repeat("x", 1+2036) + ".com"
-      r = mocks.NewProjectsRepository()
-      r.On(routine, ctx, &creation).Return(id, nil)
+      r = &projectsRepositoryMockAPI{
+        t:         t,
+        arguments: []any{ctx, &creation},
+        returns:   []any{id},
+      }
+
       res, err = NewProjectsService(r).Add(ctx, &creation)
       assert.Error(t, err)
       assert.Empty(t, res)
@@ -342,8 +449,11 @@ func TestProjectsService_Add(t *testing.T) {
 
   t.Run("expected error", func(t *testing.T) {
     var expected = problem.NewInternal()
-    var r = mocks.NewProjectsRepository()
-    r.On(routine, ctx, mock.Anything).Return("", expected)
+    var r = &projectsRepositoryMockAPI{
+      returns: []any{""},
+      errors:  expected,
+    }
+
     res, err := NewProjectsService(r).Add(ctx, new(transfer.ProjectCreation))
     assert.ErrorAs(t, err, &expected)
     assert.Empty(t, res)
@@ -351,37 +461,50 @@ func TestProjectsService_Add(t *testing.T) {
 
   t.Run("unexpected error", func(t *testing.T) {
     var unexpected = errors.New("unexpected error")
-    var r = mocks.NewProjectsRepository()
-    r.On(routine, ctx, mock.Anything).Return("", unexpected)
+    var r = &projectsRepositoryMockAPI{
+      returns: []any{""},
+      errors:  unexpected,
+    }
     res, err := NewProjectsService(r).Add(ctx, new(transfer.ProjectCreation))
     assert.ErrorIs(t, err, unexpected)
     assert.Empty(t, res)
   })
 }
 
+func (mock *projectsRepositoryMockAPI) Exists(context.Context, string) error {
+  return mock.errors
+}
+
 func TestProjectService_Exists(t *testing.T) {
-  const routine = "Exists"
   var ctx = context.Background()
   var id = uuid.New().String()
 
   t.Run("success", func(t *testing.T) {
-    var r = mocks.NewProjectsRepository()
-    r.On(routine, ctx, id).Return(nil)
+    var r = &projectsRepositoryMockAPI{errors: nil}
     err := NewProjectsService(r).Exists(ctx, id)
     assert.NoError(t, err)
   })
 
   t.Run("error", func(t *testing.T) {
     var unexpected = errors.New("unexpected error")
-    var r = mocks.NewProjectsRepository()
-    r.On(routine, ctx, id).Return(unexpected)
+    var r = &projectsRepositoryMockAPI{errors: unexpected}
     err := NewProjectsService(r).Exists(ctx, id)
     assert.ErrorIs(t, err, unexpected)
   })
 }
 
+func (mock *projectsRepositoryMockAPI) Update(_ context.Context, id string, t *transfer.ProjectUpdate) (bool, error) {
+  mock.called = true
+
+  if nil != mock.t {
+    assert.Equal(mock.t, mock.arguments[1], id)
+    assert.Equal(mock.t, mock.arguments[2], t)
+  }
+
+  return mock.returns[0].(bool), mock.errors
+}
+
 func TestProjectsService_Update(t *testing.T) {
-  const routine = "Update"
   var ctx = context.Background()
   var id = uuid.New().String()
 
@@ -416,8 +539,14 @@ func TestProjectsService_Update(t *testing.T) {
       Archived:       update.Archived,
       Finished:       update.Finished,
     }
-    var r = mocks.NewProjectsRepository()
-    r.On(routine, ctx, id, &update).Return(true, nil)
+
+    var r = &projectsRepositoryMockAPI{
+      t:         t,
+      arguments: []any{ctx, id, &update},
+      returns:   []any{true},
+      errors:    nil,
+    }
+
     res, err := NewProjectsService(r).Update(ctx, id, &dirty)
     assert.NoError(t, err)
     assert.True(t, res)
@@ -431,17 +560,21 @@ func TestProjectsService_Update(t *testing.T) {
     var dirty = transfer.ProjectUpdate{
       Summary: " \n\t " + update.Summary + " \n\t ",
     }
-    var r = mocks.NewProjectsRepository()
-    r.On(routine, ctx, id, &update).Return(true, nil)
+    var r = &projectsRepositoryMockAPI{
+      t:         t,
+      arguments: []any{ctx, id, &update},
+      returns:   []any{true},
+      errors:    nil,
+    }
     res, err := NewProjectsService(r).Update(ctx, id, &dirty)
     assert.NoError(t, err)
     assert.True(t, res)
   })
 
   t.Run("no nil parameter", func(t *testing.T) {
-    var r = mocks.NewProjectsRepository()
-    r.AssertNotCalled(t, routine)
+    var r = &projectsRepositoryMockAPI{}
     res, err := NewProjectsService(r).Update(ctx, id, nil)
+    require.False(t, r.called)
     assert.ErrorContains(t, err, "nil value for parameter: update")
     assert.Empty(t, res)
   })
@@ -451,15 +584,23 @@ func TestProjectsService_Update(t *testing.T) {
       var update = transfer.ProjectUpdate{}
 
       update.Name = strings.Repeat("x", 36)
-      var r = mocks.NewProjectsRepository()
-      r.On(routine, ctx, id, &update).Return(true, nil)
+      var r = &projectsRepositoryMockAPI{
+        t:         t,
+        arguments: []any{ctx, id, &update},
+        returns:   []any{true},
+        errors:    nil,
+      }
       res, err := NewProjectsService(r).Update(ctx, id, &update)
       assert.NoError(t, err)
       assert.True(t, res)
 
       update.Name = strings.Repeat("x", 1+36)
-      r = mocks.NewProjectsRepository()
-      r.On(routine, ctx, id, &update).Return(false, nil)
+      r = &projectsRepositoryMockAPI{
+        t:         t,
+        arguments: []any{ctx, id, &update},
+        returns:   []any{true},
+        errors:    nil,
+      }
       res, err = NewProjectsService(r).Update(ctx, id, &update)
       assert.Error(t, err)
       assert.False(t, res)
@@ -469,15 +610,23 @@ func TestProjectsService_Update(t *testing.T) {
       var update = transfer.ProjectUpdate{}
 
       update.Homepage = "https://" + strings.Repeat("x", 2036) + ".com"
-      var r = mocks.NewProjectsRepository()
-      r.On(routine, ctx, id, &update).Return(true, nil)
+      var r = &projectsRepositoryMockAPI{
+        t:         t,
+        arguments: []any{ctx, id, &update},
+        returns:   []any{true},
+        errors:    nil,
+      }
       res, err := NewProjectsService(r).Update(ctx, id, &update)
       assert.NoError(t, err)
       assert.True(t, res)
 
       update.Homepage = "https://" + strings.Repeat("x", 1+2036) + ".com"
-      r = mocks.NewProjectsRepository()
-      r.On(routine, ctx, id, &update).Return(false, nil)
+      r = &projectsRepositoryMockAPI{
+        t:         t,
+        arguments: []any{ctx, id, &update},
+        returns:   []any{false},
+        errors:    nil,
+      }
       res, err = NewProjectsService(r).Update(ctx, id, &update)
       assert.Error(t, err)
       assert.False(t, res)
@@ -487,15 +636,23 @@ func TestProjectsService_Update(t *testing.T) {
       var update = transfer.ProjectUpdate{}
 
       update.Language = strings.Repeat("x", 64)
-      var r = mocks.NewProjectsRepository()
-      r.On(routine, ctx, id, &update).Return(true, nil)
+      var r = &projectsRepositoryMockAPI{
+        t:         t,
+        arguments: []any{ctx, id, &update},
+        returns:   []any{true},
+        errors:    nil,
+      }
       res, err := NewProjectsService(r).Update(ctx, id, &update)
       assert.NoError(t, err)
       assert.True(t, res)
 
       update.Language = strings.Repeat("x", 1+64)
-      r = mocks.NewProjectsRepository()
-      r.On(routine, ctx, id, &update).Return(false, nil)
+      r = &projectsRepositoryMockAPI{
+        t:         t,
+        arguments: []any{ctx, id, &update},
+        returns:   []any{false},
+        errors:    nil,
+      }
       res, err = NewProjectsService(r).Update(ctx, id, &update)
       assert.Error(t, err)
       assert.False(t, res)
@@ -505,15 +662,23 @@ func TestProjectsService_Update(t *testing.T) {
       var update = transfer.ProjectUpdate{}
 
       update.Summary = strings.Repeat("x", 1024)
-      var r = mocks.NewProjectsRepository()
-      r.On(routine, ctx, id, &update).Return(true, nil)
+      var r = &projectsRepositoryMockAPI{
+        t:         t,
+        arguments: []any{ctx, id, &update},
+        returns:   []any{true},
+        errors:    nil,
+      }
       res, err := NewProjectsService(r).Update(ctx, id, &update)
       assert.NoError(t, err)
       assert.True(t, res)
 
       update.Summary = strings.Repeat("x", 1+1024)
-      r = mocks.NewProjectsRepository()
-      r.On(routine, ctx, id, &update).Return(false, nil)
+      r = &projectsRepositoryMockAPI{
+        t:         t,
+        arguments: []any{ctx, id, &update},
+        returns:   []any{false},
+        errors:    nil,
+      }
       res, err = NewProjectsService(r).Update(ctx, id, &update)
       assert.Error(t, err)
       assert.False(t, res)
@@ -523,15 +688,23 @@ func TestProjectsService_Update(t *testing.T) {
       var update = transfer.ProjectUpdate{}
 
       update.Summary = strings.Repeat("word ", 60)
-      var r = mocks.NewProjectsRepository()
-      r.On(routine, ctx, id, &update).Return(true, nil)
+      var r = &projectsRepositoryMockAPI{
+        t:         t,
+        arguments: []any{ctx, id, &update},
+        returns:   []any{true},
+        errors:    nil,
+      }
       res, err := NewProjectsService(r).Update(ctx, id, &update)
       assert.NoError(t, err)
       assert.True(t, res)
 
       update.Summary = strings.Repeat("word ", 1+60)
-      r = mocks.NewProjectsRepository()
-      r.On(routine, ctx, id, &update).Return(false, nil)
+      r = &projectsRepositoryMockAPI{
+        t:         t,
+        arguments: []any{ctx, id, &update},
+        returns:   []any{false},
+        errors:    nil,
+      }
       res, err = NewProjectsService(r).Update(ctx, id, &update)
       assert.Error(t, err)
       assert.False(t, res)
@@ -541,15 +714,23 @@ func TestProjectsService_Update(t *testing.T) {
       var update = transfer.ProjectUpdate{}
 
       update.Content = strings.Repeat("x", 3145728)
-      var r = mocks.NewProjectsRepository()
-      r.On(routine, ctx, id, &update).Return(true, nil)
+      var r = &projectsRepositoryMockAPI{
+        t:         t,
+        arguments: []any{ctx, id, &update},
+        returns:   []any{true},
+        errors:    nil,
+      }
       res, err := NewProjectsService(r).Update(ctx, id, &update)
       assert.NoError(t, err)
       assert.True(t, res)
 
       update.Content = strings.Repeat("x", 1+3145728)
-      r = mocks.NewProjectsRepository()
-      r.On(routine, ctx, id, &update).Return(false, nil)
+      r = &projectsRepositoryMockAPI{
+        t:         t,
+        arguments: []any{ctx, id, &update},
+        returns:   []any{false},
+        errors:    nil,
+      }
       res, err = NewProjectsService(r).Update(ctx, id, &update)
       assert.Error(t, err)
       assert.False(t, res)
@@ -559,15 +740,23 @@ func TestProjectsService_Update(t *testing.T) {
       var update = transfer.ProjectUpdate{}
 
       update.FirstImageURL = "https://" + strings.Repeat("x", 2036) + ".com"
-      var r = mocks.NewProjectsRepository()
-      r.On(routine, ctx, id, &update).Return(true, nil)
+      var r = &projectsRepositoryMockAPI{
+        t:         t,
+        arguments: []any{ctx, id, &update},
+        returns:   []any{true},
+        errors:    nil,
+      }
       res, err := NewProjectsService(r).Update(ctx, id, &update)
       assert.NoError(t, err)
       assert.True(t, res)
 
       update.FirstImageURL = "https://" + strings.Repeat("x", 1+2036) + ".com"
-      r = mocks.NewProjectsRepository()
-      r.On(routine, ctx, id, &update).Return(false, nil)
+      r = &projectsRepositoryMockAPI{
+        t:         t,
+        arguments: []any{ctx, id, &update},
+        returns:   []any{false},
+        errors:    nil,
+      }
       res, err = NewProjectsService(r).Update(ctx, id, &update)
       assert.Error(t, err)
       assert.False(t, res)
@@ -577,15 +766,23 @@ func TestProjectsService_Update(t *testing.T) {
       var update = transfer.ProjectUpdate{}
 
       update.SecondImageURL = "https://" + strings.Repeat("x", 2036) + ".com"
-      var r = mocks.NewProjectsRepository()
-      r.On(routine, ctx, id, &update).Return(true, nil)
+      var r = &projectsRepositoryMockAPI{
+        t:         t,
+        arguments: []any{ctx, id, &update},
+        returns:   []any{true},
+        errors:    nil,
+      }
       res, err := NewProjectsService(r).Update(ctx, id, &update)
       assert.NoError(t, err)
       assert.True(t, res)
 
       update.SecondImageURL = "https://" + strings.Repeat("x", 1+2036) + ".com"
-      r = mocks.NewProjectsRepository()
-      r.On(routine, ctx, id, &update).Return(false, nil)
+      r = &projectsRepositoryMockAPI{
+        t:         t,
+        arguments: []any{ctx, id, &update},
+        returns:   []any{false},
+        errors:    nil,
+      }
       res, err = NewProjectsService(r).Update(ctx, id, &update)
       assert.Error(t, err)
       assert.False(t, res)
@@ -595,15 +792,23 @@ func TestProjectsService_Update(t *testing.T) {
       var update = transfer.ProjectUpdate{}
 
       update.GitHubURL = "https://" + strings.Repeat("x", 2036) + ".com"
-      var r = mocks.NewProjectsRepository()
-      r.On(routine, ctx, id, &update).Return(true, nil)
+      var r = &projectsRepositoryMockAPI{
+        t:         t,
+        arguments: []any{ctx, id, &update},
+        returns:   []any{true},
+        errors:    nil,
+      }
       res, err := NewProjectsService(r).Update(ctx, id, &update)
       assert.NoError(t, err)
       assert.True(t, res)
 
       update.GitHubURL = "https://" + strings.Repeat("x", 1+2036) + ".com"
-      r = mocks.NewProjectsRepository()
-      r.On(routine, ctx, id, &update).Return(false, nil)
+      r = &projectsRepositoryMockAPI{
+        t:         t,
+        arguments: []any{ctx, id, &update},
+        returns:   []any{false},
+        errors:    nil,
+      }
       res, err = NewProjectsService(r).Update(ctx, id, &update)
       assert.Error(t, err)
       assert.False(t, res)
@@ -613,15 +818,23 @@ func TestProjectsService_Update(t *testing.T) {
       var update = transfer.ProjectUpdate{}
 
       update.CollectionURL = "https://" + strings.Repeat("x", 2036) + ".com"
-      var r = mocks.NewProjectsRepository()
-      r.On(routine, ctx, id, &update).Return(true, nil)
+      var r = &projectsRepositoryMockAPI{
+        t:         t,
+        arguments: []any{ctx, id, &update},
+        returns:   []any{true},
+        errors:    nil,
+      }
       res, err := NewProjectsService(r).Update(ctx, id, &update)
       assert.NoError(t, err)
       assert.True(t, res)
 
       update.CollectionURL = "https://" + strings.Repeat("x", 1+2036) + ".com"
-      r = mocks.NewProjectsRepository()
-      r.On(routine, ctx, id, &update).Return(false, nil)
+      r = &projectsRepositoryMockAPI{
+        t:         t,
+        arguments: []any{ctx, id, &update},
+        returns:   []any{false},
+        errors:    nil,
+      }
       res, err = NewProjectsService(r).Update(ctx, id, &update)
       assert.Error(t, err)
       assert.False(t, res)
@@ -631,15 +844,23 @@ func TestProjectsService_Update(t *testing.T) {
       var update = transfer.ProjectUpdate{}
 
       update.PlaygroundURL = "https://" + strings.Repeat("x", 2036) + ".com"
-      var r = mocks.NewProjectsRepository()
-      r.On(routine, ctx, id, &update).Return(true, nil)
+      var r = &projectsRepositoryMockAPI{
+        t:         t,
+        arguments: []any{ctx, id, &update},
+        returns:   []any{true},
+        errors:    nil,
+      }
       res, err := NewProjectsService(r).Update(ctx, id, &update)
       assert.NoError(t, err)
       assert.True(t, res)
 
       update.PlaygroundURL = "https://" + strings.Repeat("x", 1+2036) + ".com"
-      r = mocks.NewProjectsRepository()
-      r.On(routine, ctx, id, &update).Return(false, nil)
+      r = &projectsRepositoryMockAPI{
+        t:         t,
+        arguments: []any{ctx, id, &update},
+        returns:   []any{false},
+        errors:    nil,
+      }
       res, err = NewProjectsService(r).Update(ctx, id, &update)
       assert.Error(t, err)
       assert.False(t, res)
@@ -648,8 +869,7 @@ func TestProjectsService_Update(t *testing.T) {
 
   t.Run("expected error", func(t *testing.T) {
     var expected = problem.NewInternal()
-    var r = mocks.NewProjectsRepository()
-    r.On(routine, ctx, mock.Anything, mock.Anything).Return(false, expected)
+    var r = &projectsRepositoryMockAPI{returns: []any{false}, errors: expected}
     res, err := NewProjectsService(r).Update(ctx, id, new(transfer.ProjectUpdate))
     assert.ErrorAs(t, err, &expected)
     assert.Empty(t, res)
@@ -657,30 +877,30 @@ func TestProjectsService_Update(t *testing.T) {
 
   t.Run("unexpected error", func(t *testing.T) {
     var unexpected = errors.New("unexpected error")
-    var r = mocks.NewProjectsRepository()
-    r.On(routine, ctx, mock.Anything, mock.Anything).Return(false, unexpected)
+    var r = &projectsRepositoryMockAPI{returns: []any{false}, errors: unexpected}
     res, err := NewProjectsService(r).Update(ctx, id, new(transfer.ProjectUpdate))
     assert.ErrorIs(t, err, unexpected)
     assert.Empty(t, res)
   })
 }
 
+func (mock *projectsRepositoryMockAPI) Remove(context.Context, string) error {
+  return mock.errors
+}
+
 func TestProjectService_Remove(t *testing.T) {
-  const routine = "Remove"
   var ctx = context.Background()
   var id = uuid.New().String()
 
   t.Run("success", func(t *testing.T) {
-    var r = mocks.NewProjectsRepository()
-    r.On(routine, ctx, id).Return(nil)
+    var r = &projectsRepositoryMockAPI{}
     err := NewProjectsService(r).Remove(ctx, id)
     assert.NoError(t, err)
   })
 
   t.Run("error", func(t *testing.T) {
     var unexpected = errors.New("unexpected error")
-    var r = mocks.NewProjectsRepository()
-    r.On(routine, ctx, id).Return(unexpected)
+    var r = &projectsRepositoryMockAPI{errors: unexpected}
     err := NewProjectsService(r).Remove(ctx, id)
     assert.ErrorIs(t, err, unexpected)
   })

@@ -20,32 +20,32 @@ import (
 )
 
 type WebHandler struct {
-  meService       meServiceAPI
-  experience      experienceServiceAPI
-  projectsService service.ProjectsService
-  drafts          service.DraftsService
-  articles        service.ArticlesService
-  topics          service.TopicsService
-  tags            service.TagsService
+  meService  meServiceAPI
+  experience experienceServiceAPI
+  projects   projectsServiceAPI
+  drafts     service.DraftsService
+  articles   service.ArticlesService
+  topics     service.TopicsService
+  tags       service.TagsService
 }
 
 func NewWebHandler(
   meService meServiceAPI,
   experience experienceServiceAPI,
-  projectsService service.ProjectsService,
+  projects projectsServiceAPI,
   drafts service.DraftsService,
   articles service.ArticlesService,
   topics service.TopicsService,
   tags service.TagsService,
 ) *WebHandler {
   return &WebHandler{
-    meService:       meService,
-    experience:      experience,
-    projectsService: projectsService,
-    drafts:          drafts,
-    articles:        articles,
-    topics:          topics,
-    tags:            tags,
+    meService:  meService,
+    experience: experience,
+    projects:   projects,
+    drafts:     drafts,
+    articles:   articles,
+    topics:     topics,
+    tags:       tags,
   }
 }
 
@@ -71,7 +71,7 @@ func (h *WebHandler) RenderExperience(c *gin.Context) {
 }
 
 func (h *WebHandler) RenderProjects(c *gin.Context) {
-  var projects, err = h.projectsService.Get(c, false)
+  var projects, err = h.projects.Get(c, false)
   if nil != err {
     return
   }
@@ -80,7 +80,7 @@ func (h *WebHandler) RenderProjects(c *gin.Context) {
 
 func (h *WebHandler) RenderProjectDetails(c *gin.Context) {
   slug := c.Param("project_slug")
-  var project, err = h.projectsService.GetBySlug(c, slug)
+  var project, err = h.projects.GetBySlug(c, slug)
   if nil != err {
     c.Status(http.StatusNotFound)
     pages.ProjectDetails(nil).Render(c, c.Writer)

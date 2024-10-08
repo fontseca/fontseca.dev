@@ -1,18 +1,33 @@
 package handler
 
 import (
+  "context"
+  "fontseca.dev/model"
   "fontseca.dev/problem"
-  "fontseca.dev/service"
   "fontseca.dev/transfer"
   "github.com/gin-gonic/gin"
   "net/http"
 )
 
-type ProjectsHandler struct {
-  s service.ProjectsService
+type projectsServiceAPI interface {
+  Get(ctx context.Context, archived ...bool) ([]*model.Project, error)
+  GetByID(ctx context.Context, projectID string) (*model.Project, error)
+  GetBySlug(ctx context.Context, projectID string) (*model.Project, error)
+  Add(ctx context.Context, creation *transfer.ProjectCreation) (string, error)
+  Exists(ctx context.Context, projectID string) error
+  Update(ctx context.Context, projectID string, update *transfer.ProjectUpdate) (bool, error)
+  Unarchive(ctx context.Context, projectID string) (bool, error)
+  Remove(ctx context.Context, projectID string) error
+  ContainsTechnologyTag(ctx context.Context, projectID, tagID string) (bool, error)
+  AddTechnologyTag(ctx context.Context, projectID, tagID string) (bool, error)
+  RemoveTechnologyTag(ctx context.Context, projectID, tagID string) (bool, error)
 }
 
-func NewProjectsHandler(service service.ProjectsService) *ProjectsHandler {
+type ProjectsHandler struct {
+  s projectsServiceAPI
+}
+
+func NewProjectsHandler(service projectsServiceAPI) *ProjectsHandler {
   return &ProjectsHandler{
     s: service,
   }

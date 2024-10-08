@@ -14,51 +14,16 @@ import (
 )
 
 // ProjectsRepository provides methods for interacting with project data in the database.
-type ProjectsRepository interface {
-  // Get retrieves a slice of project types.
-  Get(ctx context.Context, archived bool) (projects []*model.Project, err error)
-
-  // GetByID retrieves a project type by its UUID.
-  GetByID(ctx context.Context, id string) (project *model.Project, err error)
-
-  // GetBySlug retrieves a project type by its slug.
-  GetBySlug(ctx context.Context, slug string) (project *model.Project, err error)
-
-  // Add creates a project record with the provided creation data.projectID
-  Add(ctx context.Context, creation *transfer.ProjectCreation) (id string, err error)
-
-  // Exists checks whether a project exists in the database.
-  // If it does, it returns nil; otherwise a not found error.
-  Exists(ctx context.Context, id string) (err error)
-
-  // Update modifies an existing project record with the provided update data.
-  Update(ctx context.Context, id string, update *transfer.ProjectUpdate) (updated bool, err error)
-
-  // Unarchive makes a project not archived so that it can be normally listed.
-  Unarchive(ctx context.Context, id string) (unarchived bool, err error)
-
-  // Remove deletes an existing project type. If not found, returns a not found error.
-  Remove(ctx context.Context, id string) (err error)
-
-  // ContainsTechnologyTag checks whether technologyTagID belongs to projectID.
-  ContainsTechnologyTag(ctx context.Context, projectID, technologyTagID string) (success bool, err error)
-
-  // AddTechnologyTag adds an existing technology tag that will belong to the project represented by projectID .
-  AddTechnologyTag(ctx context.Context, projectID, technologyTagID string) (added bool, err error)
-
-  // RemoveTechnologyTag removes a technology tag that belongs to the project represented by projectID.
-  RemoveTechnologyTag(ctx context.Context, projectID, technologyTagID string) (removed bool, err error)
-}
-
-type projectsRepository struct {
+type ProjectsRepository struct {
   db *sql.DB
 }
 
-func NewProjectsRepository(db *sql.DB) ProjectsRepository {
-  return &projectsRepository{db}
+func NewProjectsRepository(db *sql.DB) *ProjectsRepository {
+  return &ProjectsRepository{db}
 }
 
-func (r *projectsRepository) Get(ctx context.Context, archived bool) (projects []*model.Project, err error) {
+// Get retrieves a slice of project types.
+func (r *ProjectsRepository) Get(ctx context.Context, archived bool) (projects []*model.Project, err error) {
   var getProjectsQuery = `
      SELECT p."uuid",
             p."name",
@@ -133,7 +98,7 @@ func (r *projectsRepository) Get(ctx context.Context, archived bool) (projects [
   return projects, nil
 }
 
-func (r *projectsRepository) doGetByID(ctx context.Context, id string, ignoreArchived bool) (project *model.Project, err error) {
+func (r *ProjectsRepository) doGetByID(ctx context.Context, id string, ignoreArchived bool) (project *model.Project, err error) {
   var getProjectByIDQuery = `
      SELECT p."uuid",
             p."name",
@@ -207,11 +172,13 @@ func (r *projectsRepository) doGetByID(ctx context.Context, id string, ignoreArc
   return project, nil
 }
 
-func (r *projectsRepository) GetByID(ctx context.Context, id string) (project *model.Project, err error) {
+// GetByID retrieves a project type by its UUID.
+func (r *ProjectsRepository) GetByID(ctx context.Context, id string) (project *model.Project, err error) {
   return r.doGetByID(ctx, id, false)
 }
 
-func (r *projectsRepository) GetBySlug(ctx context.Context, slug string) (project *model.Project, err error) {
+// GetBySlug retrieves a project type by its slug.
+func (r *ProjectsRepository) GetBySlug(ctx context.Context, slug string) (project *model.Project, err error) {
   var getProjectBySlugQuery = `
      SELECT p."uuid",
             p."name",
@@ -279,7 +246,8 @@ func (r *projectsRepository) GetBySlug(ctx context.Context, slug string) (projec
   return project, nil
 }
 
-func (r *projectsRepository) Add(ctx context.Context, creation *transfer.ProjectCreation) (id string, err error) {
+// Add creates a project record with the provided creation data.projectID
+func (r *ProjectsRepository) Add(ctx context.Context, creation *transfer.ProjectCreation) (id string, err error) {
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
   if nil != err {
     slog.Error(err.Error())
@@ -337,7 +305,9 @@ func (r *projectsRepository) Add(ctx context.Context, creation *transfer.Project
   return id, nil
 }
 
-func (r *projectsRepository) Exists(ctx context.Context, id string) (err error) {
+// Exists checks whether a project exists in the database.
+// If it does, it returns nil; otherwise a not found error.
+func (r *ProjectsRepository) Exists(ctx context.Context, id string) (err error) {
   var query = `
   SELECT count (1)
     FROM projects."project"
@@ -357,7 +327,7 @@ func (r *projectsRepository) Exists(ctx context.Context, id string) (err error) 
   return nil
 }
 
-func (r *projectsRepository) nothingToUpdate(current *model.Project, update *transfer.ProjectUpdate) bool {
+func (r *ProjectsRepository) nothingToUpdate(current *model.Project, update *transfer.ProjectUpdate) bool {
   return ("" == update.Name || update.Name == current.Name) &&
     ("" == update.Slug || update.Slug == current.Slug) &&
     ("" == update.Homepage || update.Homepage == current.Homepage) &&
@@ -374,7 +344,7 @@ func (r *projectsRepository) nothingToUpdate(current *model.Project, update *tra
     (update.Finished == current.Finished)
 }
 
-func (r *projectsRepository) doUpdate(ctx context.Context, id string, update *transfer.ProjectUpdate, ignoreArchived bool) (updated bool, err error) {
+func (r *ProjectsRepository) doUpdate(ctx context.Context, id string, update *transfer.ProjectUpdate, ignoreArchived bool) (updated bool, err error) {
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
   if nil != err {
     slog.Error(err.Error())
@@ -454,15 +424,18 @@ func (r *projectsRepository) doUpdate(ctx context.Context, id string, update *tr
   return true, nil
 }
 
-func (r *projectsRepository) Update(ctx context.Context, id string, update *transfer.ProjectUpdate) (updated bool, err error) {
+// Update modifies an existing project record with the provided update data.
+func (r *ProjectsRepository) Update(ctx context.Context, id string, update *transfer.ProjectUpdate) (updated bool, err error) {
   return r.doUpdate(ctx, id, update, false)
 }
 
-func (r *projectsRepository) Unarchive(ctx context.Context, id string) (updated bool, err error) {
+// Unarchive makes a project not archived so that it can be normally listed.
+func (r *ProjectsRepository) Unarchive(ctx context.Context, id string) (updated bool, err error) {
   return r.doUpdate(ctx, id, &transfer.ProjectUpdate{Archived: false}, true)
 }
 
-func (r *projectsRepository) Remove(ctx context.Context, id string) (err error) {
+// Remove deletes an existing project type. If not found, returns a not found error.
+func (r *ProjectsRepository) Remove(ctx context.Context, id string) (err error) {
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
   if nil != err {
     slog.Error(err.Error())
@@ -510,7 +483,8 @@ func (r *projectsRepository) Remove(ctx context.Context, id string) (err error) 
   return nil
 }
 
-func (r *projectsRepository) ContainsTechnologyTag(ctx context.Context, projectID, technologyTagID string) (success bool, err error) {
+// ContainsTechnologyTag checks whether technologyTagID belongs to projectID.
+func (r *ProjectsRepository) ContainsTechnologyTag(ctx context.Context, projectID, technologyTagID string) (success bool, err error) {
   var hasTechTagQuery = `
   SELECT count (1)
     FROM projects.project_tag ptt
@@ -524,7 +498,8 @@ func (r *projectsRepository) ContainsTechnologyTag(ctx context.Context, projectI
   return success, nil
 }
 
-func (r *projectsRepository) AddTechnologyTag(ctx context.Context, projectID, technologyTagID string) (added bool, err error) {
+// AddTechnologyTag adds an existing technology tag that will belong to the project represented by projectID .
+func (r *ProjectsRepository) AddTechnologyTag(ctx context.Context, projectID, technologyTagID string) (added bool, err error) {
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
   if nil != err {
     slog.Error(err.Error())
@@ -554,7 +529,8 @@ func (r *projectsRepository) AddTechnologyTag(ctx context.Context, projectID, te
   return true, nil
 }
 
-func (r *projectsRepository) RemoveTechnologyTag(ctx context.Context, projectID, technologyTagID string) (removed bool, err error) {
+// RemoveTechnologyTag removes a technology tag that belongs to the project represented by projectID.
+func (r *ProjectsRepository) RemoveTechnologyTag(ctx context.Context, projectID, technologyTagID string) (removed bool, err error) {
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
   if nil != err {
     slog.Error(err.Error())
