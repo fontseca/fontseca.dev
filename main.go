@@ -120,6 +120,11 @@ func main() {
   engine.Static("/playground", "playground")
   engine.StaticFile("/favicon.ico", "public/icons/favicon.ico")
   engine.StaticFile("/photo.webp", "public/images/photo.webp")
+  engine.GET("/resume", func(c *gin.Context) {
+    c.Header("Content-Type", "application/pdf")
+    c.Header("Content-Disposition", `inline; filename="fontseca.dev's résumé.pdf"`)
+    c.File("public/documents/resume.pdf")
+  })
 
   binding.EnableDecoderDisallowUnknownFields = true
   if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
