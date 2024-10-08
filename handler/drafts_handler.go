@@ -1,18 +1,33 @@
 package handler
 
 import (
+  "context"
+  "fontseca.dev/model"
   "fontseca.dev/problem"
-  "fontseca.dev/service"
   "fontseca.dev/transfer"
   "github.com/gin-gonic/gin"
+  "github.com/google/uuid"
   "net/http"
 )
 
-type DraftsHandler struct {
-  drafts service.DraftsService
+type draftsServiceAPI interface {
+  Draft(ctx context.Context, creation *transfer.ArticleCreation) (insertedUUID uuid.UUID, err error)
+  Publish(ctx context.Context, draftUUID string) error
+  Get(ctx context.Context, filter *transfer.ArticleFilter) (drafts []*transfer.Article, err error)
+  GetByLink(ctx context.Context, link string) (article *model.Article, err error)
+  GetByID(ctx context.Context, draftUUID string) (draft *model.Article, err error)
+  AddTag(ctx context.Context, draftUUID, tagID string) error
+  RemoveTag(ctx context.Context, draftUUID, tagID string) error
+  Share(ctx context.Context, draftUUID string) (link string, err error)
+  Discard(ctx context.Context, draftUUID string) error
+  Revise(ctx context.Context, draftUUID string, revision *transfer.ArticleRevision) error
 }
 
-func NewDraftsHandler(drafts service.DraftsService) *DraftsHandler {
+type DraftsHandler struct {
+  drafts draftsServiceAPI
+}
+
+func NewDraftsHandler(drafts draftsServiceAPI) *DraftsHandler {
   return &DraftsHandler{drafts}
 }
 

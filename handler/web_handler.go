@@ -23,7 +23,7 @@ type WebHandler struct {
   meService  meServiceAPI
   experience experienceServiceAPI
   projects   projectsServiceAPI
-  drafts     service.DraftsService
+  drafts     draftsServiceAPI
   articles   service.ArticlesService
   topics     service.TopicsService
   tags       service.TagsService
@@ -33,7 +33,7 @@ func NewWebHandler(
   meService meServiceAPI,
   experience experienceServiceAPI,
   projects projectsServiceAPI,
-  drafts service.DraftsService,
+  drafts draftsServiceAPI,
   articles service.ArticlesService,
   topics service.TopicsService,
   tags service.TagsService,

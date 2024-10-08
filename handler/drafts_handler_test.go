@@ -1,25 +1,40 @@
 package handler
 
 import (
+  "context"
   "errors"
-  "fontseca.dev/mocks"
   "fontseca.dev/model"
   "fontseca.dev/problem"
   "fontseca.dev/transfer"
   "github.com/gin-gonic/gin"
   "github.com/google/uuid"
   "github.com/stretchr/testify/assert"
-  "github.com/stretchr/testify/mock"
+  "github.com/stretchr/testify/require"
   "net/http"
   "net/http/httptest"
   "testing"
 )
 
+type draftsServiceMockAPI struct {
+  draftsServiceAPI
+  t         *testing.T
+  returns   []any
+  arguments []any
+  errors    error
+}
+
+func (mock *draftsServiceMockAPI) Draft(_ context.Context, creation *transfer.ArticleCreation) (insertedUUID uuid.UUID, err error) {
+  if nil != mock.t {
+    require.Equal(mock.t, mock.arguments[1], creation)
+  }
+
+  return mock.returns[0].(uuid.UUID), mock.errors
+}
+
 func TestDraftsHandler_Start(t *testing.T) {
   const (
-    routine = "Draft"
-    method  = http.MethodPost
-    target  = "/archive.drafts.start"
+    method = http.MethodPost
+    target = "/archive.drafts.start"
   )
 
   creation := &transfer.ArticleCreation{
@@ -39,8 +54,7 @@ func TestDraftsHandler_Start(t *testing.T) {
     expectedStatusCode := http.StatusCreated
     expectedResponse := string(marshal(t, gin.H{"draft_uuid": id.String()}))
 
-    s := mocks.NewDraftsService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), creation).Return(id, nil)
+    s := &draftsServiceMockAPI{t: t, arguments: []any{context.Background(), creation}, returns: []any{id}}
 
     engine := gin.Default()
     engine.POST(target, NewDraftsHandler(s).Start)
@@ -62,8 +76,7 @@ func TestDraftsHandler_Start(t *testing.T) {
     expected.Status(expectedStatusCode)
     expected.Detail(expectBodyContains)
 
-    s := mocks.NewDraftsService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), creation).Return(uuid.Nil, expected)
+    s := &draftsServiceMockAPI{returns: []any{uuid.Nil}, errors: expected}
 
     engine := gin.Default()
     engine.POST(target, NewDraftsHandler(s).Start)
@@ -83,8 +96,7 @@ func TestDraftsHandler_Start(t *testing.T) {
     expectedStatusCode := http.StatusInternalServerError
     expectBodyContains := "An unexpected error occurred while processing your request"
 
-    s := mocks.NewDraftsService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), creation).Return(uuid.Nil, unexpected)
+    s := &draftsServiceMockAPI{returns: []any{uuid.Nil}, errors: unexpected}
 
     engine := gin.Default()
     engine.POST(target, NewDraftsHandler(s).Start)
@@ -100,11 +112,18 @@ func TestDraftsHandler_Start(t *testing.T) {
   })
 }
 
+func (mock *draftsServiceMockAPI) Publish(_ context.Context, draftUUID string) error {
+  if nil != mock.t {
+    require.Equal(mock.t, mock.arguments[1], draftUUID)
+  }
+
+  return mock.errors
+}
+
 func TestDraftsHandler_Publish(t *testing.T) {
   const (
-    routine = "Publish"
-    method  = http.MethodPost
-    target  = "/archive.drafts.publish"
+    method = http.MethodPost
+    target = "/archive.drafts.publish"
   )
 
   id := uuid.NewString()
@@ -117,8 +136,7 @@ func TestDraftsHandler_Publish(t *testing.T) {
   t.Run("success", func(t *testing.T) {
     expectedStatusCode := http.StatusNoContent
 
-    s := mocks.NewDraftsService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id).Return(nil)
+    s := &draftsServiceMockAPI{t: t, arguments: []any{context.Background(), id}}
 
     engine := gin.Default()
     engine.POST(target, NewDraftsHandler(s).Publish)
@@ -140,8 +158,7 @@ func TestDraftsHandler_Publish(t *testing.T) {
     expected.Status(expectedStatusCode)
     expected.Detail(expectBodyContains)
 
-    s := mocks.NewDraftsService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id).Return(expected)
+    s := &draftsServiceMockAPI{errors: expected}
 
     engine := gin.Default()
     engine.POST(target, NewDraftsHandler(s).Publish)
@@ -161,8 +178,7 @@ func TestDraftsHandler_Publish(t *testing.T) {
     expectedStatusCode := http.StatusInternalServerError
     expectBodyContains := "An unexpected error occurred while processing your request"
 
-    s := mocks.NewDraftsService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id).Return(unexpected)
+    s := &draftsServiceMockAPI{errors: unexpected}
 
     engine := gin.Default()
     engine.POST(target, NewDraftsHandler(s).Publish)
@@ -178,11 +194,18 @@ func TestDraftsHandler_Publish(t *testing.T) {
   })
 }
 
+func (mock *draftsServiceMockAPI) Get(_ context.Context, filter *transfer.ArticleFilter) (drafts []*transfer.Article, err error) {
+  if nil != mock.t {
+    require.Equal(mock.t, mock.arguments[1], filter)
+  }
+
+  return mock.returns[0].([]*transfer.Article), mock.errors
+}
+
 func TestDraftsHandler_Get(t *testing.T) {
   const (
-    routine = "Get"
-    method  = http.MethodGet
-    target  = "/archive.drafts.list"
+    method = http.MethodGet
+    target = "/archive.drafts.list"
   )
 
   request := httptest.NewRequest(method, target, nil)
@@ -191,9 +214,9 @@ func TestDraftsHandler_Get(t *testing.T) {
   t.Run("success without search", func(t *testing.T) {
     expectedStatusCode := http.StatusOK
     expectedBody := string(marshal(t, drafts))
+    filter := &transfer.ArticleFilter{Page: 1, RPP: 20}
 
-    s := mocks.NewDraftsService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("*transfer.ArticleFilter")).Return(drafts, nil)
+    s := &draftsServiceMockAPI{t: t, arguments: []any{context.Background(), filter}, returns: []any{drafts}}
 
     engine := gin.Default()
     engine.GET(target, NewDraftsHandler(s).Get)
@@ -215,8 +238,7 @@ func TestDraftsHandler_Get(t *testing.T) {
     expected.Status(expectedStatusCode)
     expected.Detail(expectBodyContains)
 
-    s := mocks.NewDraftsService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("*transfer.ArticleFilter")).Return(nil, expected)
+    s := &draftsServiceMockAPI{returns: []any{[]*transfer.Article(nil)}, errors: expected}
 
     engine := gin.Default()
     engine.GET(target, NewDraftsHandler(s).Get)
@@ -236,8 +258,7 @@ func TestDraftsHandler_Get(t *testing.T) {
     expectedStatusCode := http.StatusInternalServerError
     expectBodyContains := "An unexpected error occurred while processing your request"
 
-    s := mocks.NewDraftsService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), mock.AnythingOfType("*transfer.ArticleFilter")).Return(nil, unexpected)
+    s := &draftsServiceMockAPI{returns: []any{[]*transfer.Article(nil)}, errors: unexpected}
 
     engine := gin.Default()
     engine.GET(target, NewDraftsHandler(s).Get)
@@ -253,11 +274,18 @@ func TestDraftsHandler_Get(t *testing.T) {
   })
 }
 
+func (mock *draftsServiceMockAPI) GetByID(_ context.Context, draftUUID string) (draft *model.Article, err error) {
+  if nil != mock.t {
+    require.Equal(mock.t, mock.arguments[1], draftUUID)
+  }
+
+  return mock.returns[0].(*model.Article), mock.errors
+}
+
 func TestDraftsHandler_GetByID(t *testing.T) {
   const (
-    routine = "GetByID"
-    method  = http.MethodGet
-    target  = "/archive.drafts.info"
+    method = http.MethodGet
+    target = "/archive.drafts.info"
   )
 
   request := httptest.NewRequest(method, target, nil)
@@ -273,8 +301,7 @@ func TestDraftsHandler_GetByID(t *testing.T) {
     expectedStatusCode := http.StatusOK
     expectedBody := string(marshal(t, draft))
 
-    s := mocks.NewDraftsService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id).Return(draft, nil)
+    s := &draftsServiceMockAPI{t: t, arguments: []any{context.Background(), id}, returns: []any{draft}}
 
     engine := gin.Default()
     engine.GET(target, NewDraftsHandler(s).GetByID)
@@ -296,8 +323,7 @@ func TestDraftsHandler_GetByID(t *testing.T) {
     expected.Status(expectedStatusCode)
     expected.Detail(expectBodyContains)
 
-    s := mocks.NewDraftsService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id).Return(nil, expected)
+    s := &draftsServiceMockAPI{returns: []any{(*model.Article)(nil)}, errors: expected}
 
     engine := gin.Default()
     engine.GET(target, NewDraftsHandler(s).GetByID)
@@ -317,8 +343,7 @@ func TestDraftsHandler_GetByID(t *testing.T) {
     expectedStatusCode := http.StatusInternalServerError
     expectBodyContains := "An unexpected error occurred while processing your request"
 
-    s := mocks.NewDraftsService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id).Return(nil, unexpected)
+    s := &draftsServiceMockAPI{returns: []any{(*model.Article)(nil)}, errors: unexpected}
 
     engine := gin.Default()
     engine.GET(target, NewDraftsHandler(s).GetByID)
@@ -332,13 +357,21 @@ func TestDraftsHandler_GetByID(t *testing.T) {
     assert.Empty(t, recorder.Result().Cookies())
     assert.Contains(t, recorder.Result().Header.Get("Content-Type"), "application/problem+json")
   })
+}
+
+func (mock *draftsServiceMockAPI) AddTag(_ context.Context, draftUUID, tagID string) error {
+  if nil != mock.t {
+    require.Equal(mock.t, mock.arguments[1], draftUUID)
+    require.Equal(mock.t, mock.arguments[2], tagID)
+  }
+
+  return mock.errors
 }
 
 func TestDraftsHandler_AddTag(t *testing.T) {
   const (
-    routine = "AddTag"
-    method  = http.MethodPost
-    target  = "/archive.drafts.tags.add"
+    method = http.MethodPost
+    target = "/archive.drafts.tags.add"
   )
 
   request := httptest.NewRequest(method, target, nil)
@@ -353,8 +386,7 @@ func TestDraftsHandler_AddTag(t *testing.T) {
   t.Run("success", func(t *testing.T) {
     expectedStatusCode := http.StatusNoContent
 
-    s := mocks.NewDraftsService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), draftUUID, tagID).Return(nil)
+    s := &draftsServiceMockAPI{t: t, arguments: []any{context.Background(), draftUUID, tagID}}
 
     engine := gin.Default()
     engine.POST(target, NewDraftsHandler(s).AddTag)
@@ -376,8 +408,7 @@ func TestDraftsHandler_AddTag(t *testing.T) {
     expected.Status(expectedStatusCode)
     expected.Detail(expectBodyContains)
 
-    s := mocks.NewDraftsService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), draftUUID, tagID).Return(expected)
+    s := &draftsServiceMockAPI{errors: expected}
 
     engine := gin.Default()
     engine.POST(target, NewDraftsHandler(s).AddTag)
@@ -397,8 +428,7 @@ func TestDraftsHandler_AddTag(t *testing.T) {
     expectedStatusCode := http.StatusInternalServerError
     expectBodyContains := "An unexpected error occurred while processing your request"
 
-    s := mocks.NewDraftsService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), draftUUID, tagID).Return(unexpected)
+    s := &draftsServiceMockAPI{errors: unexpected}
 
     engine := gin.Default()
     engine.POST(target, NewDraftsHandler(s).AddTag)
@@ -412,13 +442,21 @@ func TestDraftsHandler_AddTag(t *testing.T) {
     assert.Empty(t, recorder.Result().Cookies())
     assert.Contains(t, recorder.Result().Header.Get("Content-Type"), "application/problem+json")
   })
+}
+
+func (mock *draftsServiceMockAPI) RemoveTag(_ context.Context, draftUUID, tagID string) error {
+  if nil != mock.t {
+    require.Equal(mock.t, mock.arguments[1], draftUUID)
+    require.Equal(mock.t, mock.arguments[2], tagID)
+  }
+
+  return mock.errors
 }
 
 func TestDraftsHandler_RemoveTag(t *testing.T) {
   const (
-    routine = "RemoveTag"
-    method  = http.MethodPost
-    target  = "/archive.drafts.tags.remove"
+    method = http.MethodPost
+    target = "/archive.drafts.tags.remove"
   )
 
   request := httptest.NewRequest(method, target, nil)
@@ -433,8 +471,7 @@ func TestDraftsHandler_RemoveTag(t *testing.T) {
   t.Run("success", func(t *testing.T) {
     expectedStatusCode := http.StatusNoContent
 
-    s := mocks.NewDraftsService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), draftUUID, tagID).Return(nil)
+    s := &draftsServiceMockAPI{t: t, arguments: []any{context.Background(), draftUUID, tagID}}
 
     engine := gin.Default()
     engine.POST(target, NewDraftsHandler(s).RemoveTag)
@@ -456,8 +493,7 @@ func TestDraftsHandler_RemoveTag(t *testing.T) {
     expected.Status(expectedStatusCode)
     expected.Detail(expectBodyContains)
 
-    s := mocks.NewDraftsService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), draftUUID, tagID).Return(expected)
+    s := &draftsServiceMockAPI{errors: expected}
 
     engine := gin.Default()
     engine.POST(target, NewDraftsHandler(s).RemoveTag)
@@ -477,8 +513,7 @@ func TestDraftsHandler_RemoveTag(t *testing.T) {
     expectedStatusCode := http.StatusInternalServerError
     expectBodyContains := "An unexpected error occurred while processing your request"
 
-    s := mocks.NewDraftsService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), draftUUID, tagID).Return(unexpected)
+    s := &draftsServiceMockAPI{errors: unexpected}
 
     engine := gin.Default()
     engine.POST(target, NewDraftsHandler(s).RemoveTag)
@@ -494,12 +529,19 @@ func TestDraftsHandler_RemoveTag(t *testing.T) {
   })
 }
 
+func (mock *draftsServiceMockAPI) Share(_ context.Context, draftUUID string) (link string, err error) {
+  if nil != mock.t {
+    require.Equal(mock.t, mock.arguments[1], draftUUID)
+  }
+
+  return mock.returns[0].(string), mock.errors
+}
+
 func TestDraftsHandler_Share(t *testing.T) {
   const (
-    routine = "Share"
-    method  = http.MethodPost
-    target  = "/archive.drafts.share"
-    link    = "/link/to/draft"
+    method = http.MethodPost
+    target = "/archive.drafts.share"
+    link   = "/link/to/draft"
   )
 
   request := httptest.NewRequest(method, target, nil)
@@ -513,8 +555,7 @@ func TestDraftsHandler_Share(t *testing.T) {
     expectedStatusCode := http.StatusOK
     expectedBody := string(marshal(t, gin.H{"shareable_link": link}))
 
-    s := mocks.NewDraftsService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id).Return(link, nil)
+    s := &draftsServiceMockAPI{t: t, arguments: []any{context.Background(), id}, returns: []any{link}}
 
     engine := gin.Default()
     engine.POST(target, NewDraftsHandler(s).Share)
@@ -536,8 +577,7 @@ func TestDraftsHandler_Share(t *testing.T) {
     expected.Status(expectedStatusCode)
     expected.Detail(expectBodyContains)
 
-    s := mocks.NewDraftsService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id).Return("about:blank", expected)
+    s := &draftsServiceMockAPI{returns: []any{"about:blank"}, errors: expected}
 
     engine := gin.Default()
     engine.POST(target, NewDraftsHandler(s).Share)
@@ -557,8 +597,7 @@ func TestDraftsHandler_Share(t *testing.T) {
     expectedStatusCode := http.StatusInternalServerError
     expectBodyContains := "An unexpected error occurred while processing your request"
 
-    s := mocks.NewDraftsService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id).Return("about:blank", unexpected)
+    s := &draftsServiceMockAPI{returns: []any{"about:blank"}, errors: unexpected}
 
     engine := gin.Default()
     engine.POST(target, NewDraftsHandler(s).Share)
@@ -574,11 +613,18 @@ func TestDraftsHandler_Share(t *testing.T) {
   })
 }
 
+func (mock *draftsServiceMockAPI) Discard(_ context.Context, draftUUID string) error {
+  if nil != mock.t {
+    require.Equal(mock.t, mock.arguments[1], draftUUID)
+  }
+
+  return mock.errors
+}
+
 func TestDraftsHandler_Discard(t *testing.T) {
   const (
-    routine = "Discard"
-    method  = http.MethodPost
-    target  = "/archive.drafts.discard"
+    method = http.MethodPost
+    target = "/archive.drafts.discard"
   )
 
   request := httptest.NewRequest(method, target, nil)
@@ -591,8 +637,7 @@ func TestDraftsHandler_Discard(t *testing.T) {
   t.Run("success", func(t *testing.T) {
     expectedStatusCode := http.StatusNoContent
 
-    s := mocks.NewDraftsService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id).Return(nil)
+    s := &draftsServiceMockAPI{t: t, arguments: []any{context.Background(), id}}
 
     engine := gin.Default()
     engine.POST(target, NewDraftsHandler(s).Discard)
@@ -614,8 +659,7 @@ func TestDraftsHandler_Discard(t *testing.T) {
     expected.Status(expectedStatusCode)
     expected.Detail(expectBodyContains)
 
-    s := mocks.NewDraftsService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id).Return(expected)
+    s := &draftsServiceMockAPI{errors: expected}
 
     engine := gin.Default()
     engine.POST(target, NewDraftsHandler(s).Discard)
@@ -635,8 +679,7 @@ func TestDraftsHandler_Discard(t *testing.T) {
     expectedStatusCode := http.StatusInternalServerError
     expectBodyContains := "An unexpected error occurred while processing your request"
 
-    s := mocks.NewDraftsService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id).Return(unexpected)
+    s := &draftsServiceMockAPI{errors: unexpected}
 
     engine := gin.Default()
     engine.POST(target, NewDraftsHandler(s).Discard)
@@ -652,11 +695,19 @@ func TestDraftsHandler_Discard(t *testing.T) {
   })
 }
 
+func (mock *draftsServiceMockAPI) Revise(_ context.Context, draftUUID string, revision *transfer.ArticleRevision) error {
+  if nil != mock.t {
+    require.Equal(mock.t, mock.arguments[1], draftUUID)
+    require.Equal(mock.t, mock.arguments[2], revision)
+  }
+
+  return mock.errors
+}
+
 func TestDraftsHandler_Revise(t *testing.T) {
   const (
-    routine = "Revise"
-    method  = http.MethodPost
-    target  = "/archive.drafts.revise"
+    method = http.MethodPost
+    target = "/archive.drafts.revise"
   )
 
   revision := &transfer.ArticleRevision{
@@ -676,8 +727,7 @@ func TestDraftsHandler_Revise(t *testing.T) {
   t.Run("success", func(t *testing.T) {
     expectedStatusCode := http.StatusNoContent
 
-    s := mocks.NewDraftsService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id, revision).Return(nil)
+    s := &draftsServiceMockAPI{t: t, arguments: []any{context.Background(), id, revision}}
 
     engine := gin.Default()
     engine.POST(target, NewDraftsHandler(s).Revise)
@@ -699,8 +749,7 @@ func TestDraftsHandler_Revise(t *testing.T) {
     expected.Status(expectedStatusCode)
     expected.Detail(expectBodyContains)
 
-    s := mocks.NewDraftsService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id, revision).Return(expected)
+    s := &draftsServiceMockAPI{errors: expected}
 
     engine := gin.Default()
     engine.POST(target, NewDraftsHandler(s).Revise)
@@ -720,8 +769,7 @@ func TestDraftsHandler_Revise(t *testing.T) {
     expectedStatusCode := http.StatusInternalServerError
     expectBodyContains := "An unexpected error occurred while processing your request"
 
-    s := mocks.NewDraftsService()
-    s.On(routine, mock.AnythingOfType("*gin.Context"), id, revision).Return(unexpected)
+    s := &draftsServiceMockAPI{errors: unexpected}
 
     engine := gin.Default()
     engine.POST(target, NewDraftsHandler(s).Revise)
