@@ -68,9 +68,8 @@ func main() {
   var mode = strings.TrimSpace(os.Getenv("SERVER_MODE"))
   if "" == mode {
     mode = gin.DebugMode
-    slog.Warn("environment variable not found",
-      slog.String("variable", "SERVER_MODE"),
-      slog.String("default", mode))
+    fmt.Printf("warn: environment `SERVER_MODE` variable not found, defaulting to value: %s\n", mode)
+
   }
 
   gin.SetMode(mode)
@@ -323,9 +322,7 @@ func main() {
   var port = strings.TrimSpace(os.Getenv("PORT"))
   if "" == port {
     port = "8080"
-    slog.Warn("environment variable not found",
-      slog.String("variable", "PORT"),
-      slog.String("default", port))
+    fmt.Printf("warn: environment `PORT` variable not found, defaulting to value: %s\n", port)
   }
 
   var server = http.Server{
@@ -342,9 +339,7 @@ func main() {
     addr = "http://" + addr
   }
 
-  slog.Info("server is listening for requests", slog.Group("server",
-    slog.String("address", addr),
-    slog.String("mode", mode)))
+  fmt.Printf("fontseca.dev server listening for connections at %s (running in %s mode)\n", addr, mode)
 
   var (
     didNotServe = make(chan struct{})
