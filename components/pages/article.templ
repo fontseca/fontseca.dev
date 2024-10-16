@@ -42,8 +42,8 @@ templ Article(article *model.Article) {
         </section>
         <section class="post-content-section post-content-receiver-container">
           <header class="post-header">
-            <button type="button" onclick="copyLinkToClipboard()">
-              <i class="fa fa-paperclip"></i>Copy link
+            <button type="button" class="link-copier">
+              Copy link
             </button>
             <p><i class="fa-regular fa-clock"></i>{ strconv.Itoa(article.ReadTime) } min</p>
           </header>

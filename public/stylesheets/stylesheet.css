@@ -128,6 +128,24 @@ a:hover {
   color: white;
 }
 
+button.link-copier {
+  position: relative;
+}
+
+button.link-copier:hover::before {
+  text-decoration: none;
+}
+
+button.link-copier::before {
+  font-family: "Font Awesome 5 Free";
+  content: "\f0c6";
+  padding-right: .4rem;
+}
+
+button.link-copier.copied::before {
+  content: "\f00c";
+}
+
 /* Title header.  */
 
 .title-header {

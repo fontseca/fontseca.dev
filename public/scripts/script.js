@@ -1,12 +1,27 @@
+document.querySelectorAll("button.link-copier").forEach(button => {
+  button.onclick = () => {
+    const dummy = document.createElement('input');
+
+    document.body.appendChild(dummy);
+    dummy.value = window.location.href;
+    dummy.select();
+
+    try {
+      document.execCommand('copy');
+      button.classList.add("copied");
+    } catch (error) {
+      console.error(error);
+    } finally {
+      document.body.removeChild(dummy);
+    }
+  };
+});
+
 function toggleNavigationSidebar() {
   const menu = document.getElementById("navigation")
   const backdrop = document.getElementById("backdrop")
   menu.classList.toggle("show")
   backdrop.classList.toggle("show")
-}
-
-async function copyLinkToClipboard() {
-  await navigator.clipboard.writeText(window.location.href);
 }
 
 function searchArticles(e) {
