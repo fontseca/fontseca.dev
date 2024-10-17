@@ -80,6 +80,7 @@ function setArchiveTopic(e) {
   searchbar.setAttribute("hx-get", baseTopicURL);
   searchbar.setAttribute("hx-push-url", baseTopicURL);
   window.history.replaceState({}, "", baseTopicURL);
+  window.scrollTo({ top: 0,    behavior: "smooth" });
 
   htmx.process(document.body);
 }
@@ -109,6 +110,7 @@ function setArchivePublicationDate(e) {
   searchbar.setAttribute("hx-push-url", currentURL);
 
   window.history.replaceState({}, "", currentURL);
+  window.scrollTo({ top: 0,    behavior: "smooth" });
 
   htmx.process(document.body);
 }
@@ -153,6 +155,7 @@ function setArchiveTag(e) {
   searchbar.setAttribute("hx-get", baseTagURL);
   searchbar.setAttribute("hx-push-url", baseTagURL);
   window.history.replaceState({}, "", baseTagURL);
+  window.scrollTo({ top: 0,    behavior: "smooth" });
 
   htmx.process(document.body);
 }
