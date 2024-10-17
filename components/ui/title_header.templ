@@ -15,13 +15,13 @@ templ TitleHeader(value string, endpoint ...string) {
              href={ templ.URL(fmt.Sprint("/playground?target=",  url.QueryEscape(endpoint[0]))) }
              target="_blank"
              title="Try out request in Playground">
-            <i class="fa fa-external-link"></i>
+            <i class="ph ph-arrow-square-out"></i>
           </a>
         } else {
           <a class="api-endpoint"
              href="about:blank"
              target="_blank">
-            <i class="fa fa-external-link"></i>
+            <i class="ph ph-arrow-square-out"></i>
           </a>
         }
       }
