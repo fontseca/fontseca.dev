@@ -13,9 +13,7 @@ templ Article(article *model.Article) {
       <section class="article-post">
         <section class="info-section">
           <header>
-            <a href="/archive">
-              <i class="fa fa-long-arrow-left" style="padding-right: .5rem"></i>Go back to archive
-            </a>
+            <a href="/archive" class="go-back-indicator">Go back to archive</a>
             <h1 class="title">{ article.Title }</h1>
           </header>
           <div class="metadata">
@@ -50,7 +48,7 @@ templ Article(article *model.Article) {
             <button type="button" class="link-copier">
               Copy link
             </button>
-            <p><i class="fa-regular fa-clock"></i>{ strconv.Itoa(article.ReadTime) } min</p>
+            <p><i class="ph ph-clock"></i>{ strconv.Itoa(article.ReadTime) } min</p>
           </header>
           <article class={ "content", templ.KV("add-border", 0 < len(article.Tags)) }>
             {! templ.Raw(md2html(article.Content)) }
