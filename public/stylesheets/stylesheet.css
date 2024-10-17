@@ -76,8 +76,41 @@ a {
   text-decoration: none;
 }
 
+a.link-normal {
+  font-weight: normal !important;
+}
+
+a.link-decorated {
+  text-decoration: underline;
+}
+
+a.link-decorated:hover {
+  text-decoration: none;
+}
+
 a:hover {
   text-decoration: underline;
+}
+
+.go-back-indicator,
+.has-phosphor-icon,
+.link-copier {
+  position: relative;
+  padding-left: 1.5rem;
+}
+
+.go-back-indicator::before {
+  content: "\E058";
+}
+
+.go-back-indicator::before,
+.link-copier::before,
+.has-phosphor-icon::before {
+  font-family: "Phosphor";
+  position: absolute;
+  left: 0;
+  top: .110rem;
+  font-weight: 600;
 }
 
 /* Logo.  */
@@ -128,22 +161,13 @@ a:hover {
   color: white;
 }
 
-button.link-copier {
-  position: relative;
-}
-
-button.link-copier:hover::before {
-  text-decoration: none;
-}
-
 button.link-copier::before {
-  font-family: "Font Awesome 5 Free";
-  content: "\f0c6";
-  padding-right: .4rem;
+  content: "\E2E6";
+  top: .34rem;
 }
 
 button.link-copier.copied::before {
-  content: "\f00c";
+  content: "\E182";
 }
 
 /* Title header.  */
@@ -162,7 +186,7 @@ button.link-copier.copied::before {
 }
 
 .title-header .api-endpoint {
-  font-size: clamp(.8rem, 1vw, 1vw);
+  font-size: clamp(1.5rem, 2vw, 2vw);
   color: rgba(0, 0, 0, 0.5);
   text-decoration: none;
 }
