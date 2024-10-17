@@ -9,6 +9,7 @@ document.querySelectorAll("button.link-copier").forEach(button => {
     try {
       document.execCommand('copy');
       button.classList.add("copied");
+      button.textContent = "Copied!";
     } catch (error) {
       console.error(error);
     } finally {
