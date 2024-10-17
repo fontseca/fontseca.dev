@@ -94,23 +94,38 @@ a:hover {
 
 .go-back-indicator,
 .has-phosphor-icon,
-.link-copier {
+.link-copier,
+.icon-tag {
   position: relative;
   padding-left: 1.5rem;
+}
+
+.go-back-indicator::before,
+.link-copier::before,
+.has-phosphor-icon::before,
+.icon-tag::before {
+  font-family: "Phosphor";
+  position: absolute;
+  left: 0;
+  top: .110rem;
+  font-weight: 600;
 }
 
 .go-back-indicator::before {
   content: "\E058";
 }
 
-.go-back-indicator::before,
-.link-copier::before,
-.has-phosphor-icon::before {
-  font-family: "Phosphor";
-  position: absolute;
-  left: 0;
-  top: .110rem;
-  font-weight: 600;
+/* Icons.  */
+
+.icon-tag {
+  padding-left: .958rem !important;
+}
+
+.icon-tag::before {
+  top: .1rem !important;
+  content: "\E478";
+  font-weight: normal;
+  font-size: 13px;
 }
 
 /* Logo.  */
@@ -1335,6 +1350,12 @@ button.link-copier.copied::before {
   font-family: 'Source Serif 4', sans-serif;
   font-size: 20px;
   font-style: italic;
+}
+
+.archive-content-main .topic-and-search .selected-tag-div .selected-tag::before {
+  font-size: 16px;
+  top: .410rem !important;
+  left: -.4rem;
 }
 
 .archive-content-main .topic-and-search .selected-tag-div.hide {

@@ -62,7 +62,7 @@ templ Article(article *model.Article) {
               <div class="tags-list">
                 for _, t := range article.Tags {
                   if nil != t {
-                    <span class="tag">
+                    <span class="tag icon-tag">
                       <a href={ templ.SafeURL(fmt.Sprint("/archive/tag/", t.ID)) }>{ t.Name }</a>
                     </span>
                   }

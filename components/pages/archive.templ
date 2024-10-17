@@ -45,7 +45,7 @@ templ Archive(articles []*transfer.Article, publications []*transfer.Publication
             </label>
             <div class={ "selected-tag-div", templ.KV("hide", nil == tag) }>
               <span></span>
-              <span class="selected-tag">
+              <span class="selected-tag icon-tag">
                 if nil != tag {
                   { tag.Name }
                 }
@@ -103,7 +103,7 @@ templ Archive(articles []*transfer.Article, publications []*transfer.Publication
             <div id="tags-list" class="tags-list">
               for _, t := range tags {
                 if nil != t {
-                  <span class="tag">
+                  <span class="tag icon-tag">
                     <a href={ templ.SafeURL(fmt.Sprintf("/archive/tag/%s", t.ID)) }
                        onclick="setArchiveTag(this)"
                        hx-get={ fmt.Sprintf("/archive/tag/%s", t.ID) }
