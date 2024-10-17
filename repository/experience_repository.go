@@ -32,6 +32,7 @@ func (r *ExperienceRepository) List(ctx context.Context, hidden bool) (experienc
          "ends",
          "job_title",
          "company",
+         "company_homepage",
          "country",
          "summary",
          "active",
@@ -61,6 +62,7 @@ ORDER BY "starts" DESC;`
       &e.Ends,
       &e.JobTitle,
       &e.Company,
+      &e.CompanyHomepage,
       &e.Country,
       &e.Summary,
       &e.Active,
@@ -86,6 +88,7 @@ func (r *ExperienceRepository) doGet(ctx context.Context, id string, strict bool
          "ends",
          "job_title",
          "company",
+         "company_homepage",
          "country",
          "summary",
          "active",
@@ -110,6 +113,7 @@ func (r *ExperienceRepository) doGet(ctx context.Context, id string, strict bool
     &experience.Ends,
     &experience.JobTitle,
     &experience.Company,
+    &experience.CompanyHomepage,
     &experience.Country,
     &experience.Summary,
     &experience.Active,
@@ -151,10 +155,18 @@ func (r *ExperienceRepository) Create(ctx context.Context, creation *transfer.Ex
                                  "ends",
                                  "job_title",
                                  "company",
+                                 "company_homepage",
                                  "country",
                                  "summary",
                                  "active")
-                         VALUES ($1, nullif ($2, 0), $3, $4, $5, $6, TRUE);`
+                         VALUES ($1,
+                                 nullif ($2, 0),
+                                 $3,
+                                 $4,
+                                 nullif($5, ''),
+                                 $6,
+                                 $7,
+                                 TRUE);`
 
   ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
   defer cancel()
@@ -164,6 +176,7 @@ func (r *ExperienceRepository) Create(ctx context.Context, creation *transfer.Ex
     creation.Ends,
     creation.JobTitle,
     creation.Company,
+    creation.CompanyHomepage,
     creation.Country,
     creation.Summary)
 
@@ -224,6 +237,7 @@ func (r *ExperienceRepository) Update(ctx context.Context, id string, update *tr
          "ends" = CASE WHEN $4::INTEGER = $5::INTEGER OR 0 = $4::INTEGER THEN $5::INTEGER ELSE $4::INTEGER END,
          "job_title" = coalesce (nullif ($6, ''), $7),
          "company" = coalesce (nullif ($8, ''), $9),
+         "company_homepage" = coalesce (nullif ($16, ''), "company_homepage"),
          "country" = coalesce (nullif ($10, ''), $11),
          "summary" = coalesce (nullif ($12, ''), $13),
          "active" = $14,
@@ -243,7 +257,8 @@ func (r *ExperienceRepository) Update(ctx context.Context, id string, update *tr
     update.Country, current.Country,
     update.Summary, current.Summary,
     update.Active,
-    update.Hidden)
+    update.Hidden,
+    update.CompanyHomepage)
 
   if nil != err {
     er := &pq.Error{}

@@ -7,6 +7,8 @@ import (
   "fontseca.dev/problem"
   "fontseca.dev/transfer"
   "log/slog"
+  "net/http"
+  "net/url"
   "strconv"
   "strings"
   "time"
@@ -59,8 +61,22 @@ func (s *ExperienceService) Create(ctx context.Context, creation *transfer.Exper
   }
   creation.JobTitle = strings.TrimSpace(creation.JobTitle)
   creation.Company = strings.TrimSpace(creation.Company)
+  creation.CompanyHomepage = strings.TrimSpace(creation.CompanyHomepage)
   creation.Country = strings.TrimSpace(creation.Country)
   creation.Summary = strings.TrimSpace(creation.Summary)
+
+  if "" != creation.CompanyHomepage {
+    _, err = url.ParseRequestURI(creation.CompanyHomepage)
+    if nil != err {
+      p := &problem.Problem{}
+      p.Status(http.StatusBadRequest)
+      p.Title("Could not parse parameter.")
+      p.Detail("Make sure the provided value is a valid URL.")
+      p.Instance("company_homepage")
+      p.With("value", creation.CompanyHomepage)
+      return false, p
+    }
+  }
 
   var year = time.Now().Year()
   switch {
@@ -72,6 +88,8 @@ func (s *ExperienceService) Create(ctx context.Context, creation *transfer.Exper
     return false, problem.NewValidation([3]string{"ends", "gte", strconv.Itoa(creation.Starts)})
   case 0 != creation.Ends && year < creation.Ends:
     return false, problem.NewValidation([3]string{"ends", "lte", strconv.Itoa(year)})
+  case 0 != len(creation.CompanyHomepage) && 2048 < len(creation.CompanyHomepage):
+    return false, problem.NewValidation([3]string{"company_homepage", "max", "2048"})
   }
 
   return s.r.Create(ctx, creation)
@@ -92,8 +110,22 @@ func (s *ExperienceService) Update(ctx context.Context, id string, update *trans
 
   update.JobTitle = strings.TrimSpace(update.JobTitle)
   update.Company = strings.TrimSpace(update.Company)
+  update.CompanyHomepage = strings.TrimSpace(update.CompanyHomepage)
   update.Country = strings.TrimSpace(update.Country)
   update.Summary = strings.TrimSpace(update.Summary)
+
+  if "" != update.CompanyHomepage {
+    _, err := url.ParseRequestURI(update.CompanyHomepage)
+    if nil != err {
+      p := &problem.Problem{}
+      p.Status(http.StatusBadRequest)
+      p.Title("Could not parse parameter.")
+      p.Detail("Make sure the provided value is a valid URL.")
+      p.Instance("company_homepage")
+      p.With("value", update.CompanyHomepage)
+      return false, p
+    }
+  }
 
   var year = time.Now().Year()
   switch {
@@ -101,6 +133,8 @@ func (s *ExperienceService) Update(ctx context.Context, id string, update *trans
     return false, problem.NewValidation([3]string{"starts", "gt", "2017"})
   case 0 != update.Starts && year < update.Starts:
     return false, problem.NewValidation([3]string{"starts", "lte", strconv.Itoa(year)})
+  case 0 != len(update.CompanyHomepage) && 2048 < len(update.CompanyHomepage):
+    return false, problem.NewValidation([3]string{"company_homepage", "max", "2048"})
   case 0 != update.Ends:
     switch {
     case 0 != update.Starts && update.Starts > update.Ends:

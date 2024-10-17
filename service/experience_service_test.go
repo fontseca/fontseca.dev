@@ -15,9 +15,11 @@ import (
 
 type experienceRepositoryMockAPI struct {
   repository.ExperienceRepository
-  returns []any
-  errors  error
-  called  bool
+  t         *testing.T
+  arguments []any
+  returns   []any
+  errors    error
+  called    bool
 }
 
 func (mock *experienceRepositoryMockAPI) List(context.Context, bool) ([]*model.Experience, error) {
@@ -78,7 +80,10 @@ func TestExperienceService_GetByID(t *testing.T) {
   })
 }
 
-func (mock *experienceRepositoryMockAPI) Create(context.Context, *transfer.ExperienceCreation) (bool, error) {
+func (mock *experienceRepositoryMockAPI) Create(_ context.Context, t *transfer.ExperienceCreation) (bool, error) {
+  if nil != mock.t {
+    require.Equal(mock.t, mock.arguments[1], t)
+  }
   return mock.returns[0].(bool), mock.errors
 }
 
@@ -87,22 +92,25 @@ func TestExperienceService_Save(t *testing.T) {
 
   t.Run("success", func(t *testing.T) {
     var expected = transfer.ExperienceCreation{
-      Starts:   2020,
-      Ends:     2023,
-      JobTitle: "JobTitle",
-      Company:  "Company",
-      Country:  "Country",
-      Summary:  "Summary",
+      Starts:          2020,
+      Ends:            2023,
+      JobTitle:        "JobTitle",
+      Company:         "Company",
+      CompanyHomepage: "http://foo.com",
+      Country:         "Country",
+      Summary:         "Summary",
     }
     var dirty = transfer.ExperienceCreation{
-      Starts:   expected.Starts,
-      Ends:     expected.Ends,
-      JobTitle: " \n\t " + expected.JobTitle + " \n\t ",
-      Company:  " \n\t " + expected.Company + " \n\t ",
-      Country:  " \n\t " + expected.Country + " \n\t ",
-      Summary:  " \n\t " + expected.Summary + " \n\t ",
+      Starts:          expected.Starts,
+      Ends:            expected.Ends,
+      JobTitle:        " \n\t " + expected.JobTitle + " \n\t ",
+      Company:         " \n\t " + expected.Company + " \n\t ",
+      CompanyHomepage: " \n\t " + expected.CompanyHomepage + " \n\t ",
+      Country:         " \n\t " + expected.Country + " \n\t ",
+      Summary:         " \n\t " + expected.Summary + " \n\t ",
     }
     var ctx = context.Background()
+    r := &experienceRepositoryMockAPI{t: t, arguments: []any{ctx, &expected}, returns: []any{true}}
     res, err := NewExperienceService(r).Create(ctx, &dirty)
     assert.NoError(t, err)
     assert.True(t, res)
@@ -113,6 +121,13 @@ func TestExperienceService_Save(t *testing.T) {
     res, err := NewExperienceService(r).Create(ctx, nil)
     require.False(t, r.called)
     assert.ErrorContains(t, err, "nil value for parameter: creation")
+    assert.False(t, res)
+  })
+
+  t.Run("company homepage is a valid url", func(t *testing.T) {
+    var ctx = context.Background()
+    res, err := NewExperienceService(r).Create(ctx, &transfer.ExperienceCreation{CompanyHomepage: "xxx"})
+    assert.ErrorContains(t, err, "Make sure the provided value is a valid URL")
     assert.False(t, res)
   })
 
@@ -212,7 +227,11 @@ func TestExperienceService_Save(t *testing.T) {
   })
 }
 
-func (mock *experienceRepositoryMockAPI) Update(context.Context, string, *transfer.ExperienceUpdate) (bool, error) {
+func (mock *experienceRepositoryMockAPI) Update(_ context.Context, id string, t *transfer.ExperienceUpdate) (bool, error) {
+  if nil != mock.t {
+    require.Equal(mock.t, mock.arguments[1], id)
+    require.Equal(mock.t, mock.arguments[2], t)
+  }
   return mock.returns[0].(bool), mock.errors
 }
 
@@ -223,21 +242,24 @@ func TestExperienceService_Update(t *testing.T) {
 
   t.Run("success", func(t *testing.T) {
     var expected = transfer.ExperienceUpdate{
-      Starts:   2020,
-      Ends:     2023,
-      JobTitle: "JobTitle",
-      Company:  "Company",
-      Country:  "Country",
-      Summary:  "Summary",
+      Starts:          2020,
+      Ends:            2023,
+      JobTitle:        "JobTitle",
+      Company:         "Company",
+      CompanyHomepage: "http://foo.com.",
+      Country:         "Country",
+      Summary:         "Summary",
     }
     var dirty = transfer.ExperienceUpdate{
-      Starts:   expected.Starts,
-      Ends:     expected.Ends,
-      JobTitle: " \n\t " + expected.JobTitle + " \n\t ",
-      Company:  " \n\t " + expected.Company + " \n\t ",
-      Country:  " \n\t " + expected.Country + " \n\t ",
-      Summary:  " \n\t " + expected.Summary + " \n\t ",
+      Starts:          expected.Starts,
+      Ends:            expected.Ends,
+      JobTitle:        " \n\t " + expected.JobTitle + " \n\t ",
+      Company:         " \n\t " + expected.Company + " \n\t ",
+      CompanyHomepage: " \n\t " + expected.CompanyHomepage + " \n\t ",
+      Country:         " \n\t " + expected.Country + " \n\t ",
+      Summary:         " \n\t " + expected.Summary + " \n\t ",
     }
+    r := &experienceRepositoryMockAPI{t: t, arguments: []any{ctx, "7d7d4da0-093a-443b-b041-2da650381220", &expected}, returns: []any{true}}
     res, err := NewExperienceService(r).Update(ctx, id, &dirty)
     assert.True(t, res)
     assert.NoError(t, err)

@@ -32,7 +32,16 @@ templ Experience(exp []*model.Experience) {
             </div>
             <div class="content-container">
               <p class="job-title">{ e.JobTitle }</p>
-              <p class="company-and-location">{ e.Company }, { e.Country }</p>
+              if nil != e.CompanyHomepage && "about:blank" != *e.CompanyHomepage {
+                <p class="company has-phosphor-icon">
+                  <a class="link-normal" target="_blank" href={ templ.SafeURL(*e.CompanyHomepage) }>{ e.Company }</a>
+                </p>
+              } else {
+                <p class="company has-phosphor-icon">{ e.Company }</p>
+              }
+              if "" != e.Country {
+                <p class="location has-phosphor-icon">{ e.Country }</p>
+              }
               <div class="summary">{! templ.Raw(md2html(e.Summary)) }</div>
             </div>
           </article>

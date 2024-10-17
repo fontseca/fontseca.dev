@@ -613,12 +613,26 @@ button.link-copier.copied::before {
   margin-bottom: .2rem;
 }
 
-.experience-list-tile .content-container .company-and-location {
+.experience-list-tile .content-container .company,
+.experience-list-tile .content-container .company * {
+  font-weight: 600 !important;
+}
+
+.experience-list-tile .content-container .company,
+.experience-list-tile .content-container .location {
+  padding-bottom: .3rem;
+}
+
+.experience-list-tile .content-container .location {
   font-weight: 500;
-  margin-bottom: 1rem;
+}
+
+.experience-list-tile .content-container .location::before {
+  content: "\EE3E";
 }
 
 .experience-list-tile .content-container .summary {
+  margin-top: .7rem;
   font-size: 17px;
 }
 
