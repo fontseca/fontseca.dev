@@ -14,8 +14,10 @@ import (
 type experienceServiceAPI interface {
   List(ctx context.Context, hidden ...bool) ([]*model.Experience, error)
   Get(ctx context.Context, id string) (*model.Experience, error)
-  Create(ctx context.Context, creation *transfer.ExperienceCreation) (bool, error)
-  Update(ctx context.Context, id string, update *transfer.ExperienceUpdate) (bool, error)
+  Create(ctx context.Context, creation *transfer.ExperienceCreation) (string, error)
+  Update(ctx context.Context, id string, update *transfer.ExperienceUpdate) error
+  Hide(ctx context.Context, id string) error
+  Show(ctx context.Context, id string) error
   Remove(ctx context.Context, id string) error
 }
 
@@ -81,16 +83,11 @@ func (h *ExperienceHandler) Create(c *gin.Context) {
     return
   }
 
-  ok, err := h.s.Create(c, &e)
+  created, err := h.s.Create(c, &e)
   if check(err, c.Writer) {
     return
   }
-
-  if !ok {
-    problem.NewInternal().Emit(c.Writer)
-  }
-
-  c.Status(http.StatusCreated)
+  c.JSON(http.StatusCreated, gin.H{"inserted_id": created})
 }
 
 func (h *ExperienceHandler) Set(c *gin.Context) {
@@ -110,16 +107,12 @@ func (h *ExperienceHandler) Set(c *gin.Context) {
     return
   }
 
-  updated, err := h.s.Update(c, id, &update)
+  err := h.s.Update(c, id, &update)
   if check(err, c.Writer) {
     return
   }
 
-  if updated {
-    c.Status(http.StatusNoContent)
-  } else {
-    c.Redirect(http.StatusSeeOther, "/experience.get?experience_uuid="+id)
-  }
+  c.Status(http.StatusNoContent)
 }
 
 func (h *ExperienceHandler) Hide(c *gin.Context) {
@@ -129,16 +122,12 @@ func (h *ExperienceHandler) Hide(c *gin.Context) {
     return
   }
 
-  updated, err := h.s.Update(c, id, &transfer.ExperienceUpdate{Hidden: true})
+  err := h.s.Hide(c, id)
   if check(err, c.Writer) {
     return
   }
 
-  if updated {
-    c.Status(http.StatusNoContent)
-  } else {
-    c.Redirect(http.StatusSeeOther, "/experience.get?experience_uuid="+id)
-  }
+  c.Status(http.StatusNoContent)
 }
 
 func (h *ExperienceHandler) Show(c *gin.Context) {
@@ -148,16 +137,12 @@ func (h *ExperienceHandler) Show(c *gin.Context) {
     return
   }
 
-  updated, err := h.s.Update(c, id, &transfer.ExperienceUpdate{Hidden: false})
+  err := h.s.Show(c, id)
   if check(err, c.Writer) {
     return
   }
 
-  if updated {
-    c.Status(http.StatusNoContent)
-  } else {
-    c.Redirect(http.StatusSeeOther, "/experience.get?experience_uuid="+id)
-  }
+  c.Status(http.StatusNoContent)
 }
 
 func (h *ExperienceHandler) Quit(c *gin.Context) {
@@ -167,20 +152,16 @@ func (h *ExperienceHandler) Quit(c *gin.Context) {
     return
   }
 
-  var updated, err = h.s.Update(c, id, &transfer.ExperienceUpdate{
+  var err = h.s.Update(c, id, &transfer.ExperienceUpdate{
     Active: false,
-    Ends:   time.Now().Year(),
+    Ends:   time.Now().Format(time.DateOnly),
   })
 
   if check(err, c.Writer) {
     return
   }
 
-  if updated {
-    c.Status(http.StatusNoContent)
-  } else {
-    c.Redirect(http.StatusSeeOther, "/experience.get?experience_uuid="+id)
-  }
+  c.Status(http.StatusNoContent)
 }
 
 func (h *ExperienceHandler) Remove(c *gin.Context) {

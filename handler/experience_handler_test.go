@@ -28,7 +28,7 @@ func (mock *experienceServiceMockAPI) List(context.Context, ...bool) (experience
   return mock.returns[0].([]*model.Experience), mock.errors
 }
 
-func TestExperienceHandler_Get(t *testing.T) {
+func TestExperienceHandler_List(t *testing.T) {
   const method = http.MethodGet
   const target = "/experience.list"
 
@@ -46,7 +46,7 @@ func TestExperienceHandler_Get(t *testing.T) {
   })
 }
 
-func TestExperienceHandler_GetHidden(t *testing.T) {
+func TestExperienceHandler_ListHidden(t *testing.T) {
   const method = http.MethodGet
   const target = "/experience.hidden.list"
 
@@ -68,16 +68,17 @@ func (mock *experienceServiceMockAPI) Get(context.Context, string) (*model.Exper
   return mock.returns[0].(*model.Experience), mock.errors
 }
 
-func TestExperienceHandler_GetByID(t *testing.T) {
+func TestExperienceHandler_Get(t *testing.T) {
   const method = http.MethodGet
   const target = "/experience.get"
 
   t.Run("success", func(t *testing.T) {
-    var i = 2023
+    var start, _ = time.Parse(time.DateOnly, "2020-01-02")
+    var end, _ = time.Parse(time.DateOnly, "2023-01-02")
     var e = &model.Experience{
       UUID:      uuid.New(),
-      Starts:    2020,
-      Ends:      &i,
+      Starts:    start,
+      Ends:      &end,
       JobTitle:  "JobTitle",
       Company:   "Company",
       Country:   "Country",
@@ -103,11 +104,11 @@ func TestExperienceHandler_GetByID(t *testing.T) {
   })
 }
 
-func (mock *experienceServiceMockAPI) Create(context.Context, *transfer.ExperienceCreation) (bool, error) {
-  return mock.returns[0].(bool), mock.errors
+func (mock *experienceServiceMockAPI) Create(context.Context, *transfer.ExperienceCreation) (string, error) {
+  return mock.returns[0].(string), mock.errors
 }
 
-func TestExperienceHandler_Add(t *testing.T) {
+func TestExperienceHandler_Create(t *testing.T) {
   const method = http.MethodPost
   const target = "/experience.add"
 
@@ -121,20 +122,20 @@ func TestExperienceHandler_Add(t *testing.T) {
   request.PostForm.Add("summary", "Summary")
 
   t.Run("success", func(t *testing.T) {
-    var s = &experienceServiceMockAPI{returns: []any{true}}
+    var s = &experienceServiceMockAPI{returns: []any{"d51897e7-39c7-49dc-a17a-9b8e2bee809b"}}
     var engine = gin.Default()
     engine.POST(target, NewExperienceHandler(s).Create)
     var recorder = httptest.NewRecorder()
     engine.ServeHTTP(recorder, request)
     assert.Equal(t, http.StatusCreated, recorder.Code)
-    assert.Empty(t, recorder.Body.String())
+    assert.Equal(t, `{"inserted_id":"d51897e7-39c7-49dc-a17a-9b8e2bee809b"}`, recorder.Body.String())
   })
 
   t.Run("expected problem detail", func(t *testing.T) {
     var expected = &problem.Problem{}
     expected.Status(http.StatusGone)
     expected.Detail("Expected problem detail.")
-    var s = &experienceServiceMockAPI{returns: []any{false}, errors: expected}
+    var s = &experienceServiceMockAPI{returns: []any{""}, errors: expected}
     var engine = gin.Default()
     engine.POST(target, NewExperienceHandler(s).Create)
     var recorder = httptest.NewRecorder()
@@ -145,7 +146,7 @@ func TestExperienceHandler_Add(t *testing.T) {
 
   t.Run("unexpected error", func(t *testing.T) {
     var unexpected = errors.New("unexpected error")
-    var s = &experienceServiceMockAPI{returns: []any{false}, errors: unexpected}
+    var s = &experienceServiceMockAPI{returns: []any{""}, errors: unexpected}
     var engine = gin.Default()
     engine.POST(target, NewExperienceHandler(s).Create)
     var recorder = httptest.NewRecorder()
@@ -155,8 +156,8 @@ func TestExperienceHandler_Add(t *testing.T) {
   })
 }
 
-func (mock *experienceServiceMockAPI) Update(context.Context, string, *transfer.ExperienceUpdate) (bool, error) {
-  return mock.returns[0].(bool), mock.errors
+func (mock *experienceServiceMockAPI) Update(context.Context, string, *transfer.ExperienceUpdate) error {
+  return mock.errors
 }
 
 func TestExperienceHandler_Set(t *testing.T) {
@@ -198,16 +199,6 @@ func TestExperienceHandler_Set(t *testing.T) {
     assert.Empty(t, recorder.Body.String())
   })
 
-  t.Run("redirects when there's nothing new", func(t *testing.T) {
-    var s = &experienceServiceMockAPI{returns: []any{false}}
-    var engine = gin.Default()
-    engine.POST(target, NewExperienceHandler(s).Set)
-    var recorder = httptest.NewRecorder()
-    engine.ServeHTTP(recorder, request)
-    assert.Equal(t, http.StatusSeeOther, recorder.Code)
-    assert.Empty(t, recorder.Body.String())
-  })
-
   t.Run("expected problem detail", func(t *testing.T) {
     var expected = &problem.Problem{}
     expected.Status(http.StatusGone)
@@ -231,6 +222,10 @@ func TestExperienceHandler_Set(t *testing.T) {
     assert.Equal(t, http.StatusInternalServerError, recorder.Code)
     assert.Contains(t, recorder.Body.String(), "An unexpected error occurred while processing your request")
   })
+}
+
+func (mock *experienceServiceMockAPI) Hide(context.Context, string) error {
+  return mock.errors
 }
 
 func TestExperienceHandler_Hide(t *testing.T) {
@@ -264,16 +259,6 @@ func TestExperienceHandler_Hide(t *testing.T) {
     assert.Empty(t, recorder.Body.String())
   })
 
-  t.Run("redirects when there's nothing new", func(t *testing.T) {
-    var s = &experienceServiceMockAPI{returns: []any{false}}
-    var engine = gin.Default()
-    engine.POST(target, NewExperienceHandler(s).Hide)
-    var recorder = httptest.NewRecorder()
-    engine.ServeHTTP(recorder, request)
-    assert.Equal(t, http.StatusSeeOther, recorder.Code)
-    assert.Empty(t, recorder.Body.String())
-  })
-
   t.Run("expected problem detail", func(t *testing.T) {
     var expected = &problem.Problem{}
     expected.Status(http.StatusGone)
@@ -297,6 +282,10 @@ func TestExperienceHandler_Hide(t *testing.T) {
     assert.Equal(t, http.StatusInternalServerError, recorder.Code)
     assert.Contains(t, recorder.Body.String(), "An unexpected error occurred while processing your request")
   })
+}
+
+func (mock *experienceServiceMockAPI) Show(context.Context, string) error {
+  return mock.errors
 }
 
 func TestExperienceHandler_Show(t *testing.T) {
@@ -327,16 +316,6 @@ func TestExperienceHandler_Show(t *testing.T) {
     var recorder = httptest.NewRecorder()
     engine.ServeHTTP(recorder, request)
     assert.Equal(t, http.StatusNoContent, recorder.Code)
-    assert.Empty(t, recorder.Body.String())
-  })
-
-  t.Run("redirects when there's nothing new", func(t *testing.T) {
-    var s = &experienceServiceMockAPI{returns: []any{false}}
-    var engine = gin.Default()
-    engine.POST(target, NewExperienceHandler(s).Show)
-    var recorder = httptest.NewRecorder()
-    engine.ServeHTTP(recorder, request)
-    assert.Equal(t, http.StatusSeeOther, recorder.Code)
     assert.Empty(t, recorder.Body.String())
   })
 
@@ -393,16 +372,6 @@ func TestExperienceHandler_Quit(t *testing.T) {
     var recorder = httptest.NewRecorder()
     engine.ServeHTTP(recorder, request)
     assert.Equal(t, http.StatusNoContent, recorder.Code)
-    assert.Empty(t, recorder.Body.String())
-  })
-
-  t.Run("redirects when there's nothing new", func(t *testing.T) {
-    var s = &experienceServiceMockAPI{returns: []any{false}}
-    var engine = gin.Default()
-    engine.POST(target, NewExperienceHandler(s).Quit)
-    var recorder = httptest.NewRecorder()
-    engine.ServeHTTP(recorder, request)
-    assert.Equal(t, http.StatusSeeOther, recorder.Code)
     assert.Empty(t, recorder.Body.String())
   })
 
