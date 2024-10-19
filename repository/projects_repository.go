@@ -392,7 +392,7 @@ func (r *ProjectsRepository) Update(ctx context.Context, id string, update *tran
          "date_end" = coalesce (nullif ($17, '')::DATE, "date_end"),
          "updated_at" = current_timestamp
    WHERE "uuid" = $1;`
-  ctx, cancel := context.WithTimeout(ctx, 5*time.Hour)
+  ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
   defer cancel()
   result, err := tx.ExecContext(ctx, updateProjectQuery,
     id,
