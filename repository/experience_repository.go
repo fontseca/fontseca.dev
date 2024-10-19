@@ -4,11 +4,9 @@ import (
   "context"
   "database/sql"
   "errors"
-  "fmt"
   "fontseca.dev/model"
   "fontseca.dev/problem"
   "fontseca.dev/transfer"
-  "github.com/lib/pq"
   "log/slog"
   "time"
 )
@@ -28,8 +26,8 @@ func NewExperienceRepository(db *sql.DB) *ExperienceRepository {
 func (r *ExperienceRepository) List(ctx context.Context, hidden bool) (experience []*model.Experience, err error) {
   getMyExperienceQuery := `
   SELECT "uuid",
-         "starts",
-         "ends",
+         "date_start",
+         "date_end",
          "job_title",
          "company",
          "company_homepage",
@@ -41,7 +39,7 @@ func (r *ExperienceRepository) List(ctx context.Context, hidden bool) (experienc
          "updated_at"
     FROM "me"."experience"
    WHERE "hidden" = $1
-ORDER BY "starts" DESC;`
+ORDER BY "date_start" DESC;`
 
   ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
   defer cancel()
@@ -49,7 +47,7 @@ ORDER BY "starts" DESC;`
   rows, err := r.db.QueryContext(ctx, getMyExperienceQuery, hidden)
 
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return nil, err
   }
 
@@ -71,7 +69,7 @@ ORDER BY "starts" DESC;`
       &e.UpdatedAt)
 
     if nil != err {
-      slog.Error(err.Error())
+      slog.Error(getErrMsg(err))
       return nil, err
     }
 
@@ -84,8 +82,8 @@ ORDER BY "starts" DESC;`
 func (r *ExperienceRepository) doGet(ctx context.Context, id string, strict bool) (experience *model.Experience, err error) {
   getExperienceByIDQuery := `
   SELECT "uuid",
-         "starts",
-         "ends",
+         "date_start",
+         "date_end",
          "job_title",
          "company",
          "company_homepage",
@@ -125,7 +123,7 @@ func (r *ExperienceRepository) doGet(ctx context.Context, id string, strict bool
     if errors.Is(err, sql.ErrNoRows) {
       err = problem.NewNotFound(id, "experience")
     } else {
-      slog.Error(err.Error())
+      slog.Error(getErrMsg(err))
     }
 
     return nil, err
@@ -134,114 +132,88 @@ func (r *ExperienceRepository) doGet(ctx context.Context, id string, strict bool
   return experience, nil
 }
 
-// Get retrieves a single experience record by its UUID.
-func (r *ExperienceRepository) Get(ctx context.Context, id string) (experience *model.Experience, err error) {
-  return r.doGet(ctx, id, true)
+// Get retrieves a single experience record by its UUID. If strict is set to true, then it ignores hidden records.
+func (r *ExperienceRepository) Get(ctx context.Context, id string, strict bool) (experience *model.Experience, err error) {
+  return r.doGet(ctx, id, strict)
 }
 
 // Create creates a new experience record with the provided creation data.
-func (r *ExperienceRepository) Create(ctx context.Context, creation *transfer.ExperienceCreation) (saved bool, err error) {
+func (r *ExperienceRepository) Create(ctx context.Context, creation *transfer.ExperienceCreation) (created string, err error) {
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
 
   if nil != err {
-    slog.Error(err.Error())
-    return false, err
+    slog.Error(getErrMsg(err))
+    return "", err
   }
 
   defer tx.Rollback()
 
   saveExperienceQuery := `
-  INSERT INTO "me"."experience" ("starts",
-                                 "ends",
+  INSERT INTO "me"."experience" ("date_start",
+                                 "date_end",
                                  "job_title",
                                  "company",
                                  "company_homepage",
                                  "country",
                                  "summary",
-                                 "active")
+                                 "active",
+                                 "hidden")
                          VALUES ($1,
-                                 nullif ($2, 0),
+                                 CASE WHEN $2 = '' THEN NULL ELSE $2::DATE END,
                                  $3,
                                  $4,
                                  nullif($5, ''),
                                  $6,
                                  $7,
-                                 TRUE);`
+                                 TRUE,
+                                 TRUE)
+    RETURNING "uuid";`
 
   ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
   defer cancel()
 
-  result, err := tx.ExecContext(ctx, saveExperienceQuery,
+  err = tx.QueryRowContext(ctx, saveExperienceQuery,
     creation.Starts,
     creation.Ends,
     creation.JobTitle,
     creation.Company,
     creation.CompanyHomepage,
     creation.Country,
-    creation.Summary)
+    creation.Summary).Scan(&created)
 
   if nil != err {
-    slog.Error(err.Error())
-    return false, err
-  }
-
-  affected, _ := result.RowsAffected()
-  if 1 != affected {
-    return false, nil
+    slog.Error(getErrMsg(err))
+    return "", err
   }
 
   if err = tx.Commit(); nil != err {
-    slog.Error(err.Error())
-    return false, nil
+    slog.Error(getErrMsg(err))
+    return "", nil
   }
 
-  return true, nil
-}
-
-func (r *ExperienceRepository) updatable(current *model.Experience, update *transfer.ExperienceUpdate) bool {
-  if (0 == update.Starts || update.Starts == current.Starts) &&
-    (0 == update.Ends || (nil != current.Ends && update.Ends == *current.Ends)) &&
-    ("" == update.JobTitle || update.JobTitle == current.JobTitle) &&
-    ("" == update.Company || update.Company == current.Company) &&
-    ("" == update.Country || update.Country == current.Country) &&
-    ("" == update.Summary || update.Summary == current.Summary) &&
-    (update.Active == current.Active) &&
-    (update.Hidden == current.Hidden) {
-    return false
-  }
-  return true
+  return created, nil
 }
 
 // Update modifies an existing experience record with the provided update data.
-func (r *ExperienceRepository) Update(ctx context.Context, id string, update *transfer.ExperienceUpdate) (updated bool, err error) {
+func (r *ExperienceRepository) Update(ctx context.Context, id string, update *transfer.ExperienceUpdate) error {
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
 
   if nil != err {
-    slog.Error(err.Error())
-    return false, err
-  }
-
-  current, err := r.doGet(ctx, id, false)
-
-  if nil != err {
-    return false, err
-  }
-
-  if updatable := r.updatable(current, update); !updatable {
-    return false, nil
+    slog.Error(getErrMsg(err))
+    return err
   }
 
   updateExperienceQuery := `
   UPDATE "me"."experience"
-     SET "starts" = CASE WHEN $2::INTEGER = $3::INTEGER OR 0 = $2::INTEGER THEN $3::INTEGER ELSE $2::INTEGER END,
-         "ends" = CASE WHEN $4::INTEGER = $5::INTEGER OR 0 = $4::INTEGER THEN $5::INTEGER ELSE $4::INTEGER END,
-         "job_title" = coalesce (nullif ($6, ''), $7),
-         "company" = coalesce (nullif ($8, ''), $9),
-         "company_homepage" = coalesce (nullif ($16, ''), "company_homepage"),
-         "country" = coalesce (nullif ($10, ''), $11),
-         "summary" = coalesce (nullif ($12, ''), $13),
-         "active" = $14,
-         "hidden" = $15,
+     SET "date_start" = CASE WHEN $2 <> '' AND $2::DATE <> "date_start" THEN $2::DATE ELSE "date_start" END,
+         "date_end" = CASE WHEN $3 = '2006-01-02' THEN NULL
+                           WHEN $3 <> '' AND "date_end" IS NULL OR $3::DATE <> "date_end" THEN $3::DATE
+                           ELSE "date_end" END,
+         "job_title" = coalesce (nullif ($4, ''), "job_title"),
+         "company" = coalesce (nullif ($5, ''), "company"),
+         "company_homepage" = coalesce (nullif ($6, ''), "company_homepage"),
+         "country" = coalesce (nullif ($7, ''), "country"),
+         "summary" = coalesce (nullif ($8, ''), "summary"),
          "updated_at" = current_timestamp
    WHERE "uuid" = $1;`
 
@@ -250,40 +222,68 @@ func (r *ExperienceRepository) Update(ctx context.Context, id string, update *tr
 
   result, err := tx.ExecContext(ctx, updateExperienceQuery,
     id,
-    update.Starts, current.Starts,
-    update.Ends, current.Ends,
-    update.JobTitle, current.JobTitle,
-    update.Company, current.Company,
-    update.Country, current.Country,
-    update.Summary, current.Summary,
-    update.Active,
-    update.Hidden,
-    update.CompanyHomepage)
+    update.Starts,
+    update.Ends,
+    update.JobTitle,
+    update.Company,
+    update.CompanyHomepage,
+    update.Country,
+    update.Summary)
 
   if nil != err {
-    er := &pq.Error{}
-
-    if errors.As(err, &er) {
-      fmt.Printf("%#v\n", er)
-      return
-    }
-
-    slog.Error(err.Error())
-    return false, err
+    slog.Error(getErrMsg(err))
+    return err
   }
 
   affected, _ := result.RowsAffected()
 
   if 1 != affected {
-    return false, nil
+    return problem.NewNotFound(id, "experience")
   }
 
   if err = tx.Commit(); nil != err {
-    slog.Error(err.Error())
-    return false, err
+    slog.Error(getErrMsg(err))
+    return err
   }
 
-  return true, nil
+  return nil
+}
+
+func (r *ExperienceRepository) SetHidden(ctx context.Context, id string, hidden bool) error {
+  tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+
+  if nil != err {
+    slog.Error(getErrMsg(err))
+    return err
+  }
+
+  query := `
+  UPDATE "me"."experience"
+     SET "hidden" = $2,
+         "updated_at" = current_timestamp
+   WHERE "uuid" = $1;`
+
+  ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+  defer cancel()
+
+  result, err := tx.ExecContext(ctx, query, id, hidden)
+
+  if nil != err {
+    slog.Error(getErrMsg(err))
+    return err
+  }
+
+  affected, _ := result.RowsAffected()
+  if 1 != affected {
+    return problem.NewNotFound(id, "experience")
+  }
+
+  if err = tx.Commit(); nil != err {
+    slog.Error(getErrMsg(err))
+    return err
+  }
+
+  return nil
 }
 
 // Remove deletes an experience record by its UUID.
@@ -291,7 +291,7 @@ func (r *ExperienceRepository) Remove(ctx context.Context, id string) error {
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
 
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
 
@@ -307,7 +307,7 @@ func (r *ExperienceRepository) Remove(ctx context.Context, id string) error {
   result, err := tx.ExecContext(ctx, removeExperienceQuery, id)
 
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
 
@@ -318,7 +318,7 @@ func (r *ExperienceRepository) Remove(ctx context.Context, id string) error {
   }
 
   if err = tx.Commit(); nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
 

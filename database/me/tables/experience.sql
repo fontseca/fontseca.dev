@@ -1,8 +1,8 @@
 CREATE TABLE IF NOT EXISTS "me"."experience"
 (
   "uuid"             VARCHAR(36) PRIMARY KEY   DEFAULT "extensions"."uuid_generate_v4"(),
-  "starts"           SMALLINT         NOT NULL CHECK ( "starts" > 2017 ),
-  "ends"             SMALLINT                  DEFAULT NULL CHECK ("ends" > 2017 OR "ends" IS NULL),
+  "date_start"       DATE             NOT NULL CHECK ( "date_start" > '2017/01/01' ),
+  "date_end"         DATE                      DEFAULT NULL CHECK ("date_end" > '2017/01/01'),
   "job_title"        VARCHAR(64)      NOT NULL CHECK ("job_title" <> ''),
   "company"          VARCHAR(64)      NOT NULL CHECK ("company" <> ''),
   "company_homepage" VARCHAR(2048)             DEFAULT NULL CHECK ("company_homepage" <> ''),

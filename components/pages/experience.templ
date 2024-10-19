@@ -4,7 +4,6 @@ import (
   "fontseca.dev/model"
   "fontseca.dev/components/layout"
   "fontseca.dev/components/ui"
-  "strconv"
 )
 
 templ Experience(exp []*model.Experience) {
@@ -22,12 +21,17 @@ templ Experience(exp []*model.Experience) {
             }
             <span class="spot"></span>
             <div class="dates-container">
-              <p class="dates-text">{ strconv.Itoa(e.Starts) } —
+              <p class="dates-text">
+                <span class="starts">
+                  { e.Starts.Format("Jan 2006") }
+                </span>
+                <span class="ends has-phosphor-icon">
                 if nil != e.Ends {
-                { strconv.Itoa(*e.Ends) }
+                { e.Ends.Format("Jan 2006") }
                 } else {
                 { "Present" }
                 }
+                </span>
               </p>
             </div>
             <div class="content-container">
