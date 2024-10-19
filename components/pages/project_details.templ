@@ -20,9 +20,7 @@ templ ProjectDetails(project *model.Project) {
         <article class="info-article">
           <div class="info-container">
             <header>
-              <a href="/work">
-                <i class="fa fa-long-arrow-left" style="padding-right: .5rem"></i>Go back to work
-              </a>
+              <a href="/work" class="go-back-indicator">Go back to work</a>
               <h1 class="name">
                 { project.Name }
                 <a class="api-endpoint"
@@ -32,22 +30,39 @@ templ ProjectDetails(project *model.Project) {
                   <i class="fa fa-external-link"></i>
                 </a>
               </h1>
-              <p class="year-and-category">
-                <span class="year">Worked on by 2021</span>
-                <span class="category">
-                  <a href="about:blank">Gotlim</a>
-                </span>
+              <p class="dates has-phosphor-icon">
+                if nil != project.Starts {
+                  <span class="start-date">{ project.Starts.Format("Jan 2006") }</span>
+                  if nil != project.Ends {
+                    <span class="end-date has-phosphor-icon">{ project.Ends.Format("Jan 2006") }</span>
+                  }
+                } else {
+                  { "In progress" }
+                }
               </p>
-              if nil != project.Language {
-                <p class="language">Built in { *project.Language }</p>
+              if nil != project.Company {
+                <p class="company link-normal has-phosphor-icon">
+                  <span class="category">
+                    if nil != project.CompanyHomepage {
+                      <a class="link-normal" href={ templ.SafeURL(*project.CompanyHomepage) } target="_blank">{ *project.Company }</a>
+                    } else {
+                      { *project.Company }
+                    }
+                  </span>
+                </p>
               }
-              <p class="homepage">
+              if nil != project.Language {
+                <p class="language has-phosphor-icon">{ *project.Language }</p>
+              }
+              <p class="homepage has-phosphor-icon">
                 if "" != project.Homepage && "about:blank" != project.Homepage {
-                <a href={ templ.URL(project.Homepage) }
+                <a class="link-normal"
+                   href={ templ.URL(project.Homepage) }
                    target="_blank"
                    title="Go to project homepage.">{ project.Homepage }</a>
                 } else {
-                <a href="about:blank"
+                <a class="link-normal"
+                   href="about:blank"
                    target="_blank"
                    title="Go to project homepage.">about:blank</a>
                 }
@@ -103,10 +118,10 @@ templ ProjectDetails(project *model.Project) {
         </article>
         <section class="post-content-section post-content-receiver-container">
           <header class="post-header">
-            <button type="button" onclick="copyLinkToClipboard()">
-              <i class="fa fa-paperclip"></i>Copy link
+            <button class="link-copier has-phosphor-icon" type="button">
+              Copy link
             </button>
-            <p><i class="fa-regular fa-clock"></i>{ strconv.Itoa(project.ReadTime) } min</p>
+            <p><i class="ph ph-clock"></i>{ strconv.Itoa(project.ReadTime) } min</p>
           </header>
           <article class="content">
             {! templ.Raw(md2html(project.Content)) }

@@ -179,7 +179,7 @@ func main() {
 
   var (
     projectsRepository = repository.NewProjectsRepository(db)
-    projectsService    = service.NewProjectsService(projectsRepository)
+    projectsService    = service.NewProjectsService(projectsRepository, technologyTagService)
     projects           = handler.NewProjectsHandler(projectsService)
   )
 

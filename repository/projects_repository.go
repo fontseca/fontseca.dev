@@ -29,6 +29,10 @@ func (r *ProjectsRepository) List(ctx context.Context, archived bool) (projects 
             p."name",
             p."slug",
             p."homepage",
+            p."company",
+            p."company_homepage",
+            p."date_start",
+            p."date_end",
             p."language",
             p."summary",
             p."read_time",
@@ -56,7 +60,7 @@ func (r *ProjectsRepository) List(ctx context.Context, archived bool) (projects 
   defer cancel()
   rows, err := r.db.QueryContext(ctx, getProjectsQuery, archived)
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return nil, err
   }
   defer rows.Close()
@@ -71,6 +75,10 @@ func (r *ProjectsRepository) List(ctx context.Context, archived bool) (projects 
       &project.Name,
       &project.Slug,
       &project.Homepage,
+      &project.Company,
+      &project.CompanyHomepage,
+      &project.Starts,
+      &project.Ends,
       &project.Language,
       &project.Summary,
       &project.ReadTime,
@@ -87,7 +95,7 @@ func (r *ProjectsRepository) List(ctx context.Context, archived bool) (projects 
       &project.UpdatedAt,
       &tags)
     if nil != err {
-      slog.Error(err.Error())
+      slog.Error(getErrMsg(err))
       return nil, err
     }
     if nil != tags && "" != *tags {
@@ -98,12 +106,17 @@ func (r *ProjectsRepository) List(ctx context.Context, archived bool) (projects 
   return projects, nil
 }
 
-func (r *ProjectsRepository) doGet(ctx context.Context, id string, ignoreArchived bool) (project *model.Project, err error) {
+// Get retrieves a project type by its UUID.
+func (r *ProjectsRepository) Get(ctx context.Context, id string) (project *model.Project, err error) {
   var getProjectByIDQuery = `
      SELECT p."uuid",
             p."name",
             p."slug",
             p."homepage",
+            p."company",
+            p."company_homepage",
+            p."date_start",
+            p."date_end",
             p."language",
             p."summary",
             p."read_time",
@@ -125,7 +138,7 @@ func (r *ProjectsRepository) doGet(ctx context.Context, id string, ignoreArchive
   LEFT JOIN "projects"."tag" tt
          ON tt."uuid" = ptt."technology_tag_uuid"
       WHERE p."uuid" = $1
-        AND p."archived" = $2
+        AND p."archived" IS FALSE
    GROUP BY p."uuid";`
 
   ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
@@ -133,12 +146,16 @@ func (r *ProjectsRepository) doGet(ctx context.Context, id string, ignoreArchive
 
   project = new(model.Project)
   var tags *string
-  err = r.db.QueryRowContext(ctx, getProjectByIDQuery, id, ignoreArchived).
+  err = r.db.QueryRowContext(ctx, getProjectByIDQuery, id).
     Scan(
       &project.UUID,
       &project.Name,
       &project.Slug,
       &project.Homepage,
+      &project.Company,
+      &project.CompanyHomepage,
+      &project.Starts,
+      &project.Ends,
       &project.Language,
       &project.Summary,
       &project.ReadTime,
@@ -159,7 +176,7 @@ func (r *ProjectsRepository) doGet(ctx context.Context, id string, ignoreArchive
     if errors.Is(err, sql.ErrNoRows) {
       err = problem.NewNotFound(id, "project")
     } else {
-      slog.Error(err.Error())
+      slog.Error(getErrMsg(err))
     }
 
     return nil, err
@@ -172,11 +189,6 @@ func (r *ProjectsRepository) doGet(ctx context.Context, id string, ignoreArchive
   return project, nil
 }
 
-// Get retrieves a project type by its UUID.
-func (r *ProjectsRepository) Get(ctx context.Context, id string) (project *model.Project, err error) {
-  return r.doGet(ctx, id, false)
-}
-
 // GetBySlug retrieves a project type by its slug.
 func (r *ProjectsRepository) GetBySlug(ctx context.Context, slug string) (project *model.Project, err error) {
   var getProjectBySlugQuery = `
@@ -184,6 +196,10 @@ func (r *ProjectsRepository) GetBySlug(ctx context.Context, slug string) (projec
             p."name",
             p."slug",
             p."homepage",
+            p."company",
+            p."company_homepage",
+            p."date_start",
+            p."date_end",
             p."language",
             p."summary",
             p."read_time",
@@ -217,6 +233,10 @@ func (r *ProjectsRepository) GetBySlug(ctx context.Context, slug string) (projec
     &project.Name,
     &project.Slug,
     &project.Homepage,
+    &project.Company,
+    &project.CompanyHomepage,
+    &project.Starts,
+    &project.Ends,
     &project.Language,
     &project.Summary,
     &project.ReadTime,
@@ -236,7 +256,7 @@ func (r *ProjectsRepository) GetBySlug(ctx context.Context, slug string) (projec
     if errors.Is(err, sql.ErrNoRows) {
       err = problem.NewSlugNotFound(slug, "project")
     } else {
-      slog.Error(err.Error())
+      slog.Error(getErrMsg(err))
     }
     return nil, err
   }
@@ -250,7 +270,7 @@ func (r *ProjectsRepository) GetBySlug(ctx context.Context, slug string) (projec
 func (r *ProjectsRepository) Create(ctx context.Context, creation *transfer.ProjectCreation) (id string, err error) {
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return uuid.Nil.String(), err
   }
   defer tx.Rollback()
@@ -259,6 +279,10 @@ func (r *ProjectsRepository) Create(ctx context.Context, creation *transfer.Proj
                         ("name",
                          "slug",
                          "homepage",
+                         "company",
+                         "company_homepage",
+                         "date_start",
+                         "date_end",
                          "language",
                          "summary",
                          "read_time",
@@ -266,18 +290,24 @@ func (r *ProjectsRepository) Create(ctx context.Context, creation *transfer.Proj
                          "first_image_url",
                          "second_image_url",
                          "github_url",
-                         "collection_url")
+                         "collection_url",
+                         "archived")
                  VALUES ($1,
                          $2,
                          coalesce (nullif ($3, ''), 'about:blank'),
                          nullif ($4, ''),
-                         coalesce (nullif ($5, ''), 'no summary'),
-                         coalesce (nullif ($6, 0), 0),
-                         coalesce (nullif ($7, ''), 'no content'),
-                         coalesce (nullif ($8, ''), 'about:blank'),
-                         coalesce (nullif ($9, ''), 'about:blank'),
-                         coalesce (nullif ($10, ''), 'about:blank'),
-                         coalesce (nullif ($11, ''), 'about:blank'))
+                         nullif ($5, ''),
+                         nullif ($6, '')::DATE,
+                         nullif ($7, '')::DATE,
+                         nullif ($8, ''),
+                         coalesce (nullif ($9, ''), 'no summary'),
+                         coalesce (nullif ($10, 0), 0),
+                         coalesce (nullif ($11, ''), 'no content'),
+                         coalesce (nullif ($12, ''), 'about:blank'),
+                         coalesce (nullif ($13, ''), 'about:blank'),
+                         coalesce (nullif ($14, ''), 'about:blank'),
+                         coalesce (nullif ($15, ''), 'about:blank'),
+                         TRUE)
               RETURNING "uuid";`
   ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
   defer cancel()
@@ -285,6 +315,10 @@ func (r *ProjectsRepository) Create(ctx context.Context, creation *transfer.Proj
     creation.Name,
     creation.Slug,
     creation.Homepage,
+    creation.Company,
+    creation.CompanyHomepage,
+    creation.Starts,
+    creation.Ends,
     creation.Language,
     creation.Summary,
     creation.ReadTime,
@@ -295,11 +329,11 @@ func (r *ProjectsRepository) Create(ctx context.Context, creation *transfer.Proj
     creation.CollectionURL)
   err = row.Scan(&id)
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return uuid.Nil.String(), err
   }
   if err = tx.Commit(); nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return uuid.Nil.String(), err
   }
   return id, nil
@@ -307,7 +341,7 @@ func (r *ProjectsRepository) Create(ctx context.Context, creation *transfer.Proj
 
 // Exists checks whether a project exists in the database.
 // If it does, it returns nil; otherwise a not found error.
-func (r *ProjectsRepository) Exists(ctx context.Context, id string) (err error) {
+func (r *ProjectsRepository) Exists(ctx context.Context, id string) error {
   var query = `
   SELECT count (1)
     FROM projects."project"
@@ -316,9 +350,9 @@ func (r *ProjectsRepository) Exists(ctx context.Context, id string) (err error) 
   defer cancel()
   var row = r.db.QueryRowContext(ctx, query, id)
   var exists bool
-  err = row.Scan(&exists)
+  err := row.Scan(&exists)
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
   if !exists {
@@ -327,118 +361,108 @@ func (r *ProjectsRepository) Exists(ctx context.Context, id string) (err error) 
   return nil
 }
 
-func (r *ProjectsRepository) nothingToUpdate(current *model.Project, update *transfer.ProjectUpdate) bool {
-  return ("" == update.Name || update.Name == current.Name) &&
-    ("" == update.Slug || update.Slug == current.Slug) &&
-    ("" == update.Homepage || update.Homepage == current.Homepage) &&
-    ("" == update.Language || nil != current.Language && update.Language == *current.Language) &&
-    ("" == update.Summary || update.Summary == current.Summary) &&
-    (0 == update.ReadTime || update.ReadTime == current.ReadTime) &&
-    ("" == update.Content || update.Content == current.Content) &&
-    ("" == update.FirstImageURL || update.FirstImageURL == current.FirstImageURL) &&
-    ("" == update.SecondImageURL || update.SecondImageURL == current.SecondImageURL) &&
-    ("" == update.GitHubURL || update.GitHubURL == current.GitHubURL) &&
-    ("" == update.CollectionURL || update.CollectionURL == current.CollectionURL) &&
-    ("" == update.PlaygroundURL || update.PlaygroundURL == current.PlaygroundURL) &&
-    (update.Archived == current.Archived) &&
-    (update.Finished == current.Finished)
-}
-
-func (r *ProjectsRepository) doUpdate(ctx context.Context, id string, update *transfer.ProjectUpdate, ignoreArchived bool) (updated bool, err error) {
+// Update modifies an existing project record with the provided update data.
+func (r *ProjectsRepository) Update(ctx context.Context, id string, update *transfer.ProjectUpdate) error {
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
   if nil != err {
-    slog.Error(err.Error())
-    return false, err
+    slog.Error(getErrMsg(err))
+    return err
   }
   defer tx.Rollback()
-  current, err := r.doGet(ctx, id, ignoreArchived)
-  if nil != err {
-    return false, err
-  }
-  if r.nothingToUpdate(current, update) {
-    return false, nil
-  }
   var updateProjectQuery = `
   UPDATE "projects"."project"
-     SET "name" = coalesce (nullif ($1, ''), $2),
-         "slug" = coalesce (nullif ($3, ''), $4),
-         "homepage" = coalesce (nullif ($5, ''), $6),
-         "language" = coalesce (nullif ($7, ''), $8),
-         "summary" = coalesce (nullif ($9, ''), $10),
-         "read_time" = CASE WHEN $11::INTEGER = $12::INTEGER OR 0 = $11::INTEGER
-                            THEN $12::INTEGER
-                            ELSE $11::INTEGER
-                            END,
-         "content" = coalesce (nullif ($13, ''), $14),
-         "first_image_url" = coalesce (nullif ($15, ''), $16),
-         "second_image_url" = coalesce (nullif ($17, ''), $18),
-         "github_url" = coalesce (nullif ($19, ''), $20),
-         "collection_url" = coalesce (nullif ($21, ''), $22),
-         "playground_url" = coalesce (nullif ($23, ''), $24),
-         "playable" = $25,
-         "archived" = $26,
-         "finished" = $27,
+     SET "name" = coalesce (nullif ($2, ''), "name"),
+         "slug" = coalesce (nullif ($3, ''), "slug"),
+         "homepage" = coalesce (nullif ($4, ''), "homepage"),
+         "language" = coalesce (nullif ($5, ''), "language"),
+         "summary" = coalesce (nullif ($6, ''), "summary"),
+         "read_time" = CASE WHEN $7 = "read_time" OR 0 >= $7 THEN "read_time" ELSE $7 END,
+         "content" = coalesce (nullif ($8, ''), "content"),
+         "first_image_url" = coalesce (nullif ($9, ''), "first_image_url"),
+         "second_image_url" = coalesce (nullif ($10, ''), "second_image_url"),
+         "github_url" = coalesce (nullif ($11, ''), "github_url"),
+         "collection_url" = coalesce (nullif ($12, ''), "collection_url"),
+         "playground_url" = coalesce (nullif ($13, ''), "playground_url"),
+         "playable" = CASE WHEN $13 <> '' AND $13 = 'about:blank' AND "playable" THEN FALSE
+                           WHEN $13 <> '' AND $13 <> 'about:blank' THEN TRUE
+                           ELSE "playable" END,
+         "company" = coalesce (nullif ($14, ''), "company"),
+         "company_homepage" = coalesce (nullif ($15, ''), "company_homepage"),
+         "date_start" = coalesce (nullif ($16, '')::DATE, "date_start"),
+         "date_end" = coalesce (nullif ($17, '')::DATE, "date_end"),
          "updated_at" = current_timestamp
-   WHERE "uuid" = $28;`
-  var playable = current.Playable
-  if "" != update.PlaygroundURL {
-    var wantsToDefaultPlaygroundURL = "about:blank" == update.PlaygroundURL
-    var notSamePlaygroundURLs = update.PlaygroundURL != current.PlaygroundURL
-    if playable && wantsToDefaultPlaygroundURL && notSamePlaygroundURLs {
-      playable = false
-    } else if !playable && notSamePlaygroundURLs {
-      playable = true
-    }
-  }
-  ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+   WHERE "uuid" = $1;`
+  ctx, cancel := context.WithTimeout(ctx, 5*time.Hour)
   defer cancel()
   result, err := tx.ExecContext(ctx, updateProjectQuery,
-    update.Name, current.Name,
-    update.Slug, current.Slug,
-    update.Homepage, current.Homepage,
-    update.Language, current.Language,
-    update.Summary, current.Summary,
-    update.ReadTime, current.ReadTime,
-    update.Content, current.Content,
-    update.FirstImageURL, current.FirstImageURL,
-    update.SecondImageURL, current.SecondImageURL,
-    update.GitHubURL, current.GitHubURL,
-    update.CollectionURL, current.CollectionURL,
-    update.PlaygroundURL, current.PlaygroundURL,
-    playable,
-    update.Archived,
-    update.Finished,
-    id)
+    id,
+    update.Name,
+    update.Slug,
+    update.Homepage,
+    update.Language,
+    update.Summary,
+    update.ReadTime,
+    update.Content,
+    update.FirstImageURL,
+    update.SecondImageURL,
+    update.GitHubURL,
+    update.CollectionURL,
+    update.PlaygroundURL,
+    update.Company,
+    update.CompanyHomepage,
+    update.Starts,
+    update.Ends)
   if nil != err {
-    slog.Error(err.Error())
-    return false, err
+    slog.Error(getErrMsg(err))
+    return err
   }
   var affected, _ = result.RowsAffected()
   if 1 != affected {
-    return false, nil
+    return problem.NewNotFound(id, "project")
   }
   if err = tx.Commit(); nil != err {
-    slog.Error(err.Error())
-    return false, err
+    slog.Error(getErrMsg(err))
+    return err
   }
-  return true, nil
+  return nil
 }
 
-// Update modifies an existing project record with the provided update data.
-func (r *ProjectsRepository) Update(ctx context.Context, id string, update *transfer.ProjectUpdate) (updated bool, err error) {
-  return r.doUpdate(ctx, id, update, false)
-}
-
-// Unarchive makes a project not archived so that it can be normally listed.
-func (r *ProjectsRepository) Unarchive(ctx context.Context, id string) (updated bool, err error) {
-  return r.doUpdate(ctx, id, &transfer.ProjectUpdate{Archived: false}, true)
+// SetArchived makes a project archived or unarchived. If the project is archived it cannot be normally listed.
+func (r *ProjectsRepository) SetArchived(ctx context.Context, id string, archive bool) error {
+  tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+  if nil != err {
+    slog.Error(getErrMsg(err))
+    return err
+  }
+  defer tx.Rollback()
+  var query = `
+  UPDATE "projects"."project"
+     SET "archived" = $2,
+         "updated_at" = current_timestamp
+   WHERE "uuid" = $1;`
+  ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+  defer cancel()
+  result, err := tx.ExecContext(ctx, query, id, archive)
+  if nil != err {
+    slog.Error(getErrMsg(err))
+    return err
+  }
+  var affected, _ = result.RowsAffected()
+  if 1 != affected {
+    return nil
+  }
+  if err = tx.Commit(); nil != err {
+    slog.Error(getErrMsg(err))
+    return err
+  }
+  return nil
 }
 
 // Remove deletes an existing project type. If not found, returns a not found error.
-func (r *ProjectsRepository) Remove(ctx context.Context, id string) (err error) {
+func (r *ProjectsRepository) Remove(ctx context.Context, id string) error {
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
   defer tx.Rollback()
@@ -452,7 +476,7 @@ func (r *ProjectsRepository) Remove(ctx context.Context, id string) (err error) 
   defer cancel()
   _, err = tx.ExecContext(ctx, query, id)
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
 
@@ -466,7 +490,7 @@ func (r *ProjectsRepository) Remove(ctx context.Context, id string) (err error) 
 
   result, err := tx.ExecContext(ctx, query, id)
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
 
@@ -476,7 +500,7 @@ func (r *ProjectsRepository) Remove(ctx context.Context, id string) (err error) 
   }
 
   if err = tx.Commit(); nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
 
@@ -492,18 +516,18 @@ func (r *ProjectsRepository) HasTag(ctx context.Context, projectID, technologyTa
      AND ptt."technology_tag_uuid" = $2;`
   err = r.db.QueryRowContext(ctx, hasTechTagQuery, projectID, technologyTagID).Scan(&success)
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return false, err
   }
   return success, nil
 }
 
 // AddTag adds an existing technology tag that will belong to the project represented by projectID .
-func (r *ProjectsRepository) AddTag(ctx context.Context, projectID, technologyTagID string) (added bool, err error) {
+func (r *ProjectsRepository) AddTag(ctx context.Context, projectID, technologyTagID string) error {
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
   if nil != err {
-    slog.Error(err.Error())
-    return false, err
+    slog.Error(getErrMsg(err))
+    return err
   }
   defer tx.Rollback()
   var addTechTagQuery = `
@@ -516,25 +540,26 @@ func (r *ProjectsRepository) AddTag(ctx context.Context, projectID, technologyTa
 
   result, err := tx.ExecContext(ctx, addTechTagQuery, projectID, technologyTagID)
   if nil != err {
-    slog.Error(err.Error())
-    return false, err
+    slog.Error(getErrMsg(err))
+    return err
   }
   affected, _ := result.RowsAffected()
   if 1 != affected {
-    return false, nil
+    return nil
   }
   if err = tx.Commit(); nil != err {
-    return false, err
+    slog.Error(getErrMsg(err))
+    return err
   }
-  return true, nil
+  return nil
 }
 
 // RemoveTag removes a technology tag that belongs to the project represented by projectID.
-func (r *ProjectsRepository) RemoveTag(ctx context.Context, projectID, technologyTagID string) (removed bool, err error) {
+func (r *ProjectsRepository) RemoveTag(ctx context.Context, projectID, technologyTagID string) error {
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
   if nil != err {
-    slog.Error(err.Error())
-    return false, err
+    slog.Error(getErrMsg(err))
+    return err
   }
   defer tx.Rollback()
   var removeTechTagQuery = `
@@ -543,17 +568,14 @@ func (r *ProjectsRepository) RemoveTag(ctx context.Context, projectID, technolog
           AND "technology_tag_uuid" = $2;`
   ctx, cancel := context.WithTimeout(ctx, time.Second)
   defer cancel()
-  result, err := tx.ExecContext(ctx, removeTechTagQuery, projectID, technologyTagID)
+  _, err = tx.ExecContext(ctx, removeTechTagQuery, projectID, technologyTagID)
   if nil != err {
-    slog.Error(err.Error())
-    return false, err
-  }
-  affected, _ := result.RowsAffected()
-  if 1 != affected {
-    return false, nil
+    slog.Error(getErrMsg(err))
+    return err
   }
   if err = tx.Commit(); nil != err {
-    return false, err
+    slog.Error(getErrMsg(err))
+    return err
   }
-  return true, nil
+  return nil
 }

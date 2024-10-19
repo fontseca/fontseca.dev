@@ -14,13 +14,11 @@ type projectsServiceAPI interface {
   Get(ctx context.Context, projectID string) (*model.Project, error)
   GetBySlug(ctx context.Context, projectID string) (*model.Project, error)
   Create(ctx context.Context, creation *transfer.ProjectCreation) (string, error)
-  Exists(ctx context.Context, projectID string) error
-  Update(ctx context.Context, projectID string, update *transfer.ProjectUpdate) (bool, error)
-  Unarchive(ctx context.Context, projectID string) (bool, error)
+  Update(ctx context.Context, projectID string, update *transfer.ProjectUpdate) error
+  Unarchive(ctx context.Context, projectID string) error
   Remove(ctx context.Context, projectID string) error
-  HasTag(ctx context.Context, projectID, tagID string) (bool, error)
-  AddTag(ctx context.Context, projectID, tagID string) (bool, error)
-  RemoveTag(ctx context.Context, projectID, tagID string) (bool, error)
+  AddTag(ctx context.Context, projectID, tagID string) error
+  RemoveTag(ctx context.Context, projectID, tagID string) error
 }
 
 type ProjectsHandler struct {
@@ -86,15 +84,11 @@ func (h *ProjectsHandler) Set(c *gin.Context) {
   if err := validateStruct(&update); check(err, c.Writer) {
     return
   }
-  var updated, err = h.s.Update(c, id, &update)
+  var err = h.s.Update(c, id, &update)
   if check(err, c.Writer) {
     return
   }
-  if updated {
-    c.Status(http.StatusNoContent)
-  } else {
-    c.Redirect(http.StatusSeeOther, "/me.projects.get?id="+id)
-  }
+  c.Status(http.StatusNoContent)
 }
 
 func (h *ProjectsHandler) Archive(c *gin.Context) {
@@ -103,7 +97,7 @@ func (h *ProjectsHandler) Archive(c *gin.Context) {
     problem.NewMissingParameter("project_uuid").Emit(c.Writer)
     return
   }
-  _, err := h.s.Update(c, id, &transfer.ProjectUpdate{Archived: true})
+  err := h.s.Update(c, id, &transfer.ProjectUpdate{Archived: true})
   if check(err, c.Writer) {
     return
   }
@@ -116,15 +110,11 @@ func (h *ProjectsHandler) Unarchive(c *gin.Context) {
     problem.NewMissingParameter("project_uuid").Emit(c.Writer)
     return
   }
-  var unarchived, err = h.s.Unarchive(c, id)
+  var err = h.s.Unarchive(c, id)
   if check(err, c.Writer) {
     return
   }
-  if unarchived {
-    c.Status(http.StatusNoContent)
-  } else {
-    c.Redirect(http.StatusSeeOther, "/me.projects.get?id="+id)
-  }
+  c.Status(http.StatusNoContent)
 }
 
 func (h *ProjectsHandler) Finish(c *gin.Context) {
@@ -133,15 +123,11 @@ func (h *ProjectsHandler) Finish(c *gin.Context) {
     problem.NewMissingParameter("project_uuid").Emit(c.Writer)
     return
   }
-  var updated, err = h.s.Update(c, id, &transfer.ProjectUpdate{Finished: true})
+  var err = h.s.Update(c, id, &transfer.ProjectUpdate{Finished: true})
   if check(err, c.Writer) {
     return
   }
-  if updated {
-    c.Status(http.StatusNoContent)
-  } else {
-    c.Redirect(http.StatusSeeOther, "/me.projects.get?id="+id)
-  }
+  c.Status(http.StatusNoContent)
 }
 
 func (h *ProjectsHandler) Unfinish(c *gin.Context) {
@@ -150,15 +136,11 @@ func (h *ProjectsHandler) Unfinish(c *gin.Context) {
     problem.NewMissingParameter("project_uuid").Emit(c.Writer)
     return
   }
-  var updated, err = h.s.Update(c, id, &transfer.ProjectUpdate{Finished: false})
+  var err = h.s.Update(c, id, &transfer.ProjectUpdate{Finished: false})
   if check(err, c.Writer) {
     return
   }
-  if updated {
-    c.Status(http.StatusNoContent)
-  } else {
-    c.Redirect(http.StatusSeeOther, "/me.projects.get?id="+id)
-  }
+  c.Status(http.StatusNoContent)
 }
 
 func (h *ProjectsHandler) getIDAndURLParameters(c *gin.Context) (id string, url string, ok bool) {
@@ -176,15 +158,11 @@ func (h *ProjectsHandler) getIDAndURLParameters(c *gin.Context) (id string, url 
 }
 
 func (h *ProjectsHandler) setURL(c *gin.Context, id string, update *transfer.ProjectUpdate) {
-  var updated, err = h.s.Update(c, id, update)
+  var err = h.s.Update(c, id, update)
   if check(err, c.Writer) {
     return
   }
-  if updated {
-    c.Status(http.StatusNoContent)
-  } else {
-    c.Status(http.StatusConflict)
-  }
+  c.Status(http.StatusNoContent)
 }
 
 func (h *ProjectsHandler) SetPlaygroundURL(c *gin.Context) {
@@ -251,15 +229,11 @@ func (h *ProjectsHandler) AddTag(c *gin.Context) {
     problem.NewMissingParameter("technology_id").Emit(c.Writer)
     return
   }
-  var added, err = h.s.AddTag(c, projectID, technologyTagID)
+  var err = h.s.AddTag(c, projectID, technologyTagID)
   if check(err, c.Writer) {
     return
   }
-  if added {
-    c.Status(http.StatusNoContent)
-  } else {
-    c.Status(http.StatusConflict)
-  }
+  c.Status(http.StatusNoContent)
 }
 
 func (h *ProjectsHandler) RemoveTag(c *gin.Context) {
@@ -273,13 +247,9 @@ func (h *ProjectsHandler) RemoveTag(c *gin.Context) {
     problem.NewMissingParameter("technology_id").Emit(c.Writer)
     return
   }
-  var removed, err = h.s.RemoveTag(c, projectID, technologyTagID)
+  var err = h.s.RemoveTag(c, projectID, technologyTagID)
   if check(err, c.Writer) {
     return
   }
-  if removed {
-    c.Status(http.StatusNoContent)
-  } else {
-    c.Status(http.StatusConflict)
-  }
+  c.Status(http.StatusNoContent)
 }

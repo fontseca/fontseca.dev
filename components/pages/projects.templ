@@ -18,16 +18,34 @@ templ Projects(projects []*model.Project) {
             <article class="project-tile">
               <div class="content-container">
                 <p class="name">{ project.Name }</p>
-                if nil != project.Language {
-                  <p class="language">Built in { *project.Language }</p>
+                <p class="dates has-phosphor-icon">
+                  if nil != project.Starts {
+                    <span class="start-date">{ project.Starts.Format("Jan 2006") }</span>
+                    if nil != project.Ends {
+                      <span class="end-date has-phosphor-icon">{ project.Ends.Format("Jan 2006") }</span>
+                    }
+                  } else {
+                    { "In progress" }
+                  }
+                </p>
+                if nil != project.Company {
+                  <p class="company has-phosphor-icon">
+                    if nil != project.CompanyHomepage {
+                      <a class="link-normal" href={ templ.SafeURL(*project.CompanyHomepage) } target="_blank">{ *project.Company }</a>
+                    } else {
+                      { *project.Company }
+                    }
+                  </p>
                 }
-                <p class="homepage">
+                <p class="homepage has-phosphor-icon">
                   if "" != project.Homepage && "about:blank" != project.Homepage {
-                    <a href={ templ.URL(project.Homepage) }
+                    <a class="link-normal"
+                       href={ templ.URL(project.Homepage) }
                        target="_blank"
                        title="Go to project homepage.">{ project.Homepage }</a>
                   } else {
-                  <a href="about:blank"
+                  <a class="link-normal"
+                     href="about:blank"
                      target="_blank"
                      title="Go to project homepage.">about:blank</a>
                   }

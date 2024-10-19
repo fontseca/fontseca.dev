@@ -35,7 +35,7 @@ func (mock *projectsServiceMockAPI) List(_ context.Context, b ...bool) ([]*model
   return mock.returns[0].([]*model.Project), mock.errors
 }
 
-func TestProjectsHandler_Get(t *testing.T) {
+func TestProjectsHandler_List(t *testing.T) {
   const method = http.MethodGet
   const target = "/me.projects.list"
 
@@ -52,7 +52,7 @@ func TestProjectsHandler_Get(t *testing.T) {
   })
 }
 
-func TestProjectsHandler_GetArchived(t *testing.T) {
+func TestProjectsHandler_ListArchived(t *testing.T) {
   const method = http.MethodGet
   const target = "/me.projects.hidden.list"
 
@@ -200,7 +200,7 @@ func TestProjectsHandler_Add(t *testing.T) {
   })
 }
 
-func (mock *projectsServiceMockAPI) Update(_ context.Context, id string, t *transfer.ProjectUpdate) (bool, error) {
+func (mock *projectsServiceMockAPI) Update(_ context.Context, id string, t *transfer.ProjectUpdate) error {
   mock.called = true
 
   if nil != mock.t {
@@ -208,7 +208,7 @@ func (mock *projectsServiceMockAPI) Update(_ context.Context, id string, t *tran
     require.Equal(mock.t, mock.arguments[2], t)
   }
 
-  return mock.returns[0].(bool), mock.errors
+  return mock.errors
 }
 
 func TestProjectsHandler_Set(t *testing.T) {
@@ -270,7 +270,7 @@ func TestProjectsHandler_Set(t *testing.T) {
     engine.POST(target, NewProjectsHandler(s).Set)
     var recorder = httptest.NewRecorder()
     engine.ServeHTTP(recorder, request)
-    assert.Equal(t, http.StatusSeeOther, recorder.Code)
+    assert.Equal(t, http.StatusNoContent, recorder.Code)
     assert.Empty(t, recorder.Body.String())
   })
 
@@ -372,14 +372,14 @@ func TestProjectsHandler_Archive(t *testing.T) {
   })
 }
 
-func (mock *projectsServiceMockAPI) Unarchive(_ context.Context, id string) (bool, error) {
+func (mock *projectsServiceMockAPI) Unarchive(_ context.Context, id string) error {
   mock.called = true
 
   if nil != mock.t {
     require.Equal(mock.t, mock.arguments[1], id)
   }
 
-  return mock.returns[0].(bool), mock.errors
+  return mock.errors
 }
 
 func TestProjectsHandler_Unarchive(t *testing.T) {
@@ -429,7 +429,7 @@ func TestProjectsHandler_Unarchive(t *testing.T) {
     engine.POST(target, NewProjectsHandler(s).Unarchive)
     var recorder = httptest.NewRecorder()
     engine.ServeHTTP(recorder, request)
-    assert.Equal(t, http.StatusSeeOther, recorder.Code)
+    assert.Equal(t, http.StatusNoContent, recorder.Code)
     assert.Empty(t, recorder.Body.String())
   })
 
@@ -578,7 +578,7 @@ func TestProjectsHandler_Unfinish(t *testing.T) {
     engine.POST(target, NewProjectsHandler(s).Unfinish)
     var recorder = httptest.NewRecorder()
     engine.ServeHTTP(recorder, request)
-    assert.Equal(t, http.StatusSeeOther, recorder.Code)
+    assert.Equal(t, http.StatusNoContent, recorder.Code)
     assert.Empty(t, recorder.Body.String())
   })
 
@@ -666,21 +666,6 @@ func TestProjectsHandler_SetPlaygroundURL(t *testing.T) {
     assert.Contains(t, recorder.Body.String(), "Expected problem detail.")
   })
 
-  t.Run("failed update without error: conflicts with current resource state", func(t *testing.T) {
-    var s = &projectsServiceMockAPI{
-      t:         t,
-      arguments: []any{context.Background(), id, update},
-      returns:   []any{false},
-      errors:    nil,
-    }
-    var engine = gin.Default()
-    engine.POST(target, NewProjectsHandler(s).SetPlaygroundURL)
-    var recorder = httptest.NewRecorder()
-    engine.ServeHTTP(recorder, request)
-    assert.Equal(t, http.StatusConflict, recorder.Code)
-    assert.Empty(t, recorder.Body.String())
-  })
-
   t.Run("unexpected error", func(t *testing.T) {
     var unexpected = errors.New("unexpected error")
     var s = &projectsServiceMockAPI{
@@ -747,21 +732,6 @@ func TestProjectsHandler_SetFirstImageURL(t *testing.T) {
     engine.ServeHTTP(recorder, request)
     assert.Equal(t, http.StatusGone, recorder.Code)
     assert.Contains(t, recorder.Body.String(), "Expected problem detail.")
-  })
-
-  t.Run("failed update without error: conflicts with current resource state", func(t *testing.T) {
-    var s = &projectsServiceMockAPI{
-      t:         t,
-      arguments: []any{context.Background(), id, update},
-      returns:   []any{false},
-      errors:    nil,
-    }
-    var engine = gin.Default()
-    engine.POST(target, NewProjectsHandler(s).SetFirstImageURL)
-    var recorder = httptest.NewRecorder()
-    engine.ServeHTTP(recorder, request)
-    assert.Equal(t, http.StatusConflict, recorder.Code)
-    assert.Empty(t, recorder.Body.String())
   })
 
   t.Run("unexpected error", func(t *testing.T) {
@@ -832,21 +802,6 @@ func TestProjectsHandler_SetSecondImageURL(t *testing.T) {
     assert.Contains(t, recorder.Body.String(), "Expected problem detail.")
   })
 
-  t.Run("failed update without error: conflicts with current resource state", func(t *testing.T) {
-    var s = &projectsServiceMockAPI{
-      t:         t,
-      arguments: []any{context.Background(), id, update},
-      returns:   []any{false},
-      errors:    nil,
-    }
-    var engine = gin.Default()
-    engine.POST(target, NewProjectsHandler(s).SetSecondImageURL)
-    var recorder = httptest.NewRecorder()
-    engine.ServeHTTP(recorder, request)
-    assert.Equal(t, http.StatusConflict, recorder.Code)
-    assert.Empty(t, recorder.Body.String())
-  })
-
   t.Run("unexpected error", func(t *testing.T) {
     var unexpected = errors.New("unexpected error")
     var s = &projectsServiceMockAPI{
@@ -915,21 +870,6 @@ func TestProjectsHandler_SetGitHubURL(t *testing.T) {
     assert.Contains(t, recorder.Body.String(), "Expected problem detail.")
   })
 
-  t.Run("failed update without error: conflicts with current resource state", func(t *testing.T) {
-    var s = &projectsServiceMockAPI{
-      t:         t,
-      arguments: []any{context.Background(), id, update},
-      returns:   []any{false},
-      errors:    nil,
-    }
-    var engine = gin.Default()
-    engine.POST(target, NewProjectsHandler(s).SetGitHubURL)
-    var recorder = httptest.NewRecorder()
-    engine.ServeHTTP(recorder, request)
-    assert.Equal(t, http.StatusConflict, recorder.Code)
-    assert.Empty(t, recorder.Body.String())
-  })
-
   t.Run("unexpected error", func(t *testing.T) {
     var unexpected = errors.New("unexpected error")
     var s = &projectsServiceMockAPI{
@@ -996,21 +936,6 @@ func TestProjectsHandler_SetCollectionURL(t *testing.T) {
     engine.ServeHTTP(recorder, request)
     assert.Equal(t, http.StatusGone, recorder.Code)
     assert.Contains(t, recorder.Body.String(), "Expected problem detail.")
-  })
-
-  t.Run("failed update without error: conflicts with current resource state", func(t *testing.T) {
-    var s = &projectsServiceMockAPI{
-      t:         t,
-      arguments: []any{context.Background(), id, update},
-      returns:   []any{false},
-      errors:    nil,
-    }
-    var engine = gin.Default()
-    engine.POST(target, NewProjectsHandler(s).SetCollectionURL)
-    var recorder = httptest.NewRecorder()
-    engine.ServeHTTP(recorder, request)
-    assert.Equal(t, http.StatusConflict, recorder.Code)
-    assert.Empty(t, recorder.Body.String())
   })
 
   t.Run("unexpected error", func(t *testing.T) {
@@ -1102,7 +1027,7 @@ func TestProjectsHandler_Remove(t *testing.T) {
   })
 }
 
-func (mock *projectsServiceMockAPI) AddTag(_ context.Context, id1 string, id2 string) (bool, error) {
+func (mock *projectsServiceMockAPI) AddTag(_ context.Context, id1 string, id2 string) error {
   mock.called = true
 
   if nil != mock.t {
@@ -1110,7 +1035,7 @@ func (mock *projectsServiceMockAPI) AddTag(_ context.Context, id1 string, id2 st
     require.Equal(mock.t, mock.arguments[2], id2)
   }
 
-  return mock.returns[0].(bool), mock.errors
+  return mock.errors
 }
 
 func TestProjectsHandler_AddTechnologyTag(t *testing.T) {
@@ -1192,7 +1117,7 @@ func TestProjectsHandler_AddTechnologyTag(t *testing.T) {
   })
 }
 
-func (mock *projectsServiceMockAPI) RemoveTag(_ context.Context, id1 string, id2 string) (bool, error) {
+func (mock *projectsServiceMockAPI) RemoveTag(_ context.Context, id1 string, id2 string) error {
   mock.called = true
 
   if nil != mock.t {
@@ -1200,7 +1125,7 @@ func (mock *projectsServiceMockAPI) RemoveTag(_ context.Context, id1 string, id2
     require.Equal(mock.t, mock.arguments[2], id2)
   }
 
-  return mock.returns[0].(bool), mock.errors
+  return mock.errors
 }
 
 func TestProjectsHandler_RemoveTechnologyTag(t *testing.T) {

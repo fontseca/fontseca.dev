@@ -702,15 +702,9 @@ button.link-copier.copied::before {
 
 .project-tile .content-container .name {
   width: calc(100% - 170px - .5rem);
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 800;
-  margin-bottom: .8rem;
-}
-
-.project-tile .content-container .language,
-.project-tile .content-container .homepage {
-  font-weight: 500;
-  margin-top: .4rem;
+  margin-bottom: 1rem;
 }
 
 .project-tile .content-container .homepage {
@@ -719,6 +713,13 @@ button.link-copier.copied::before {
   width: 100%;
   display: block;
   overflow: hidden;
+}
+
+.project-tile .content-container .dates,
+.project-tile .content-container .company,
+.project-tile .content-container .language,
+.project-tile .content-container .homepage {
+  margin-bottom: .3rem;
 }
 
 .project-tile .content-container .summary {
@@ -946,9 +947,45 @@ button.link-copier.copied::before {
   color: black;
 }
 
-.project-detail .info-article .info-container .year-and-category,
-.project-detail .info-article .info-container .language {
+.project-detail .info-article .info-container .dates,
+.project-detail .info-article .info-container .company,
+.project-detail .info-article .info-container .language,
+.project-detail .info-article .info-container .homepage {
   margin-bottom: .5rem;
+}
+
+
+.project-tile .content-container .dates::before,
+.project-detail .info-article .info-container .dates::before {
+  content: "\E7B4";
+}
+
+.project-tile .content-container .dates .end-date,
+.project-detail .info-article .info-container .dates .end-date {
+  position: relative;
+  padding-left: 1.3rem;
+}
+
+.project-tile .content-container .dates .end-date::before,
+.project-detail .info-article .info-container .dates .end-date::before {
+  content: "\E32A";
+}
+
+.experience-list-tile .content-container .company::before,
+.project-tile .content-container .company::before,
+.project-detail .info-article .info-container .company::before {
+  content: "\E5B0";
+}
+
+.project-detail .info-article .info-container .language::before {
+  font-family: "Phosphor-Bold" !important;
+  content: "\E860";
+  font-weight: 600;
+}
+
+.project-tile .content-container .homepage::before,
+.project-detail .info-article .info-container .homepage::before {
+  content: "\E288";
 }
 
 .project-detail .info-article .info-container .homepage {
@@ -957,17 +994,14 @@ button.link-copier.copied::before {
   overflow: hidden;
 }
 
-.project-detail .info-article .info-container .category:before {
-  content: "—";
-  position: relative;
-  padding-left: .3rem;
-  padding-right: .3rem;
+.project-detail .info-article .info-container .category {
+  font-weight: bolder;
 }
 
 .project-detail .info-article .info-container .summary {
   font-family: 'Source Serif 4', sans-serif;
   font-size: 17px;
-  padding-top: 1rem;
+  padding-top: .6rem;
 }
 
 .project-detail .info-article .info-container .tags-and-playground-container {
