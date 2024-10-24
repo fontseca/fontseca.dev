@@ -29,7 +29,7 @@ templ Article(article *model.Article) {
                 }
               </span>
               <span style="font-weight: 500;">
-                  if nil != article.Topic {
+                  if nil != article.Topic && nil != article.PublishedAt {
                     <time>
                       <a style="font-weight: 500;"
                          href={ templ.SafeURL(fmt.Sprint("/archive/any/", article.PublishedAt.Year(), "/", int(article.PublishedAt.Month()))) }>
