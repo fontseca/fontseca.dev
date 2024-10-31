@@ -115,6 +115,15 @@ func main() {
     Output:    serverLogFile,
   }))
 
+  engine.Use(func(c *gin.Context) {
+    if http.MethodPost == c.Request.Method &&
+      !(strings.Contains(c.ContentType(), "application/x-www-form-urlencoded") ||
+        strings.Contains(c.ContentType(), "multipart/form-data")) {
+      c.Header("Accept-Post", "application/x-www-form-urlencoded; charset=UTF-8")
+      c.AbortWithStatus(http.StatusUnsupportedMediaType)
+    }
+  })
+
   engine.Static("/public", "public")
   engine.Static("/playground", "playground")
   engine.StaticFile("/favicon.ico", "public/icons/favicon.ico")
@@ -290,7 +299,10 @@ func main() {
   engine.GET("/archive/:topic/:year/:month/:slug", web.RenderArticle)
   engine.GET("/archive/sharing/:hash", web.RenderArticle)
   engine.POST("/playground.request", func(c *gin.Context) { playground.Scanner(c.Writer, c.Request) })
-  engine.GET("/playground", func(c *gin.Context) { playground.Renderer(c.Writer, c.Request) })
+
+  playgroundRenderer := func(c *gin.Context) { playground.Renderer(c.Writer, c.Request) }
+  engine.GET("/playground", playgroundRenderer)
+  engine.POST("/playground", playgroundRenderer)
 
   engine.NoRoute(func(c *gin.Context) {
     http.Error(c.Writer, "404 Not Found", http.StatusNotFound)
@@ -299,11 +311,6 @@ func main() {
   engine.HandleMethodNotAllowed = true
   var routes = engine.Routes()
   engine.NoMethod(func(c *gin.Context) {
-    if "Bearer" != strings.Split(strings.TrimSpace(c.GetHeader("Authorization")), " ")[0] {
-      http.Error(c.Writer, "404 Not Found", http.StatusNotFound)
-      return
-    }
-
     var allowedMethods = make([]string, 0, 1)
     for _, route := range routes {
       if route.Path == c.Request.URL.Path {
@@ -312,7 +319,7 @@ func main() {
     }
 
     c.Header("Allow", strings.Join(allowedMethods, ","))
-    http.Error(c.Writer, "405 Not Allowed", http.StatusMethodNotAllowed)
+    c.AbortWithStatus(http.StatusMethodNotAllowed)
   })
 
   if gin.ReleaseMode != mode {
