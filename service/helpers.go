@@ -22,6 +22,8 @@ var (
   wordsOnly              = regexp.MustCompile(`\w+`)
 )
 
+// sanitizeTextWordIntersections removes contiguous whitespace characters from the given text,
+// reducing them to a single space.
 func sanitizeTextWordIntersections(text *string) {
   if nil == text {
     return
@@ -29,6 +31,8 @@ func sanitizeTextWordIntersections(text *string) {
   *text = contiguousSpacesRegexp.ReplaceAllString(*text, " ")
 }
 
+// toKebabCase converts a given text to kebab-case by replacing spaces and underscores with hyphens,
+// making all letters lowercase, and removing any non-word characters.
 func toKebabCase(text string) string {
   if "" == text {
     return ""
@@ -45,15 +49,20 @@ func toKebabCase(text string) string {
   return strings.Join(words, "-")
 }
 
+// generateSlug creates a URL-friendly slug by converting the source text to kebab-case.
 func generateSlug(source string) string {
   return toKebabCase(source)
 }
 
+// wordsIn counts the number of words in a given text based on whitespace splitting.
 func wordsIn(text string) int {
   fields := strings.Fields(text)
   return len(fields)
 }
 
+// sanitizeURL checks if the provided URLs are in a valid format. If valid, it
+// trims whitespace and returns the sanitized URL(s). If invalid, it returns a problem
+// detailing the URL error.
 func sanitizeURL(urls ...*string) error {
   if 0 == len(urls) {
     return nil
@@ -72,6 +81,7 @@ func sanitizeURL(urls ...*string) error {
     uri, err := url.ParseRequestURI(*u)
     if nil != err {
       var p problem.Problem
+      p.Type("unparseable_value")
       p.Title("Unprocessable URL format.")
       p.Status(http.StatusUnprocessableEntity)
       p.Detail("There was an error parsing the requested URL. Please try with a different URL or verify the current one for correctness.")
@@ -84,6 +94,9 @@ func sanitizeURL(urls ...*string) error {
   return nil
 }
 
+// validateUUID checks if a string is a valid UUID format, trimming whitespace
+// and standardizing it if valid. If invalid, it sets the UUID to an empty string
+// and returns an error describing the problem.
 func validateUUID(id *string) error {
   if nil == id {
     return nil
@@ -104,6 +117,8 @@ func validateUUID(id *string) error {
   return nil
 }
 
+// approximatePostWordsCount counts the approximate number of words in HTML or text content
+// while ignoring specific HTML elements like <figure> and nested <div> tags.
 func approximatePostWordsCount(r io.Reader) (words int, err error) {
   data, err := io.ReadAll(r)
   if nil != err {
@@ -199,6 +214,8 @@ func approximatePostWordsCount(r io.Reader) (words int, err error) {
   return words, nil
 }
 
+// computePostReadingTime estimates the reading time of a post based on the word count
+// and a specified words-per-minute rate.
 func computePostReadingTime(r io.Reader, wordsPerMinute float64) (readingTime time.Duration, err error) {
   count, err := approximatePostWordsCount(bufio.NewReader(r))
   if nil != err {
@@ -210,6 +227,8 @@ func computePostReadingTime(r io.Reader, wordsPerMinute float64) (readingTime ti
   return readingTime, nil
 }
 
+// computePostReadingTimeInMinutes calculates the approximate reading time in whole minutes,
+// assuming an average reading speed of 183 words per minute.
 func computePostReadingTimeInMinutes(r io.Reader) int {
   duration, err := computePostReadingTime(r, 183.0)
   if err != nil {
