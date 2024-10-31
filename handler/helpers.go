@@ -31,6 +31,7 @@ func marshal(t *testing.T, value any) []byte {
 
 func check(err error, w http.ResponseWriter) bool {
   if nil != err {
+    w.Header().Set("Content-Type", "application/json")
     var p *problem.Problem
     if errors.As(err, &p) {
       p.Emit(w)
