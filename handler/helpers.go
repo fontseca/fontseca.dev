@@ -17,18 +17,12 @@ import (
   "regexp"
   "strconv"
   "strings"
-  "testing"
   "time"
 )
 
-func marshal(t *testing.T, value any) []byte {
-  var data, err = json.Marshal(value)
-  if nil != err {
-    t.Fatal(err)
-  }
-  return data
-}
-
+// check handles errors by sending a standardized JSON response if an error occurs.
+// If the error is of type *problem.Problem, it emits the specific problem; otherwise,
+// it emits a generic internal problem.
 func check(err error, w http.ResponseWriter) bool {
   if nil != err {
     w.Header().Set("Content-Type", "application/json")
@@ -43,12 +37,18 @@ func check(err error, w http.ResponseWriter) bool {
   return false
 }
 
+// failure represents a validation failure with details about the failing field,
+// validation criterion, and parameter (if applicable).
 type failure struct {
   Field     string `json:"field"`
   Criterion string `json:"criterion"`
   Parameter string `json:"parameter,omitempty"`
 }
 
+// bindJSONRequestBody binds and validates a JSON request body to the provided
+// object. If binding fails, it emits a problem response detailing the error.
+// Handles multiple error cases including empty body, syntax errors, unexpected fields,
+// and validation errors.
 func bindJSONRequestBody(c *gin.Context, obj any) (ok bool) {
   c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 1<<20)
   var err = c.ShouldBindJSON(obj)
@@ -115,6 +115,8 @@ func bindJSONRequestBody(c *gin.Context, obj any) (ok bool) {
   return true
 }
 
+// validateStruct validates the provided struct using the registered validator.
+// If validation fails, emits a problem response detailing the errors.
 func validateStruct(s any) error {
   var err = binding.Validator.ValidateStruct(s)
   if nil != err {
@@ -145,6 +147,9 @@ func validateStruct(s any) error {
   return err
 }
 
+// handleStrconvError handles errors from strconv parsing functions,
+// converting them into *problem.Problem errors. It also checks for specific
+// error types like syntax and range errors.
 func handleStrconvError(err error, targetType, fieldName string) (error, bool) {
   if nil != err {
     var numErr *strconv.NumError
@@ -161,6 +166,9 @@ func handleStrconvError(err error, targetType, fieldName string) (error, bool) {
   return nil, true
 }
 
+// bindPostForm binds form values from an HTTP POST request to a struct's fields
+// based on "json" struct tags. Supports types including strings, integers,
+// floats, and booleans.
 func bindPostForm(c *gin.Context, val any) error {
   if nil == c || nil == val {
     var err = errors.New("got an unacceptable nil parameter")

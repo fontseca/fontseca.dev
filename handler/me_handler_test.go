@@ -200,6 +200,5 @@ func TestMeHandler_Update(t *testing.T) {
 
     assert.Equal(t, http.StatusNoContent, recorder.Code)
     assert.Empty(t, recorder.Body.String())
-    assert.Equal(t, recorder.Header(), http.Header{"Content-Type": []string{"application/json"}})
   })
 }

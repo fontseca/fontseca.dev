@@ -1,6 +1,7 @@
 package handler
 
 import (
+  "encoding/json"
   "fmt"
   "github.com/gin-gonic/gin"
   "github.com/stretchr/testify/assert"
@@ -9,6 +10,16 @@ import (
   "net/http"
   "testing"
 )
+
+// marshal marshals a value to JSON and logs a fatal error if marshaling fails.
+// Only intended for use in testing.
+func marshal(t *testing.T, value any) []byte {
+  var data, err = json.Marshal(value)
+  if nil != err {
+    t.Fatal(err)
+  }
+  return data
+}
 
 type dummy struct {
   StringField  string  `json:"string_field,omitempty"`
