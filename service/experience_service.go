@@ -65,6 +65,9 @@ func (s *ExperienceService) Create(ctx context.Context, creation *transfer.Exper
   creation.Country = strings.TrimSpace(creation.Country)
   creation.Summary = strings.TrimSpace(creation.Summary)
 
+  sanitizeTextWordIntersections(&creation.JobTitle)
+  sanitizeTextWordIntersections(&creation.Company)
+
   if "" != creation.CompanyHomepage {
     if 2048 < len(creation.CompanyHomepage) {
       return "", problem.NewValidation([3]string{"company_homepage", "max", "2048"})
@@ -164,6 +167,9 @@ func (s *ExperienceService) Update(ctx context.Context, id string, update *trans
   update.CompanyHomepage = strings.TrimSpace(update.CompanyHomepage)
   update.Country = strings.TrimSpace(update.Country)
   update.Summary = strings.TrimSpace(update.Summary)
+
+  sanitizeTextWordIntersections(&update.JobTitle)
+  sanitizeTextWordIntersections(&update.Company)
 
   if "" != update.CompanyHomepage {
     if 2048 < len(update.CompanyHomepage) {
