@@ -16,10 +16,12 @@ import (
   "io"
   "log"
   "log/slog"
+  "net"
   "net/http"
   "os"
   "os/signal"
   "reflect"
+  "slices"
   "strconv"
   "strings"
   "syscall"
@@ -334,7 +336,7 @@ func main() {
 
   var port = strings.TrimSpace(os.Getenv("PORT"))
   if "" == port {
-    port = "8080"
+    port = "41203"
     fmt.Printf("warn: environment `PORT` variable not found, defaulting to value: %s\n", port)
   }
 
@@ -347,7 +349,27 @@ func main() {
     Handler:        engine,
   }
 
-  addr := server.Addr
+  listener, err := net.Listen("tcp", server.Addr)
+  if nil != err {
+    log.Fatalf("net.Listen(...) failed: %v\n", err)
+  }
+
+  defer listener.Close()
+
+  var (
+    addrs []net.Addr
+    ip    string
+  )
+
+  addrs, _ = net.InterfaceAddrs()
+  for addr := range slices.Values(addrs) {
+    ipnet, ok := addr.(*net.IPNet)
+    if ok && !ipnet.IP.IsLoopback() && nil != ipnet.IP.To4() {
+      ip = ipnet.IP.String()
+    }
+  }
+
+  addr := fmt.Sprint(ip, ":", listener.Addr().(*net.TCPAddr).Port)
   if nil == server.TLSConfig {
     addr = "http://" + addr
   }
@@ -362,7 +384,7 @@ func main() {
   signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL)
 
   go func() {
-    err = server.ListenAndServe()
+    err = server.Serve(listener)
     if !errors.Is(err, http.ErrServerClosed) {
       slog.Error(err.Error())
     }
