@@ -7,7 +7,7 @@ import (
 
 func NewInternal() *Problem {
   var p Problem
-  p.Type("about:blank")
+  p.Type("internal")
   p.Status(http.StatusInternalServerError)
   p.Title("Internal Server Error.")
   p.Detail("An unexpected error occurred while processing your request. Please try again later. If the problem persists, contact the developer for assistance.")
@@ -17,7 +17,7 @@ func NewInternal() *Problem {
 
 func NewNotFound(id, recordType string) *Problem {
   var p Problem
-  p.Type("about:blank")
+  p.Type("not_found")
   p.Status(http.StatusNotFound)
   p.Title("Record not found.")
   p.Detail(fmt.Sprintf("The %s record with UUID '%s' could not be found in the database.", recordType, id))
@@ -28,7 +28,7 @@ func NewNotFound(id, recordType string) *Problem {
 
 func NewSlugNotFound(slug, recordType string) *Problem {
   var p Problem
-  p.Type("about:blank")
+  p.Type("not_found")
   p.Status(http.StatusNotFound)
   p.Title("Record not found.")
   p.Detail(fmt.Sprintf("The %s record with the slug '%s' could not be found in the database.", recordType, slug))
@@ -39,7 +39,7 @@ func NewSlugNotFound(slug, recordType string) *Problem {
 
 func NewUnparsableValue(targetType, fieldName, fieldValue string) *Problem {
   var p Problem
-  p.Type("about:blank")
+  p.Type("unparseable_value")
   p.Status(http.StatusUnprocessableEntity)
   p.Title(fmt.Sprintf("Failure when parsing %s value.", targetType))
   p.Detail(fmt.Sprintf("Failed to parse the provided value as: %s. Please make sure the value is valid according to its type.", targetType))
@@ -51,7 +51,7 @@ func NewUnparsableValue(targetType, fieldName, fieldValue string) *Problem {
 
 func NewValueOutOfRange(targetType, fieldName, fieldValue string) *Problem {
   var p Problem
-  p.Type("about:blank")
+  p.Type("out_of_range")
   p.Status(http.StatusUnprocessableEntity)
   p.Title(fmt.Sprintf("Failure when parsing %s value.", targetType))
   p.Detail(fmt.Sprintf("Out of range for the provided value as: %s. Please make sure the value is valid according to its type.", targetType))
@@ -88,6 +88,7 @@ func NewValidation(failures ...[3]string) *Problem {
 
 func NewMissingParameter(parameter string) *Problem {
   var p Problem
+  p.Type("missing_argument")
   p.Status(http.StatusBadRequest)
   p.Title("Missing required parameter.")
   p.Detail(fmt.Sprintf("The '%s' parameter is required but was not found in the request form data.", parameter))
