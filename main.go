@@ -298,7 +298,13 @@ func main() {
   engine.GET("/archive/tag/:tag", web.RenderArchive)
   engine.GET("/archive/:topic/:year/:month/:slug", web.RenderArticle)
   engine.GET("/archive/sharing/:hash", web.RenderArticle)
-  engine.POST("/playground.request", func(c *gin.Context) { playground.Scanner(c.Writer, c.Request) })
+
+  playgroundCtx, playgroundCtxCanceler := context.WithCancel(context.Background())
+  engine.POST("/playground.request", func(c *gin.Context) {
+    ctx, cancel := context.WithCancel(playgroundCtx)
+    defer cancel()
+    playground.Scanner(ctx, c.Writer, c.Request)
+  })
 
   playgroundRenderer := func(c *gin.Context) { playground.Renderer(c.Writer, c.Request) }
   engine.GET("/playground", playgroundRenderer)
@@ -371,6 +377,7 @@ func main() {
     fmt.Fprintf(os.Stdout, "received %s signal, gracefully shutting down...\n", sig.String())
 
     archive.Close()
+    playgroundCtxCanceler()
 
     if err := server.Shutdown(context.TODO()); nil != err {
       fmt.Fprintf(os.Stderr, "could not shutdown server: %v", err)
