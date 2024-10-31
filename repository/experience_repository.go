@@ -207,7 +207,7 @@ func (r *ExperienceRepository) Update(ctx context.Context, id string, update *tr
   UPDATE "me"."experience"
      SET "date_start" = CASE WHEN $2 <> '' AND $2::DATE <> "date_start" THEN $2::DATE ELSE "date_start" END,
          "date_end" = CASE WHEN $3 = '2006-01-02' THEN NULL
-                           WHEN $3 <> '' AND "date_end" IS NULL OR $3::DATE <> "date_end" THEN $3::DATE
+                           WHEN $3 <> '' AND "date_end" IS NULL OR $3 <> '' AND $3::DATE <> "date_end" THEN $3::DATE
                            ELSE "date_end" END,
          "job_title" = coalesce (nullif ($4, ''), "job_title"),
          "company" = coalesce (nullif ($5, ''), "company"),
