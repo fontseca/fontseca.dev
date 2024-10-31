@@ -10,6 +10,12 @@ import (
   "time"
 )
 
+func Test_sanitizeTextWordIntersections(t *testing.T) {
+  text := "a             b c\n\t  d \t\n e"
+  sanitizeTextWordIntersections(&text)
+  assert.Equal(t, "a b c d e", text)
+}
+
 func Test_generateSlug(t *testing.T) {
   sources := [][2]string{
     {"Quisque egestas cursus.", "quisque-egestas-cursus"},
