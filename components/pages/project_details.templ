@@ -98,7 +98,8 @@ templ ProjectDetails(project *model.Project) {
                 if (0 != len(project.CollectionURL) && "about:blank" != project.CollectionURL) {
                   <a class="collection-url"
                      href={ templ.URL(project.CollectionURL) }
-                     target="_blank">
+                     target="_blank"
+                     download>
                     <span>Get collection file</span>
                     <i class="fa fa-arrow-down" style="margin-left: .7rem"></i>
                   </a>
