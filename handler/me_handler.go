@@ -14,7 +14,8 @@ import (
 
 type meServiceAPI interface {
   Get(context.Context) (*model.Me, error)
-  Update(context.Context, *transfer.MeUpdate) (bool, error)
+  Update(context.Context, *transfer.MeUpdate) error
+  SetHireable(context.Context, bool) error
 }
 
 type MeHandler struct {
@@ -40,51 +41,47 @@ func (h *MeHandler) Get(c *gin.Context) {
 }
 
 func (h *MeHandler) SetPhoto(c *gin.Context) {
-  var photoURL = c.PostForm("photo_url")
-  ok, err := h.s.Update(c, &transfer.MeUpdate{PhotoURL: photoURL})
-  if nil != err {
-    var p *problem.Problem
-    if errors.As(err, &p) {
-      p.Emit(c.Writer)
-    } else {
-      problem.NewInternal().Emit(c.Writer)
-    }
+  var photoURL = strings.TrimSpace(c.PostForm("photo_url"))
+  if "" == photoURL {
+    problem.NewMissingParameter("photo_url").Emit(c.Writer)
     return
   }
 
-  if ok {
-    c.Status(http.StatusNoContent)
-  } else {
-    c.Redirect(http.StatusSeeOther, "/me.get")
+  err := h.s.Update(c, &transfer.MeUpdate{PhotoURL: photoURL})
+  if check(err, c.Writer) {
+    return
   }
+
+  c.Status(http.StatusNoContent)
 }
 
 func (h *MeHandler) SetResume(c *gin.Context) {
-  var resumeURL = c.PostForm("resume_url")
-  ok, err := h.s.Update(c, &transfer.MeUpdate{ResumeURL: resumeURL})
-  if nil != err {
-    var p *problem.Problem
-    if errors.As(err, &p) {
-      p.Emit(c.Writer)
-    } else {
-      problem.NewInternal().Emit(c.Writer)
-    }
+  var resumeURL = strings.TrimSpace(c.PostForm("resume_url"))
+  if "" == resumeURL {
+    problem.NewMissingParameter("resume_url").Emit(c.Writer)
     return
   }
 
-  if ok {
-    c.Status(http.StatusNoContent)
-  } else {
-    c.Redirect(http.StatusSeeOther, "/me.get")
+  err := h.s.Update(c, &transfer.MeUpdate{ResumeURL: resumeURL})
+  if check(err, c.Writer) {
   }
+
+  c.Status(http.StatusNoContent)
 }
 
 func (h *MeHandler) SetHireable(c *gin.Context) {
-  hireable, err := strconv.ParseBool(strings.TrimSpace(c.DefaultPostForm("hireable", "false")))
+  var hireableStr = strings.TrimSpace(c.PostForm("hireable"))
+  if "" == hireableStr {
+    problem.NewMissingParameter("hireable").Emit(c.Writer)
+    return
+  }
+
+  hireable, err := strconv.ParseBool(hireableStr)
   if nil != err {
     var numError *strconv.NumError
     if errors.As(err, &numError) {
       var p problem.Problem
+      p.Type("unparseable_value")
       p.Title("Failure when parsing boolean value.")
       p.Status(http.StatusUnprocessableEntity)
       p.Detail("Failed to parse the provided value as a boolean. Please ensure the value is either 'true' or 'false'.")
@@ -96,45 +93,24 @@ func (h *MeHandler) SetHireable(c *gin.Context) {
     return
   }
 
-  ok, err := h.s.Update(c, &transfer.MeUpdate{Hireable: hireable})
-  if nil != err {
-    var p *problem.Problem
-    if errors.As(err, &p) {
-      p.Emit(c.Writer)
-    } else {
-      problem.NewInternal().Emit(c.Writer)
-    }
+  err = h.s.SetHireable(c, hireable)
+  if check(err, c.Writer) {
     return
   }
 
-  if ok {
-    c.Status(http.StatusNoContent)
-  } else {
-    c.Redirect(http.StatusSeeOther, "/me.get")
-  }
+  c.Status(http.StatusNoContent)
 }
 
 func (h *MeHandler) Set(c *gin.Context) {
   var update transfer.MeUpdate
-
-  if ok := bindJSONRequestBody(c, &update); !ok {
+  if err := bindPostForm(c, &update); check(err, c.Writer) {
     return
   }
 
-  ok, err := h.s.Update(c, &update)
-  if nil != err {
-    var p *problem.Problem
-    if errors.As(err, &p) {
-      p.Emit(c.Writer)
-    } else {
-      problem.NewInternal().Emit(c.Writer)
-    }
+  err := h.s.Update(c, &update)
+  if check(err, c.Writer) {
     return
   }
 
-  if ok {
-    c.Status(http.StatusNoContent)
-  } else {
-    c.Redirect(http.StatusSeeOther, "/me.get")
-  }
+  c.Status(http.StatusNoContent)
 }

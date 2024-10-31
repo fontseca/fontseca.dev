@@ -27,9 +27,9 @@ func (mock *meServiceMockAPI) Get(context.Context) (*model.Me, error) {
   return mock.returns[0].(*model.Me), mock.errors
 }
 
-func (mock *meServiceMockAPI) Update(context.Context, *transfer.MeUpdate) (bool, error) {
+func (mock *meServiceMockAPI) Update(context.Context, *transfer.MeUpdate) error {
   mock.called = true
-  return mock.returns[0].(bool), mock.errors
+  return mock.errors
 }
 
 func TestMeHandler_Get(t *testing.T) {
@@ -75,7 +75,6 @@ func TestMeHandler_SetPhoto(t *testing.T) {
 
   t.Run("success", func(t *testing.T) {
     var urls = []string{
-      "  \t\n\t  ",
       "https://picsum.photos/200/300",
       "http://www.picture.com/",
     }
@@ -100,13 +99,17 @@ func TestMeHandler_SetPhoto(t *testing.T) {
   })
 }
 
+func (mock *meServiceMockAPI) SetHireable(context.Context, bool) error {
+  mock.called = true
+  return mock.errors
+}
+
 func TestMeHandler_SetResume(t *testing.T) {
   const method = http.MethodPost
   const target = "/me.setResume"
 
   t.Run("success", func(t *testing.T) {
     var urls = []string{
-      "  \t\n\t  ",
       "https://picsum.photos/200/300",
       "http://www.picture.com/",
     }
@@ -197,6 +200,6 @@ func TestMeHandler_Update(t *testing.T) {
 
     assert.Equal(t, http.StatusNoContent, recorder.Code)
     assert.Empty(t, recorder.Body.String())
-    assert.Empty(t, recorder.Header())
+    assert.Equal(t, recorder.Header(), http.Header{"Content-Type": []string{"application/json"}})
   })
 }

@@ -66,9 +66,9 @@ func TestMeService_Get(t *testing.T) {
   })
 }
 
-func (mock *meRepositoryMockAPI) Update(context.Context, *transfer.MeUpdate) (bool, error) {
+func (mock *meRepositoryMockAPI) Update(context.Context, *transfer.MeUpdate) error {
   mock.called = true
-  return mock.returns[0].(bool), mock.errors
+  return mock.errors
 }
 
 func TestMeService_Update(t *testing.T) {
@@ -76,7 +76,7 @@ func TestMeService_Update(t *testing.T) {
     var expected = transfer.MeUpdate{
       Summary:      "Summary",
       JobTitle:     "JobTitle",
-      Email:        "Email",
+      Email:        "Email@email.com",
       PhotoURL:     "https://www.PhotoURL.com",
       ResumeURL:    "https://www.ResumeURL.com",
       Company:      "Company",
@@ -105,26 +105,23 @@ func TestMeService_Update(t *testing.T) {
     }
     var r = &meRepositoryMockAPI{returns: []any{true}}
     var ctx = context.Background()
-    res, err := NewMeService(r).Update(ctx, &dirty)
+    err := NewMeService(r).Update(ctx, &dirty)
     assert.NoError(t, err)
-    assert.True(t, res)
   })
 
   t.Run("error on nil update", func(t *testing.T) {
     var r = &meRepositoryMockAPI{}
     var ctx = context.Background()
-    res, err := NewMeService(r).Update(ctx, nil)
+    err := NewMeService(r).Update(ctx, nil)
     assert.False(t, r.called)
     assert.ErrorContains(t, err, "nil value for parameter: update")
-    assert.False(t, res)
   })
 
   t.Run("got an error", func(t *testing.T) {
     var unexpected = errors.New("unexpected error")
     var r = &meRepositoryMockAPI{returns: []any{false}, errors: unexpected}
     var ctx = context.Background()
-    res, err := NewMeService(r).Update(ctx, new(transfer.MeUpdate))
+    err := NewMeService(r).Update(ctx, new(transfer.MeUpdate))
     assert.ErrorIs(t, err, unexpected)
-    assert.False(t, res)
   })
 }
