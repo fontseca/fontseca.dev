@@ -136,60 +136,31 @@ func (r *MeRepository) Get(ctx context.Context) (me *model.Me, err error) {
   return me, nil
 }
 
-func (r *MeRepository) updatable(current *model.Me, update *transfer.MeUpdate) bool {
-  if ("" == update.Summary || update.Summary == current.Summary) &&
-    ("" == update.JobTitle || update.JobTitle == current.JobTitle) &&
-    ("" == update.Email || update.Email == current.Email) &&
-    ("" == update.PhotoURL || update.PhotoURL == current.PhotoURL) &&
-    ("" == update.ResumeURL || update.ResumeURL == current.ResumeURL) &&
-    ("" == update.Company || update.Company == current.Company) &&
-    ("" == update.Location || update.Location == current.Location) &&
-    (update.Hireable == current.Hireable) &&
-    ("" == update.GitHubURL || update.GitHubURL == current.GitHubURL) &&
-    ("" == update.LinkedInURL || update.LinkedInURL == current.LinkedInURL) &&
-    ("" == update.YouTubeURL || update.YouTubeURL == current.YouTubeURL) &&
-    ("" == update.InstagramURL || update.InstagramURL == current.InstagramURL) {
-    return false
-  }
-  return true
-}
-
 // Update updates the information of my profile.
-func (r *MeRepository) Update(ctx context.Context, update *transfer.MeUpdate) (ok bool, err error) {
+func (r *MeRepository) Update(ctx context.Context, update *transfer.MeUpdate) error {
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
 
   if nil != err {
     slog.Error(getErrMsg(err))
-    return false, err
+    return err
   }
 
   defer tx.Rollback()
 
-  current, err := r.Get(ctx)
-
-  if nil != err {
-    return false, err
-  }
-
-  if updatable := r.updatable(current, update); !updatable {
-    return false, nil
-  }
-
   updateMeQuery := `
     UPDATE "me"."me"
-       SET "summary" = coalesce (nullif ($1, ''), $2),
-           "job_title" = coalesce (nullif ($3, ''), $4),
-           "email" = coalesce (nullif ($5, ''), $6),
-           "photo_url" = coalesce (nullif ($7, ''), $8),
-           "resume_url" = coalesce (nullif ($9, ''), $10),
-           "company" = coalesce (nullif ($11, ''), $12),
-           "location" = coalesce (nullif ($13, ''), $14),
-           "hireable" = $15,
-           "github_url" = coalesce (nullif ($16, ''), $17),
-           "linkedin_url" = coalesce (nullif ($18, ''), $19),
-           "youtube_url" = coalesce (nullif ($20, ''), $21),
-           "twitter_url" = coalesce (nullif ($22, ''), $23),
-           "instagram_url" = coalesce (nullif ($24, ''), $25),
+       SET "summary" = coalesce (nullif ($1, ''), "summary"),
+           "job_title" = coalesce (nullif ($2, ''), "job_title"),
+           "email" = coalesce (nullif ($3, ''), "email"),
+           "photo_url" = coalesce (nullif ($4, ''), "photo_url"),
+           "resume_url" = coalesce (nullif ($5, ''), "resume_url"),
+           "company" = coalesce (nullif ($6, ''), "company"),
+           "location" = coalesce (nullif ($7, ''), "location"),
+           "github_url" = coalesce (nullif ($8, ''), "github_url"),
+           "linkedin_url" = coalesce (nullif ($9, ''), "linkedin_url"),
+           "youtube_url" = coalesce (nullif ($10, ''), "youtube_url"),
+           "twitter_url" = coalesce (nullif ($11, ''), "twitter_url"),
+           "instagram_url" = coalesce (nullif ($12, ''), "instagram_url"),
            "updated_at" = current_timestamp
      WHERE "username" = 'fontseca.dev';`
 
@@ -199,38 +170,81 @@ func (r *MeRepository) Update(ctx context.Context, update *transfer.MeUpdate) (o
   defer cancel()
 
   result, err := tx.ExecContext(ctx, updateMeQuery,
-    update.Summary, current.Summary,
-    update.JobTitle, current.JobTitle,
-    update.Email, current.Email,
-    update.PhotoURL, current.PhotoURL,
-    update.ResumeURL, current.ResumeURL,
-    update.Company, current.Company,
-    update.Location, current.Location,
-    update.Hireable,
-    update.GitHubURL, current.GitHubURL,
-    update.LinkedInURL, current.LinkedInURL,
-    update.YouTubeURL, current.YouTubeURL,
-    update.TwitterURL, current.TwitterURL,
-    update.InstagramURL, current.InstagramURL)
+    update.Summary,
+    update.JobTitle,
+    update.Email,
+    update.PhotoURL,
+    update.ResumeURL,
+    update.Company,
+    update.Location,
+    update.GitHubURL,
+    update.LinkedInURL,
+    update.YouTubeURL,
+    update.TwitterURL,
+    update.InstagramURL)
 
   if nil != err {
     slog.Error(getErrMsg(err))
-    return false, err
+    return err
   }
 
   var affected, _ = result.RowsAffected()
   if 1 != affected {
-    return false, nil
+    return nil
   }
 
   if err = tx.Commit(); nil != err {
     slog.Error(getErrMsg(err))
-    return false, err
+    return err
   }
 
   r.cache(ctx)
 
-  return true, nil
+  return nil
+}
+
+// SetHireable defines whether I am currently hireable or not.
+func (r *MeRepository) SetHireable(ctx context.Context, hireable bool) error {
+  tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+
+  if nil != err {
+    slog.Error(getErrMsg(err))
+    return err
+  }
+
+  defer tx.Rollback()
+
+  query := `
+    UPDATE "me"."me"
+       SET "hireable" = $1,
+           "updated_at" = current_timestamp
+     WHERE "username" = 'fontseca.dev';`
+
+  slog.Info("updating 'me' object")
+
+  ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+  defer cancel()
+
+  result, err := tx.ExecContext(ctx, query, hireable)
+
+  if nil != err {
+    slog.Error(getErrMsg(err))
+    return err
+  }
+
+  var affected, _ = result.RowsAffected()
+  if 1 != affected {
+    return nil
+  }
+
+  if err = tx.Commit(); nil != err {
+    slog.Error(getErrMsg(err))
+    return err
+  }
+
+  r.cache(ctx)
+
+  return nil
 }
 
 func (r *MeRepository) cache(ctx context.Context) {
