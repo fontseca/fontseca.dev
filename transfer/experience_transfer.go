@@ -2,7 +2,7 @@ package transfer
 
 // ExperienceCreation represents the data required to create a new experience entry.
 type ExperienceCreation struct {
-  Starts          string `json:"starts"`
+  Starts          string `json:"starts" binding:"required"`
   Ends            string `json:"ends"`
   JobTitle        string `json:"job_title" binding:"required,max=64"`
   Company         string `json:"company" binding:"required,max=64"`
