@@ -115,9 +115,9 @@ func (r *ArchiveRepository) cacheWriter() {
 }
 
 // Close forces all caches be written.
-func (r *ArchiveRepository) Close() {
+func (r *ArchiveRepository) Close(ctx context.Context) {
   close(r.done)
-  r.writeViewsCache(context.TODO())
+  r.writeViewsCache(ctx)
 }
 
 // closed checks if the repository has been closed, that is the

@@ -398,11 +398,14 @@ func main() {
   case sig := <-shutdown:
     fmt.Fprintf(os.Stdout, "received %s signal, gracefully shutting down...\n", sig.String())
 
-    archive.Close()
+    ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+    defer cancel()
+
+    archive.Close(ctx)
     playgroundCtxCanceler()
 
-    if err := server.Shutdown(context.TODO()); nil != err {
-      fmt.Fprintf(os.Stderr, "could not shutdown server: %v", err)
+    if err := server.Shutdown(ctx); nil != err {
+      fmt.Fprintf(os.Stderr, "could not shutdown server: %v\n", err)
     }
   }
 }
