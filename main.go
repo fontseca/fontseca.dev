@@ -31,12 +31,7 @@ import (
 func main() {
   log.SetFlags(log.LstdFlags | log.Lshortfile)
 
-  var db, err = sql.Open("postgres", fmt.Sprintf("user=%s password=%s host=%s port=%s dbname=%s connect_timeout=5 sslmode=require binary_parameters=yes",
-    mustLookupEnv("PG_USER"),
-    mustLookupEnv("PG_PASSWORD"),
-    mustLookupEnv("PG_HOST"),
-    mustLookupEnv("PG_PORT"),
-    mustLookupEnv("PG_DATABASE")))
+  var db, err = sql.Open("postgres", mustLookupEnv("DB_CONN_STRING"))
 
   if nil != err {
     log.Fatal(err)
