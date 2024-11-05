@@ -55,7 +55,7 @@ func (r *ProjectsRepository) List(ctx context.Context, archived bool) (projects 
          ON tt."uuid" = ptt."technology_tag_uuid"
       WHERE p."archived" = $1
    GROUP BY p."uuid"
-   ORDER BY p."created_at" DESC;`
+   ORDER BY p."date_start" DESC NULLS FIRST, p."created_at" DESC;`
   ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
   defer cancel()
   rows, err := r.db.QueryContext(ctx, getProjectsQuery, archived)
