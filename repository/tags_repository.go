@@ -8,6 +8,7 @@ import (
   "fontseca.dev/transfer"
   "log/slog"
   "net/http"
+  "strings"
   "time"
 )
 
@@ -43,7 +44,17 @@ func (r *TagsRepository) Create(ctx context.Context, creation *transfer.TagCreat
   )
 
   if nil != err {
-    slog.Error(err.Error())
+    if strings.Contains(err.Error(), `duplicate key value violates unique constraint "tag_pkey"`) ||
+      strings.Contains(err.Error(), `duplicate key value violates unique constraint "tag_name_key"`) {
+      var p problem.Problem
+      p.Type(problem.TypeDuplicateKey)
+      p.Status(http.StatusConflict)
+      p.Title("Duplicate tag.")
+      p.Detail("A tag with a similar name is already registered. Try using a different one.")
+      p.With("name", creation.Name)
+      return &p
+    }
+    slog.Error(getErrMsg(err))
     return err
   }
 
@@ -57,7 +68,7 @@ func (r *TagsRepository) Create(ctx context.Context, creation *transfer.TagCreat
   }
 
   if err = tx.Commit(); nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
 
@@ -79,7 +90,7 @@ ORDER BY lower("name");`
 
   result, err := r.db.QueryContext(ctx, getTagsQuery)
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return nil, err
   }
 
@@ -98,7 +109,7 @@ ORDER BY lower("name");`
     )
 
     if nil != err {
-      slog.Error(err.Error())
+      slog.Error(getErrMsg(err))
       return nil, err
     }
 
@@ -112,7 +123,7 @@ ORDER BY lower("name");`
 func (r *TagsRepository) Update(ctx context.Context, id string, update *transfer.TagUpdate) error {
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
 
@@ -132,7 +143,16 @@ func (r *TagsRepository) Update(ctx context.Context, id string, update *transfer
   )
 
   if nil != err {
-    slog.Error(err.Error())
+    if strings.Contains(err.Error(), `violates foreign key constraint "article_tag_tag_id_fkey"`) {
+      p := &problem.Problem{}
+      p.Type(problem.TypeActionRefused)
+      p.Status(http.StatusBadRequest)
+      p.Title("Could not update article tag.")
+      p.Detail("Cannot update tag name because it is already in used by some articles. Try deleting this one and register a new tag under this name.")
+      p.With("name", update.Name)
+      return p
+    }
+    slog.Error(getErrMsg(err))
     return err
   }
 
@@ -153,7 +173,7 @@ func (r *TagsRepository) Update(ctx context.Context, id string, update *transfer
   )
 
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
 
@@ -162,7 +182,7 @@ func (r *TagsRepository) Update(ctx context.Context, id string, update *transfer
   }
 
   if err = tx.Commit(); nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
 
@@ -173,7 +193,7 @@ func (r *TagsRepository) Update(ctx context.Context, id string, update *transfer
 func (r *TagsRepository) Remove(ctx context.Context, id string) error {
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
 
@@ -189,7 +209,7 @@ func (r *TagsRepository) Remove(ctx context.Context, id string) error {
   result, err := tx.ExecContext(ctx1, removeTagQuery, id)
 
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
 
@@ -207,16 +227,16 @@ func (r *TagsRepository) Remove(ctx context.Context, id string) error {
   result, err = tx.ExecContext(ctx1, removeFromAttachedArticlesQuery, id)
 
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
 
   if _, err = result.RowsAffected(); nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
   }
 
   if err = tx.Commit(); nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
 

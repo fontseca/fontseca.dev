@@ -103,7 +103,7 @@ func TestEmit(t *testing.T) {
     var recorder = httptest.NewRecorder()
 
     var p Problem
-    p.Type(expectedType)
+    p.Type(Type(expectedType))
     p.Title(expectedTitle)
     p.Status(expectedStatus)
     p.With("error", expectedError[0])
@@ -146,7 +146,7 @@ func TestEmit(t *testing.T) {
 
     var recorder = httptest.NewRecorder()
     var p Problem
-    p.Type(expectedType)
+    p.Type(Type(expectedType))
     p.Title(expectedTitle)
     p.Status(expectedStatus)
     p.Detail(expectedDetail)

@@ -394,6 +394,7 @@ func (s *ProjectsService) AddTag(ctx context.Context, projectID, technologyTagID
   }
   if conflict {
     var p problem.Problem
+    p.Type(problem.TypeDuplicateKey)
     p.Status(http.StatusConflict)
     p.Title("Duplicate technology tag.")
     p.Detail("The specified technology tag is already associated with this project. Try using a different one.")

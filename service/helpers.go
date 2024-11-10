@@ -81,7 +81,7 @@ func sanitizeURL(urls ...*string) error {
     uri, err := url.ParseRequestURI(*u)
     if nil != err {
       var p problem.Problem
-      p.Type("unparseable_value")
+      p.Type(problem.TypeUnparseableValue)
       p.Title("Unprocessable URL format.")
       p.Status(http.StatusUnprocessableEntity)
       p.Detail("There was an error parsing the requested URL. Please try with a different URL or verify the current one for correctness.")
@@ -105,7 +105,8 @@ func validateUUID(id *string) error {
   parsed, err := uuid.Parse(*id)
   if nil != err {
     var p problem.Problem
-    p.Title("Could not parse UUID.")
+    p.Type(problem.TypeUnparseableValue)
+    p.Title("Could not parse value UUID.")
     p.Status(http.StatusUnprocessableEntity)
     p.Detail("An error occurred while attempting to parse the provided UUID string.")
     p.With("uuid", *id)

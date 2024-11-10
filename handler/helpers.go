@@ -123,6 +123,7 @@ func validateStruct(s any) error {
     var validationErrors validator.ValidationErrors
     if errors.As(err, &validationErrors) {
       var p problem.Problem
+      p.Type(problem.TypeUnmetValidation)
       p.Title("Failed to validate request data.")
       p.Status(http.StatusUnprocessableEntity)
       p.Detail("The provided data does not meet the required validation criteria. Please review your input and try again.")

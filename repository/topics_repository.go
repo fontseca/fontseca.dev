@@ -8,6 +8,7 @@ import (
   "fontseca.dev/transfer"
   "log/slog"
   "net/http"
+  "strings"
   "time"
 )
 
@@ -31,13 +32,14 @@ func (r *TopicsRepository) Create(ctx context.Context, creation *transfer.TopicC
   err := r.db.QueryRowContext(ctx, `SELECT count (1) FROM "archive"."topic" WHERE "id" = $1;`, creation.ID).Scan(&exists)
 
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
 
   if exists {
     p := &problem.Problem{}
     p.Status(http.StatusConflict)
+    p.Type(problem.TypeDuplicateKey)
     p.Title("Could not create topic.")
     p.Detail("This topic is already registered.")
     p.With("topic_id", creation.ID)
@@ -62,7 +64,7 @@ func (r *TopicsRepository) Create(ctx context.Context, creation *transfer.TopicC
   result, err := tx.ExecContext(ctx, addTopicQuery, creation.ID, creation.Name)
 
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
 
@@ -76,7 +78,7 @@ func (r *TopicsRepository) Create(ctx context.Context, creation *transfer.TopicC
   }
 
   if err = tx.Commit(); nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
 
@@ -98,7 +100,7 @@ ORDER BY lower("name");`
 
   result, err := r.db.QueryContext(ctx, getTopicsQuery)
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return nil, err
   }
 
@@ -117,7 +119,7 @@ ORDER BY lower("name");`
     )
 
     if nil != err {
-      slog.Error(err.Error())
+      slog.Error(getErrMsg(err))
       return nil, err
     }
 
@@ -131,7 +133,7 @@ ORDER BY lower("name");`
 func (r *TopicsRepository) Update(ctx context.Context, id string, update *transfer.TopicUpdate) error {
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
 
@@ -148,7 +150,16 @@ func (r *TopicsRepository) Update(ctx context.Context, id string, update *transf
   result, err := tx.ExecContext(ctx1, updateArticleTopicQuery, id, update.ID)
 
   if nil != err {
-    slog.Error(err.Error())
+    if strings.Contains(err.Error(), `violates foreign key constraint "article_topic_fkey"`) {
+      p := &problem.Problem{}
+      p.Type(problem.TypeActionRefused)
+      p.Status(http.StatusBadRequest)
+      p.Title("Could not update topic.")
+      p.Detail("Cannot update topic name because it is already in used by some articles. Try deleting this one and register a new topic under this name.")
+      p.With("name", update.Name)
+      return p
+    }
+    slog.Error(getErrMsg(err))
     return err
   }
 
@@ -169,7 +180,7 @@ func (r *TopicsRepository) Update(ctx context.Context, id string, update *transf
   )
 
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
 
@@ -178,7 +189,7 @@ func (r *TopicsRepository) Update(ctx context.Context, id string, update *transf
   }
 
   if err = tx.Commit(); nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
 
@@ -191,7 +202,7 @@ func (r *TopicsRepository) Remove(ctx context.Context, id string) error {
 
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
 
@@ -207,7 +218,7 @@ func (r *TopicsRepository) Remove(ctx context.Context, id string) error {
   result, err := tx.ExecContext(ctx1, removeTopicQuery, id)
 
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
 
@@ -226,16 +237,16 @@ func (r *TopicsRepository) Remove(ctx context.Context, id string) error {
   result, err = tx.ExecContext(ctx1, removeFromAttachedArticlesQuery, id)
 
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
 
   if _, err = result.RowsAffected(); nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
   }
 
   if err = tx.Commit(); nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
 

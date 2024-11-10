@@ -347,7 +347,7 @@ func (r *ArchiveRepository) Draft(ctx context.Context, creation *transfer.Articl
 
   draftArticleQuery := `
   INSERT INTO "archive"."article" ("title", "author", "slug", "read_time", "content")
-                 VALUES ($1, 'fontseca.dev', $2, $3, $4)
+                 VALUES ($1, 'fontseca.dev', $2, $3, coalesce(nullif($4, ''), 'no content'))
               RETURNING "uuid";`
 
   ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
@@ -361,6 +361,15 @@ func (r *ArchiveRepository) Draft(ctx context.Context, creation *transfer.Articl
   )
 
   if err = result.Scan(&id); nil != err {
+    if strings.Contains(err.Error(), `duplicate key value violates unique constraint "article_slug_key"`) {
+      var p problem.Problem
+      p.Type(problem.TypeDuplicateKey)
+      p.Status(http.StatusConflict)
+      p.Title("Duplicate draft title.")
+      p.Detail("The provided article draft title is already registered. Try using a different one.")
+      p.With("draft_title", creation.Title)
+      return "", &p
+    }
     slog.Error(getErrMsg(err))
     return uuid.Nil.String(), err
   }
@@ -404,6 +413,7 @@ func (r *ArchiveRepository) Publish(ctx context.Context, id string) error {
 
   if !isArticleDraft {
     p := problem.Problem{}
+    p.Type(problem.TypeActionAlreadyCompleted)
     p.Title("Article already published.")
     p.Status(http.StatusConflict)
     p.Detail("Cannot publish an article that is already published.")
@@ -432,6 +442,7 @@ func (r *ArchiveRepository) Publish(ctx context.Context, id string) error {
 
   if !hasTopic {
     p := &problem.Problem{}
+    p.Type(problem.TypeActionRefused)
     p.Status(http.StatusBadRequest)
     p.Title("Could not publish draft.")
     p.Detail("Cannot publish a draft without making it belong to a topic first.")
@@ -579,10 +590,10 @@ func (r *ArchiveRepository) Publications(ctx context.Context) (publications []*t
 // List retrieves all the articles that are either hidden or not. If
 // draftsOnly is true, then only retrieves all the ongoing drafts.
 //
-// If needle is a non-empty string, then Get behaves like a search
+// If filter.Search is a non-empty string, then List behaves like a search
 // function over non-hidden articles, so it attempts to find and
 // amass every article whose title contains any of the keywords
-// (if more than one) in needle.
+// (if more than one) in the search string.
 func (r *ArchiveRepository) List(ctx context.Context, filter *transfer.ArticleFilter, hidden, draftsOnly bool) (articles []*transfer.Article, err error) {
   query := strings.Builder{}
   query.WriteString(`
@@ -1074,6 +1085,7 @@ func (r *ArchiveRepository) Amend(ctx context.Context, id string) error {
 
   if isBeenAmended {
     p := problem.Problem{}
+    p.Type(problem.TypeActionRefused)
     p.Title("Article is currently been amended.")
     p.Detail("Could not amend article because there is an ongoing update.")
     p.Status(http.StatusConflict)
@@ -1255,6 +1267,7 @@ func (r *ArchiveRepository) AddTag(ctx context.Context, articleID, tagID string,
 
   if tagAlreadyExists {
     p := problem.Problem{}
+    p.Type(problem.TypeDuplicateKey)
     p.Status(http.StatusConflict)
     p.Title("Could not add a tag.")
 

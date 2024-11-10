@@ -3,11 +3,14 @@ package repository
 import (
   "context"
   "database/sql"
+  "errors"
   "fontseca.dev/model"
   "fontseca.dev/problem"
   "fontseca.dev/transfer"
   "github.com/google/uuid"
   "log/slog"
+  "net/http"
+  "strings"
   "time"
 )
 
@@ -30,7 +33,7 @@ ORDER BY "created_at" DESC;`
   defer cancel()
   rows, err := r.db.QueryContext(ctx, getTagsQuery)
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return nil, err
   }
   technologies = make([]*model.TechnologyTag, 0)
@@ -38,7 +41,7 @@ ORDER BY "created_at" DESC;`
     var tech = new(model.TechnologyTag)
     err = rows.Scan(&tech.UUID, &tech.Name, &tech.CreatedAt, &tech.UpdatedAt)
     if nil != err {
-      slog.Error(err.Error())
+      slog.Error(getErrMsg(err))
       return nil, err
     }
     technologies = append(technologies, tech)
@@ -50,7 +53,7 @@ ORDER BY "created_at" DESC;`
 func (r *TechnologyTagRepository) Create(ctx context.Context, creation *transfer.TechnologyTagCreation) (id string, err error) {
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return uuid.Nil.String(), err
   }
   defer tx.Rollback()
@@ -62,11 +65,20 @@ func (r *TechnologyTagRepository) Create(ctx context.Context, creation *transfer
   var result = tx.QueryRowContext(ctx, addTagQuery, creation.Name)
   err = result.Scan(&id)
   if nil != err {
-    slog.Error(err.Error())
+    if strings.Contains(err.Error(), `duplicate key value violates unique constraint "tag_name_key"`) {
+      var p problem.Problem
+      p.Type(problem.TypeDuplicateKey)
+      p.Status(http.StatusConflict)
+      p.Title("Duplicate technology tag.")
+      p.Detail("The specified technology tag name is already registered. Try using a different one.")
+      p.With("name", creation.Name)
+      return "", &p
+    }
+    slog.Error(getErrMsg(err))
     return uuid.Nil.String(), err
   }
   if err = tx.Commit(); nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return uuid.Nil.String(), err
   }
   return id, nil
@@ -85,7 +97,7 @@ func (r *TechnologyTagRepository) Exists(ctx context.Context, id string) (err er
   var count int
   err = row.Scan(&count)
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
   if count != 1 {
@@ -98,7 +110,7 @@ func (r *TechnologyTagRepository) Exists(ctx context.Context, id string) (err er
 func (r *TechnologyTagRepository) Update(ctx context.Context, id string, update *transfer.TechnologyTagUpdate) (updated bool, err error) {
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return false, err
   }
   defer tx.Rollback()
@@ -112,7 +124,10 @@ func (r *TechnologyTagRepository) Update(ctx context.Context, id string, update 
   var currentName string
   err = row.Scan(&currentName)
   if nil != err {
-    slog.Error(err.Error())
+    if errors.Is(err, sql.ErrNoRows) {
+      return false, problem.NewNotFound(id, "technology_tag")
+    }
+    slog.Error(getErrMsg(err))
     return false, err
   }
   if update.Name == currentName {
@@ -127,7 +142,16 @@ func (r *TechnologyTagRepository) Update(ctx context.Context, id string, update 
   defer cancel()
   result, err := tx.ExecContext(ctx, updateTagQuery, id, update.Name)
   if nil != err {
-    slog.Error(err.Error())
+    if strings.Contains(err.Error(), `duplicate key value violates unique constraint "tag_name_key"`) {
+      var p problem.Problem
+      p.Type(problem.TypeDuplicateKey)
+      p.Status(http.StatusConflict)
+      p.Title("Duplicate technology tag.")
+      p.Detail("The specified technology tag name is already registered. Try using a different one.")
+      p.With("name", update.Name)
+      return false, &p
+    }
+    slog.Error(getErrMsg(err))
     return false, err
   }
   affected, _ := result.RowsAffected()
@@ -135,7 +159,7 @@ func (r *TechnologyTagRepository) Update(ctx context.Context, id string, update 
     return false, nil
   }
   if err = tx.Commit(); nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return false, err
   }
   return true, nil
@@ -145,7 +169,7 @@ func (r *TechnologyTagRepository) Update(ctx context.Context, id string, update 
 func (r *TechnologyTagRepository) Remove(ctx context.Context, id string) (err error) {
   tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
   defer tx.Rollback()
@@ -156,7 +180,7 @@ func (r *TechnologyTagRepository) Remove(ctx context.Context, id string) (err er
   defer cancel()
   result, err := tx.ExecContext(ctx, removeTagQuery, id)
   if nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
   affected, _ := result.RowsAffected()
@@ -164,7 +188,7 @@ func (r *TechnologyTagRepository) Remove(ctx context.Context, id string) (err er
     return problem.NewNotFound(id, "technology_tag")
   }
   if err = tx.Commit(); nil != err {
-    slog.Error(err.Error())
+    slog.Error(getErrMsg(err))
     return err
   }
   return nil

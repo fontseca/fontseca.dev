@@ -5,9 +5,23 @@ import (
   "net/http"
 )
 
+type Type string
+
+const (
+  TypeInternal               Type = "internal"
+  TypeMissingArgument             = "missing_argument"
+  TypeUnparseableValue            = "unparseable_value"
+  TypeNotFound                    = "not_found"
+  TypeOutOfRange                  = "out_of_range"
+  TypeUnmetValidation             = "unmet_validation"
+  TypeDuplicateKey                = "duplicate_key"
+  TypeActionAlreadyCompleted      = "action_already_completed"
+  TypeActionRefused               = "action_refused"
+)
+
 func NewInternal() *Problem {
   var p Problem
-  p.Type("internal")
+  p.Type(TypeInternal)
   p.Status(http.StatusInternalServerError)
   p.Title("Internal Server Error.")
   p.Detail("An unexpected error occurred while processing your request. Please try again later. If the problem persists, contact the developer for assistance.")
@@ -17,7 +31,7 @@ func NewInternal() *Problem {
 
 func NewNotFound(id, recordType string) *Problem {
   var p Problem
-  p.Type("not_found")
+  p.Type(TypeNotFound)
   p.Status(http.StatusNotFound)
   p.Title("Record not found.")
   p.Detail(fmt.Sprintf("The %s record with UUID '%s' could not be found in the database.", recordType, id))
@@ -28,7 +42,7 @@ func NewNotFound(id, recordType string) *Problem {
 
 func NewSlugNotFound(slug, recordType string) *Problem {
   var p Problem
-  p.Type("not_found")
+  p.Type(TypeNotFound)
   p.Status(http.StatusNotFound)
   p.Title("Record not found.")
   p.Detail(fmt.Sprintf("The %s record with the slug '%s' could not be found in the database.", recordType, slug))
@@ -39,7 +53,7 @@ func NewSlugNotFound(slug, recordType string) *Problem {
 
 func NewUnparsableValue(targetType, fieldName, fieldValue string) *Problem {
   var p Problem
-  p.Type("unparseable_value")
+  p.Type(TypeUnparseableValue)
   p.Status(http.StatusUnprocessableEntity)
   p.Title(fmt.Sprintf("Failure when parsing %s value.", targetType))
   p.Detail(fmt.Sprintf("Failed to parse the provided value as: %s. Please make sure the value is valid according to its type.", targetType))
@@ -51,7 +65,7 @@ func NewUnparsableValue(targetType, fieldName, fieldValue string) *Problem {
 
 func NewValueOutOfRange(targetType, fieldName, fieldValue string) *Problem {
   var p Problem
-  p.Type("out_of_range")
+  p.Type(TypeOutOfRange)
   p.Status(http.StatusUnprocessableEntity)
   p.Title(fmt.Sprintf("Failure when parsing %s value.", targetType))
   p.Detail(fmt.Sprintf("Out of range for the provided value as: %s. Please make sure the value is valid according to its type.", targetType))
@@ -64,6 +78,7 @@ func NewValueOutOfRange(targetType, fieldName, fieldValue string) *Problem {
 
 func NewValidation(failures ...[3]string) *Problem {
   var p Problem
+  p.Type(TypeUnmetValidation)
   p.Status(http.StatusBadRequest)
   p.Title("Failed to validate request data.")
   p.Detail("The provided data does not meet the required validation criteria. Please review your input and try again.")
@@ -88,7 +103,7 @@ func NewValidation(failures ...[3]string) *Problem {
 
 func NewMissingParameter(parameter string) *Problem {
   var p Problem
-  p.Type("missing_argument")
+  p.Type(TypeMissingArgument)
   p.Status(http.StatusBadRequest)
   p.Title("Missing required parameter.")
   p.Detail(fmt.Sprintf("The '%s' parameter is required but was not found in the request form data.", parameter))

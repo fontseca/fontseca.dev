@@ -274,11 +274,11 @@ func (p *Problem) defaultType() {
 
 // Type sets the type of the problem. If the string t is empty,
 // its value is assumed to be "about:blank".
-func (p *Problem) Type(t string) {
-  t = strings.TrimSpace(t)
+func (p *Problem) Type(t Type) {
+  t = Type(strings.TrimSpace(string(t)))
 
   if base.empty {
-    u, ok := doParseURL(t)
+    u, ok := doParseURL(string(t))
     if ok {
       p.typ = u.String()
     } else {
@@ -291,7 +291,7 @@ func (p *Problem) Type(t string) {
 
   if base.fragment {
     clone, _ := url.Parse(base.url.String())
-    clone.Fragment = t
+    clone.Fragment = string(t)
     p.typ = clone.String()
     return
   }
@@ -301,7 +301,7 @@ func (p *Problem) Type(t string) {
     return
   }
 
-  u, err := url.JoinPath(base.url.String(), t)
+  u, err := url.JoinPath(base.url.String(), string(t))
   if nil != err {
     slog.Error(err.Error())
     p.defaultType()

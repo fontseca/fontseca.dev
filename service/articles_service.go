@@ -42,7 +42,7 @@ func (s *ArticlesService) list(ctx context.Context, filter *transfer.ArticleFilt
 
 // List retrieves all the published articles.
 //
-// If filter.Search is a non-empty string, then Get behaves like a search
+// If filter.Search is a non-empty string, then List behaves like a search
 // function over articles, so it attempts to find and amass every
 // article whose title contains any of the keywords (if more than one)
 // in filter.Search.

@@ -81,7 +81,7 @@ func (h *MeHandler) SetHireable(c *gin.Context) {
     var numError *strconv.NumError
     if errors.As(err, &numError) {
       var p problem.Problem
-      p.Type("unparseable_value")
+      p.Type(problem.TypeUnparseableValue)
       p.Title("Failure when parsing boolean value.")
       p.Status(http.StatusUnprocessableEntity)
       p.Detail("Failed to parse the provided value as a boolean. Please ensure the value is either 'true' or 'false'.")
