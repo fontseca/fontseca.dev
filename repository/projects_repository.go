@@ -9,6 +9,7 @@ import (
   "fontseca.dev/transfer"
   "github.com/google/uuid"
   "log/slog"
+  "slices"
   "strings"
   "time"
 )
@@ -100,6 +101,7 @@ func (r *ProjectsRepository) List(ctx context.Context, archived bool) (projects 
     }
     if nil != tags && "" != *tags {
       project.TechnologyTags = strings.Split(*tags, ",")
+      slices.Sort(project.TechnologyTags)
     }
     projects = append(projects, project)
   }
@@ -184,6 +186,7 @@ func (r *ProjectsRepository) Get(ctx context.Context, id string) (project *model
 
   if nil != tags && "" != *tags {
     project.TechnologyTags = strings.Split(*tags, ",")
+    slices.Sort(project.TechnologyTags)
   }
 
   return project, nil
@@ -262,6 +265,7 @@ func (r *ProjectsRepository) GetBySlug(ctx context.Context, slug string) (projec
   }
   if nil != tags && "" != *tags {
     project.TechnologyTags = strings.Split(*tags, ",")
+    slices.Sort(project.TechnologyTags)
   }
   return project, nil
 }
