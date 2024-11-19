@@ -815,17 +815,16 @@ button.link-copier.copied::before {
 
 .project-tile .images-container .first-image {
   width: 100%;
+  max-height: 300px;
   position: relative;
-  border-top-left-radius: 5px;
-  border-top-right-radius: 5px;
-  border-bottom-left-radius: 5px;
+  border-radius: 5px;
+  overflow: hidden;
 }
 
 .project-tile .images-container .first-image img {
+  width: 110%;
   height: auto;
-  border-top-left-radius: 5px;
-  border-top-right-radius: 5px;
-  border-bottom-left-radius: 5px;
+  border-radius: 5px;
 }
 
 .project-tile .images-container .second-image {
@@ -1030,7 +1029,7 @@ button.link-copier.copied::before {
 
 .project-detail .info-article .images-and-links-container {
   position: relative;
-  width: 35%;
+  width: 50%;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -1038,7 +1037,10 @@ button.link-copier.copied::before {
 
 .project-detail .info-article .images-container {
   width: 100%;
-  padding-bottom: 2.5rem;
+  height: 100%;
+  max-height: 350px;
+  border-radius: 5px;
+  overflow: hidden;
 }
 
 .project-detail .info-article .images-container img {
@@ -1047,17 +1049,16 @@ button.link-copier.copied::before {
 
 .project-detail .info-article .images-container .first-image {
   width: 100%;
-  border-top-left-radius: 5px;
-  border-top-right-radius: 5px;
-  border-bottom-left-radius: 5px;
+  height: 100%;
+  border-radius: 5px;
   position: relative;
+  overflow: hidden;
 }
 
 .project-detail .info-article .images-container .first-image img {
+  width: 150%;
   height: auto;
-  border-top-left-radius: 5px;
-  border-top-right-radius: 5px;
-  border-bottom-left-radius: 5px;
+  border-radius: 5px;
 }
 
 .project-detail .info-article .images-container .second-image {
@@ -1103,16 +1104,10 @@ button.link-copier.copied::before {
 }
 
 @media screen and (max-width: 1420px) {
-  .project-detail .info-article .info-container {
-    width: 60%;
+  .project-detail .info-article .images-container .first-image img {
+    width: 100%;
   }
 
-  .project-detail .info-article .images-and-links-container {
-    width: 40%;
-  }
-}
-
-@media screen and (max-width: 1120px) {
   .project-detail .info-article {
     flex-wrap: wrap;
     flex-direction: column;
