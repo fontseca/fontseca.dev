@@ -482,7 +482,7 @@ button.link-copier.copied::before {
 }
 
 .me .info-article .name {
-  font-size: clamp(3.5rem, 5vw, 6vw);
+  font-size: clamp(2.7rem, 5vw, 6vw);
   font-weight: 200;
 }
 
@@ -491,9 +491,9 @@ button.link-copier.copied::before {
 }
 
 .me .info-article .job-title {
-  font-size: clamp(1.5rem, 1.5vw, 3vw);
-  font-weight: 600;
-  margin-top: 1rem;
+  font-size: clamp(1.4rem, 1.5vw, 3vw);
+  font-weight: 700;
+  margin-top: .5rem;
 }
 
 .me .info-article .job-title span {
@@ -504,8 +504,11 @@ button.link-copier.copied::before {
   padding-top: 2.2rem;
 }
 
-.me .info-article .summary-container p {
+.me .info-article .summary-container * {
   font-family: 'Source Serif 4', sans-serif;
+}
+
+.me .info-article .summary-container p {
   font-size: 17px;
 }
 
