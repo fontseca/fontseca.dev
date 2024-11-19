@@ -90,8 +90,8 @@ func (s *ProjectsService) Create(ctx context.Context, creation *transfer.Project
   creation.CollectionURL = strings.TrimSpace(creation.CollectionURL)
 
   switch {
-  case 0 != len(creation.Name) && 36 < len(creation.Name):
-    return "", problem.NewValidation([3]string{"name", "max", "36"})
+  case 0 != len(creation.Name) && 128 < len(creation.Name):
+    return "", problem.NewValidation([3]string{"name", "max", "128"})
   case 0 != len(creation.Homepage) && 2048 < len(creation.Homepage):
     return "", problem.NewValidation([3]string{"homepage", "max", "2048"})
   case 0 != len(creation.Company) && 64 < len(creation.Company):

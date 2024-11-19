@@ -1,7 +1,7 @@
 CREATE TABLE IF NOT EXISTS "projects"."project"
 (
   "uuid"             VARCHAR(36) PRIMARY KEY       DEFAULT "extensions"."uuid_generate_v4"(),
-  "name"             VARCHAR(64) UNIQUE   NOT NULL CHECK ( "name" <> '' ),
+  "name"             VARCHAR(128) UNIQUE   NOT NULL CHECK ( "name" <> '' ),
   "slug"             VARCHAR(2024) UNIQUE NOT NULL CHECK ("slug" <> ''),
   "homepage"         VARCHAR(2048)        NOT NULL DEFAULT 'about:blank' CHECK ("homepage" <> ''),
   "company_name"     VARCHAR(64)                   DEFAULT NULL CHECK ("company_name" <> ''),
