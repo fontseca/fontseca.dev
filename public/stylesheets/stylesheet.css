@@ -1223,14 +1223,17 @@ button.link-copier.copied::before {
 .post-content-section .content h3,
 .post-content-section .content h4,
 .post-content-section .content h5,
-.post-content-section .content h6,
+.post-content-section .content h6 {
+  padding-bottom: 2rem;
+}
+
 .post-content-section .content li {
-  padding-bottom: 1rem;
+  padding-bottom: 0;
 }
 
 .post-content-section .content p,
 .post-content-section .content li {
-  font-size: 17px;
+  font-size: 18px;
 }
 
 .post-content-section .content ul,
@@ -1292,7 +1295,7 @@ button.link-copier.copied::before {
 }
 
 .post-content-section .content figure {
-  margin-bottom: 1rem;
+  margin-bottom: 2rem;
 }
 
 .post-content-section .content .video {
@@ -1336,7 +1339,7 @@ button.link-copier.copied::before {
 
 @media screen and (max-width: 1120px) {
   .post-content-section .content figure {
-    margin-bottom: 0;
+    margin-bottom: 1rem;
   }
 
   .post-content-section .content figure img {
@@ -1449,7 +1452,7 @@ button.link-copier.copied::before {
 
 .articles-list .article-tile a {
   font-size: 17px;
-  font-weight: 300;
+  font-weight: 400;
 }
 
 .articles-list .article-tile.pinned:after {
