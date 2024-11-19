@@ -773,12 +773,16 @@ button.link-copier.copied::before {
   padding-top: 1rem;
   padding-bottom: 1rem;
   display: flex;
-  column-gap: .7rem;
-  row-gap: .2rem;
+  column-gap: .5rem;
+  row-gap: .5rem;
   flex-wrap: wrap;
 }
 
 .project-tile .content-container .tags .tag {
+  background-color: black;
+  color: white;
+  padding: .3rem;
+  font-size: 14px;
   font-weight: 600;
 }
 
@@ -1047,12 +1051,16 @@ button.link-copier.copied::before {
 .project-detail .info-article .tags-and-playground-container .tags {
   padding-top: 1rem;
   display: flex;
-  column-gap: .7rem;
-  row-gap: .2rem;
+  column-gap: .5rem;
+  row-gap: .5rem;
   flex-wrap: wrap;
 }
 
 .project-detail .info-article .tags-and-playground-container .tags .tag {
+  background-color: black;
+  color: white;
+  font-size: 14px;
+  padding: .3rem;
   font-weight: 600;
 }
 
