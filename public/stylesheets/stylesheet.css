@@ -13,6 +13,8 @@
 @media (prefers-color-scheme: light) {
   body {
     background-image: url("/public/images/bg-light.webp");
+    background-color: rgba(255, 255, 255, 0.1);
+    background-blend-mode: lighten;
   }
 }
 
@@ -240,7 +242,7 @@ button.link-copier.copied::before {
 
 .site-wrapper {
   width: 54%;
-  max-width: 54rem;
+  max-width: 55rem;
   min-height: 100%;
   margin: auto;
   display: block;
@@ -506,6 +508,7 @@ button.link-copier.copied::before {
 
 .me .info-article .summary-container * {
   font-family: 'Source Serif 4', sans-serif;
+  text-align: justify;
 }
 
 .me .info-article .summary-container p {
@@ -1254,6 +1257,16 @@ button.link-copier.copied::before {
   font-family: 'Source Serif 4', sans-serif;
 }
 
+.post-content-section .content h2 {
+  font-size: x-large !important;
+  font-weight: 800;
+}
+
+.post-content-section .content h3 {
+  font-size: larger !important;
+  font-weight: 800;
+}
+
 .post-content-section .content p,
 .post-content-section .content h1,
 .post-content-section .content h2,
@@ -1261,16 +1274,25 @@ button.link-copier.copied::before {
 .post-content-section .content h4,
 .post-content-section .content h5,
 .post-content-section .content h6 {
-  padding-bottom: 2rem;
+  padding-bottom: 1.3rem;
 }
 
 .post-content-section .content li {
-  padding-bottom: 0;
+  margin-bottom: .3rem;
 }
 
 .post-content-section .content p,
-.post-content-section .content li {
+.post-content-section .content a,
+.post-content-section .content li,
+.post-content-section .content p *,
+.post-content-section .content li * {
   font-size: 18px;
+  line-height: 22px;
+}
+
+.post-content-section .content strong,
+.post-content-section .content strong b {
+  font-weight: 600;
 }
 
 .post-content-section .content ul,
@@ -1280,13 +1302,13 @@ button.link-copier.copied::before {
 
 .post-content-section .content blockquote {
   padding-left: 3rem;
-  padding-bottom: 1rem;
+  padding-bottom: 1.2rem;
   margin: 0;
 }
 
 .post-content-section .content .snippet {
   width: 100%;
-  margin-bottom: 1rem;
+  margin-bottom: 1.2rem;
   background-color: #f5f5f5;
   border-radius: 5px;
   border: 1px solid rgba(0, 0, 0, 0.3);
@@ -1306,6 +1328,7 @@ button.link-copier.copied::before {
   padding: 0 !important;
   font-weight: 600;
   font-family: monospace !important;
+  font-size: 14px !important;
 }
 
 .post-content-section .content .snippet pre {
@@ -1318,9 +1341,22 @@ button.link-copier.copied::before {
   overflow-x: auto;
 }
 
+.post-content-section .content code,
 .post-content-section .content .snippet pre code {
   font-family: monospace !important;
   font-size: 14px !important;
+}
+
+.post-content-section .content code {
+  background-color: #f5f5f5;
+  padding: .3rem;
+  font-weight: bold;
+}
+
+.post-content-section .content .snippet pre code {
+  background-color: transparent;
+  padding: 0;
+  font-weight: normal;
 }
 
 .post-content-section .content blockquote p::before {
@@ -1332,7 +1368,7 @@ button.link-copier.copied::before {
 }
 
 .post-content-section .content figure {
-  margin-bottom: 2rem;
+  margin-bottom: 1.2rem;
 }
 
 .post-content-section .content .video {
@@ -1376,7 +1412,7 @@ button.link-copier.copied::before {
 
 @media screen and (max-width: 1120px) {
   .post-content-section .content figure {
-    margin-bottom: 1rem;
+    margin-bottom: 0;
   }
 
   .post-content-section .content figure img {
