@@ -50,7 +50,10 @@ templ Me(me *model.Me) {
 				</div>
 				<div class="buttons">
 					@ui.Button("Get in touch", true, "mailto:" + me.Email, nil)
+
+				  if "" != me.ResumeURL && "about:blank" != me.ResumeURL {
 					@ui.Button("See résumé", false, me.ResumeURL, nil)
+					}
 				</div>
 				<p class="bottom-line">Feel free to reach me out if you want to build something together, have any questions, or just want to connect.</p>
 			</article>
