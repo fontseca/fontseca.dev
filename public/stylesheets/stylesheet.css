@@ -1562,6 +1562,7 @@ button.link-copier.copied::before {
 .archive-content-aside .tags .tags-list .tag a {
   font-size: 13px;
   font-weight: normal;
+  padding-left: .125rem;
 }
 
 .archive-content-aside .tags .tags-list .tag.selected a {
@@ -1693,4 +1694,5 @@ button.link-copier.copied::before {
 
 .article-post .post-content-section .tags-list .tag a {
   font-weight: normal;
+  padding-left: .125rem;
 }
