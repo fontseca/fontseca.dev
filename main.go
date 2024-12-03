@@ -30,8 +30,6 @@ import (
 )
 
 func main() {
-  log.SetFlags(log.LstdFlags | log.Lshortfile)
-
   var db, err = sql.Open("postgres", mustLookupEnv("DB_CONN_STRING"))
 
   if nil != err {
@@ -67,15 +65,18 @@ func main() {
   if "" == mode {
     mode = gin.DebugMode
     fmt.Printf("warn: environment `SERVER_MODE` variable not found, defaulting to value: %s\n", mode)
+  }
 
+  if gin.ReleaseMode == mode {
+    log.SetFlags(log.Lshortfile)
+  } else {
+    log.SetFlags(log.LstdFlags | log.Lshortfile)
   }
 
   gin.SetMode(mode)
   var engine = gin.New()
 
   engine.Use(gin.Recovery())
-  engine.Use(func(c *gin.Context) {
-  })
 
   var formatter = func(param gin.LogFormatterParams) string {
     if param.Latency > time.Minute {
