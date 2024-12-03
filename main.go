@@ -9,6 +9,7 @@ import (
   "fontseca.dev/playground"
   "fontseca.dev/repository"
   "fontseca.dev/service"
+  "github.com/gin-contrib/gzip"
   "github.com/gin-gonic/gin"
   "github.com/gin-gonic/gin/binding"
   "github.com/go-playground/validator/v10"
@@ -113,6 +114,18 @@ func main() {
   }))
 
   engine.Use(func(c *gin.Context) {
+    if http.MethodGet == c.Request.Method {
+      switch c.Request.URL.Path {
+      case "/public", "/playground", "/favicon.ico", "/resume":
+        c.Writer.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+      }
+    }
+    c.Next()
+  })
+
+  engine.Use(gzip.Gzip(gzip.DefaultCompression))
+
+  engine.Use(func(c *gin.Context) {
     if http.MethodPost == c.Request.Method &&
       !(strings.Contains(c.ContentType(), "application/x-www-form-urlencoded") ||
         strings.Contains(c.ContentType(), "multipart/form-data")) {
@@ -124,7 +137,6 @@ func main() {
   engine.Static("/public", "public")
   engine.Static("/playground", "playground")
   engine.StaticFile("/favicon.ico", "public/icons/favicon.ico")
-  engine.StaticFile("/photo.webp", "public/images/photo.webp")
   engine.GET("/resume", func(c *gin.Context) {
     c.Header("Content-Type", "application/pdf")
     c.Header("Content-Disposition", `inline; filename="fontseca.dev's résumé.pdf"`)
