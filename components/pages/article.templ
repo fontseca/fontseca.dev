@@ -33,7 +33,7 @@ templ Article(article *model.Article) {
                     <time>
                       <a style="font-weight: 500;"
                          href={ templ.SafeURL(fmt.Sprint("/archive/any/", article.PublishedAt.Year(), "/", int(article.PublishedAt.Month()))) }>
-                         { article.PublishedAt.Format("January 02, 2006") }
+                         { article.PublishedAt.Format("Jan 02, 2006") }
                       </a>
                     </time>
                   } else {
