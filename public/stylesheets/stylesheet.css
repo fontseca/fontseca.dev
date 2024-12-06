@@ -1266,6 +1266,14 @@ button.link-copier.copied::before {
   font-weight: 800;
 }
 
+.post-content-section .content h2 {
+  line-height: 1.6rem;
+}
+
+.post-content-section .content h3 {
+  line-height: 1.5rem;
+}
+
 .post-content-section .content p,
 .post-content-section .content h1,
 .post-content-section .content h2,
