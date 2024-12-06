@@ -1,5 +1,10 @@
 document.querySelectorAll("button.link-copier").forEach(button => {
+  let isCopied = false;
   button.onclick = () => {
+    if (isCopied) {
+      return;
+    }
+
     const dummy = document.createElement('input');
 
     document.body.appendChild(dummy);
@@ -8,8 +13,14 @@ document.querySelectorAll("button.link-copier").forEach(button => {
 
     try {
       document.execCommand('copy');
+      isCopied = true;
       button.classList.add("copied");
       button.textContent = "Copied!";
+      setTimeout(() => {
+        button.textContent = "Copy link";
+        button.classList.remove("copied");
+        isCopied = false;
+      }, 5000);
     } catch (error) {
       console.error(error);
     } finally {
@@ -80,7 +91,7 @@ function setArchiveTopic(e) {
   searchbar.setAttribute("hx-get", baseTopicURL);
   searchbar.setAttribute("hx-push-url", baseTopicURL);
   window.history.replaceState({}, "", baseTopicURL);
-  window.scrollTo({ top: 0,    behavior: "smooth" });
+  window.scrollTo({top: 0, behavior: "smooth"});
 
   htmx.process(document.body);
 }
@@ -110,7 +121,7 @@ function setArchivePublicationDate(e) {
   searchbar.setAttribute("hx-push-url", currentURL);
 
   window.history.replaceState({}, "", currentURL);
-  window.scrollTo({ top: 0,    behavior: "smooth" });
+  window.scrollTo({top: 0, behavior: "smooth"});
 
   htmx.process(document.body);
 }
@@ -155,7 +166,7 @@ function setArchiveTag(e) {
   searchbar.setAttribute("hx-get", baseTagURL);
   searchbar.setAttribute("hx-push-url", baseTagURL);
   window.history.replaceState({}, "", baseTagURL);
-  window.scrollTo({ top: 0,    behavior: "smooth" });
+  window.scrollTo({top: 0, behavior: "smooth"});
 
   htmx.process(document.body);
 }
