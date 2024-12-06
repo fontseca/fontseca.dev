@@ -61,6 +61,9 @@ templ Archive(articles []*transfer.Article, publications []*transfer.Publication
             <header>
               <h3>Topics</h3>
             </header>
+            if 0 == len(topics) {
+              <small>No topics yet.</small>
+            } else {
             <ul id="topics-list" class="topics-list">
               for _, t := range topics {
                 if nil != t {
@@ -76,11 +79,15 @@ templ Archive(articles []*transfer.Article, publications []*transfer.Publication
                 }
               }
             </ul>
+            }
           </section>
           <section class="publications">
             <header>
               <h3>Publications</h3>
             </header>
+            if 0 == len(publications) {
+              <small>No publications yet.</small>
+            } else {
             <ul id="publications-list" class="publications-list">
               for _, p := range publications {
                 if nil != p {
@@ -95,11 +102,15 @@ templ Archive(articles []*transfer.Article, publications []*transfer.Publication
                 }
               }
             </ul>
+            }
           </section>
           <section class="tags">
             <header>
               <h3>Tags</h3>
             </header>
+            if 0 == len(tags) {
+              <small>No tags yet.</small>
+            } else {
             <div id="tags-list" class="tags-list">
               for _, t := range tags {
                 if nil != t {
@@ -116,6 +127,7 @@ templ Archive(articles []*transfer.Article, publications []*transfer.Publication
                 }
               }
             </div>
+            }
           </section>
         </aside>
       </section>
