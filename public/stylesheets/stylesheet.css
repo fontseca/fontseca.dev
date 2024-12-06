@@ -146,14 +146,14 @@ a:hover {
 /* Icons.  */
 
 .icon-tag {
-  padding-left: .958rem !important;
+  padding-left: .7rem !important;
 }
 
 .icon-tag::before {
-  top: .1rem !important;
-  content: "\E478";
+  top: .2rem !important;
+  content: "#";
   font-weight: normal;
-  font-size: 13px;
+  font-size: 15px;
 }
 
 /* Logo.  */
@@ -1465,8 +1465,8 @@ button.link-copier.copied::before {
 }
 
 .archive-content-main .topic-and-search .selected-tag-div .selected-tag::before {
-  font-size: 16px;
-  top: .410rem !important;
+  font-size: 20px;
+  top: .1rem !important;
   left: -.4rem;
 }
 
@@ -1554,14 +1554,19 @@ button.link-copier.copied::before {
 
 .archive-content-aside .tags .tags-list {
   display: flex;
+  column-gap: .6rem;
+  row-gap: .2rem;
   flex-wrap: wrap;
-  gap: .4rem;
+}
+
+.archive-content-aside .tags .tags-list .tag::before {
+  top: 0 !important;
 }
 
 .archive-content-aside .tags .tags-list .tag a {
   font-size: 13px;
   font-weight: normal;
-  padding-left: .125rem;
+  font-family: 'Source Serif 4', sans-serif;
 }
 
 .archive-content-aside .tags .tags-list .tag.selected a {
@@ -1686,12 +1691,16 @@ button.link-copier.copied::before {
 
 .article-post .post-content-section .tags-list {
   display: flex;
-  row-gap: .5rem;
-  column-gap: 1rem;
+  column-gap: .6rem;
   flex-wrap: wrap;
+}
+
+.article-post .post-content-section .tags-list .tag::before {
+  top: 0 !important;
 }
 
 .article-post .post-content-section .tags-list .tag a {
   font-weight: normal;
-  padding-left: .125rem;
+  font-family: 'Source Serif 4', sans-serif;
+  font-size: 13px;
 }
