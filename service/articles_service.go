@@ -23,13 +23,23 @@ type archiveRepositoryAPIForArticles interface {
   SetPinned(ctx context.Context, articleID string, pinned bool) error
 }
 
-// ArticlesService is a high level provider for articles.
-type ArticlesService struct {
-  r archiveRepositoryAPIForArticles
+type cacher interface {
+  SetCache(ctx context.Context)
 }
 
-func NewArticlesService(r archiveRepositoryAPIForArticles) *ArticlesService {
-  return &ArticlesService{r}
+// ArticlesService is a high level provider for articles.
+type ArticlesService struct {
+  r            archiveRepositoryAPIForArticles
+  topicsCacher cacher
+  tagsCacher   cacher
+}
+
+func NewArticlesService(r archiveRepositoryAPIForArticles, topicsService cacher, tagsService cacher) *ArticlesService {
+  return &ArticlesService{
+    r:            r,
+    topicsCacher: topicsService,
+    tagsCacher:   tagsService,
+  }
 }
 
 func (s *ArticlesService) list(ctx context.Context, filter *transfer.ArticleFilter, hidden ...bool) (articles []*transfer.Article, err error) {
@@ -91,7 +101,13 @@ func (s *ArticlesService) Hide(ctx context.Context, id string) error {
     return err
   }
 
-  return s.r.SetHidden(ctx, id, true)
+  err := s.r.SetHidden(ctx, id, true)
+  if nil != err {
+    return err
+  }
+
+  s.setCaches(ctx)
+  return nil
 }
 
 // Show shows a hidden article.
@@ -100,7 +116,13 @@ func (s *ArticlesService) Show(ctx context.Context, id string) error {
     return err
   }
 
-  return s.r.SetHidden(ctx, id, false)
+  err := s.r.SetHidden(ctx, id, false)
+  if nil != err {
+    return err
+  }
+
+  s.setCaches(ctx)
+  return nil
 }
 
 // SetSlug changes the slug of an article.
@@ -138,7 +160,13 @@ func (s *ArticlesService) Remove(ctx context.Context, id string) error {
     return err
   }
 
-  return s.r.Remove(ctx, id)
+  err := s.r.Remove(ctx, id)
+  if nil != err {
+    return err
+  }
+
+  s.setCaches(ctx)
+  return nil
 }
 
 // Pin pins an article.
@@ -166,7 +194,13 @@ func (s *ArticlesService) AddTag(ctx context.Context, articleUUID, tagID string)
     return err
   }
 
-  return s.r.AddTag(ctx, articleUUID, tagID)
+  err := s.r.AddTag(ctx, articleUUID, tagID)
+  if nil != err {
+    return err
+  }
+
+  s.setCaches(ctx)
+  return nil
 }
 
 // RemoveTag removes a tag from article. If the article
@@ -177,5 +211,16 @@ func (s *ArticlesService) RemoveTag(ctx context.Context, articleUUID, tagID stri
     return err
   }
 
-  return s.r.RemoveTag(ctx, articleUUID, tagID)
+  err := s.r.RemoveTag(ctx, articleUUID, tagID)
+  if nil != err {
+    return err
+  }
+
+  s.setCaches(ctx)
+  return nil
+}
+
+func (s *ArticlesService) setCaches(ctx context.Context) {
+  s.tagsCacher.SetCache(ctx)
+  s.topicsCacher.SetCache(ctx)
 }

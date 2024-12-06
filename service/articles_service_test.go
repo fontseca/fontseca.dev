@@ -32,6 +32,12 @@ func (mock *archiveRepositoryMockAPIForArticles) List(_ context.Context, filter 
   return mock.returns[0].([]*transfer.Article), mock.errors
 }
 
+type cacherMock struct{}
+
+func (mock *cacherMock) SetCache(ctx context.Context) {}
+
+var cacherImpl = &cacherMock{}
+
 func TestArticlesService_Get(t *testing.T) {
   ctx := context.TODO()
   filter := &transfer.ArticleFilter{}
@@ -40,7 +46,7 @@ func TestArticlesService_Get(t *testing.T) {
     expectedArticles := []*transfer.Article{{}, {}, {}}
 
     r := &archiveRepositoryMockAPIForArticles{t: t, arguments: []any{ctx, filter, false, false}, returns: []any{expectedArticles}}
-    articles, err := NewArticlesService(r).List(ctx, filter)
+    articles, err := NewArticlesService(r, cacherImpl, cacherImpl).List(ctx, filter)
 
     assert.Equal(t, expectedArticles, articles)
     assert.NoError(t, err)
@@ -49,7 +55,7 @@ func TestArticlesService_Get(t *testing.T) {
   t.Run("gets a repository failure", func(t *testing.T) {
     unexpected := errors.New("unexpected error")
     r := &archiveRepositoryMockAPIForArticles{returns: []any{([]*transfer.Article)(nil)}, errors: unexpected}
-    _, err := NewArticlesService(r).List(ctx, filter)
+    _, err := NewArticlesService(r, cacherImpl, cacherImpl).List(ctx, filter)
     assert.ErrorIs(t, err, unexpected)
   })
 }
@@ -62,7 +68,7 @@ func TestArticlesService_GetHidden(t *testing.T) {
     expectedArticles := []*transfer.Article{{}, {}, {}}
 
     r := &archiveRepositoryMockAPIForArticles{t: t, arguments: []any{ctx, filter, true, false}, returns: []any{expectedArticles}}
-    articles, err := NewArticlesService(r).ListHidden(ctx, filter)
+    articles, err := NewArticlesService(r, cacherImpl, cacherImpl).ListHidden(ctx, filter)
 
     assert.Equal(t, expectedArticles, articles)
     assert.NoError(t, err)
@@ -72,7 +78,7 @@ func TestArticlesService_GetHidden(t *testing.T) {
     unexpected := errors.New("unexpected error")
 
     r := &archiveRepositoryMockAPIForArticles{returns: []any{([]*transfer.Article)(nil)}, errors: unexpected}
-    _, err := NewArticlesService(r).ListHidden(ctx, filter)
+    _, err := NewArticlesService(r, cacherImpl, cacherImpl).ListHidden(ctx, filter)
     assert.ErrorIs(t, err, unexpected)
   })
 }
@@ -96,7 +102,7 @@ func TestArticlesService_GetByID(t *testing.T) {
     expectedArticle := &model.Article{}
 
     r := &archiveRepositoryMockAPIForArticles{t: t, arguments: []any{ctx, id, false}, returns: []any{expectedArticle}}
-    article, err := NewArticlesService(r).GetByID(ctx, id)
+    article, err := NewArticlesService(r, cacherImpl, cacherImpl).GetByID(ctx, id)
 
     assert.Equal(t, expectedArticle, article)
     assert.NoError(t, err)
@@ -106,7 +112,7 @@ func TestArticlesService_GetByID(t *testing.T) {
     unexpected := errors.New("unexpected error")
 
     r := &archiveRepositoryMockAPIForArticles{returns: []any{(*model.Article)(nil)}, errors: unexpected}
-    article, err := NewArticlesService(r).GetByID(ctx, id)
+    article, err := NewArticlesService(r, cacherImpl, cacherImpl).GetByID(ctx, id)
 
     assert.Nil(t, article)
     assert.ErrorIs(t, err, unexpected)
@@ -116,7 +122,7 @@ func TestArticlesService_GetByID(t *testing.T) {
     id = "e4d06ba7-f086-47dc-9f5e"
 
     r := &archiveRepositoryMockAPIForArticles{}
-    _, err := NewArticlesService(r).GetByID(ctx, id)
+    _, err := NewArticlesService(r, cacherImpl, cacherImpl).GetByID(ctx, id)
 
     require.False(t, r.called)
     assert.Error(t, err)
@@ -141,20 +147,20 @@ func TestArticlesService_Hide(t *testing.T) {
   t.Run("success", func(t *testing.T) {
     r := &archiveRepositoryMockAPIForArticles{t: t, arguments: []any{ctx, id, true}}
 
-    assert.NoError(t, NewArticlesService(r).Hide(ctx, id))
+    assert.NoError(t, NewArticlesService(r, cacherImpl, cacherImpl).Hide(ctx, id))
   })
 
   t.Run("gets a repository failure", func(t *testing.T) {
     unexpected := errors.New("unexpected error")
     r := &archiveRepositoryMockAPIForArticles{errors: unexpected}
-    assert.ErrorIs(t, NewArticlesService(r).Hide(ctx, id), unexpected)
+    assert.ErrorIs(t, NewArticlesService(r, cacherImpl, cacherImpl).Hide(ctx, id), unexpected)
   })
 
   t.Run("wrong uuid", func(t *testing.T) {
     id = "e4d06ba7-f086-47dc-9f5e"
 
     r := &archiveRepositoryMockAPIForArticles{}
-    assert.Error(t, NewArticlesService(r).Hide(ctx, id))
+    assert.Error(t, NewArticlesService(r, cacherImpl, cacherImpl).Hide(ctx, id))
     assert.False(t, r.called)
   })
 }
@@ -165,21 +171,21 @@ func TestArticlesService_Show(t *testing.T) {
 
   t.Run("success", func(t *testing.T) {
     r := &archiveRepositoryMockAPIForArticles{t: t, arguments: []any{ctx, id, false}}
-    assert.NoError(t, NewArticlesService(r).Show(ctx, id))
+    assert.NoError(t, NewArticlesService(r, cacherImpl, cacherImpl).Show(ctx, id))
   })
 
   t.Run("gets a repository failure", func(t *testing.T) {
     unexpected := errors.New("unexpected error")
 
     r := &archiveRepositoryMockAPIForArticles{errors: unexpected}
-    assert.ErrorIs(t, NewArticlesService(r).Show(ctx, id), unexpected)
+    assert.ErrorIs(t, NewArticlesService(r, cacherImpl, cacherImpl).Show(ctx, id), unexpected)
   })
 
   t.Run("wrong uuid", func(t *testing.T) {
     id = "e4d06ba7-f086-47dc-9f5e"
 
     r := &archiveRepositoryMockAPIForArticles{}
-    assert.Error(t, NewArticlesService(r).Show(ctx, id))
+    assert.Error(t, NewArticlesService(r, cacherImpl, cacherImpl).Show(ctx, id))
     assert.False(t, r.called)
   })
 }
@@ -200,21 +206,21 @@ func TestArticlesService_Amend(t *testing.T) {
 
   t.Run("success", func(t *testing.T) {
     r := &archiveRepositoryMockAPIForArticles{t: t, arguments: []any{ctx, id}}
-    assert.NoError(t, NewArticlesService(r).Amend(ctx, id))
+    assert.NoError(t, NewArticlesService(r, cacherImpl, cacherImpl).Amend(ctx, id))
   })
 
   t.Run("gets a repository failure", func(t *testing.T) {
     unexpected := errors.New("unexpected error")
 
     r := &archiveRepositoryMockAPIForArticles{errors: unexpected}
-    assert.ErrorIs(t, NewArticlesService(r).Amend(ctx, id), unexpected)
+    assert.ErrorIs(t, NewArticlesService(r, cacherImpl, cacherImpl).Amend(ctx, id), unexpected)
   })
 
   t.Run("wrong uuid", func(t *testing.T) {
     id = "e4d06ba7-f086-47dc-9f5e"
 
     r := &archiveRepositoryMockAPIForArticles{}
-    assert.Error(t, NewArticlesService(r).Amend(ctx, id))
+    assert.Error(t, NewArticlesService(r, cacherImpl, cacherImpl).Amend(ctx, id))
     assert.False(t, r.called)
   })
 }
@@ -236,20 +242,20 @@ func TestArticlesService_Remove(t *testing.T) {
   t.Run("success", func(t *testing.T) {
     r := &archiveRepositoryMockAPIForArticles{t: t, arguments: []any{ctx, id}}
 
-    assert.NoError(t, NewArticlesService(r).Remove(ctx, id))
+    assert.NoError(t, NewArticlesService(r, cacherImpl, cacherImpl).Remove(ctx, id))
   })
 
   t.Run("gets a repository failure", func(t *testing.T) {
     unexpected := errors.New("unexpected error")
     r := &archiveRepositoryMockAPIForArticles{errors: unexpected}
-    assert.ErrorIs(t, NewArticlesService(r).Remove(ctx, id), unexpected)
+    assert.ErrorIs(t, NewArticlesService(r, cacherImpl, cacherImpl).Remove(ctx, id), unexpected)
   })
 
   t.Run("wrong uuid", func(t *testing.T) {
     id = "e4d06ba7-f086-47dc-9f5e"
 
     r := &archiveRepositoryMockAPIForArticles{}
-    assert.Error(t, NewArticlesService(r).Remove(ctx, id))
+    assert.Error(t, NewArticlesService(r, cacherImpl, cacherImpl).Remove(ctx, id))
     assert.False(t, r.called)
   })
 }
@@ -271,19 +277,19 @@ func TestArticlesService_Pin(t *testing.T) {
 
   t.Run("success", func(t *testing.T) {
     r := &archiveRepositoryMockAPIForArticles{t: t, arguments: []any{ctx, id, true}}
-    assert.NoError(t, NewArticlesService(r).Pin(ctx, id))
+    assert.NoError(t, NewArticlesService(r, cacherImpl, cacherImpl).Pin(ctx, id))
   })
 
   t.Run("gets a repository failure", func(t *testing.T) {
     unexpected := errors.New("unexpected error")
     r := &archiveRepositoryMockAPIForArticles{errors: unexpected}
-    assert.ErrorIs(t, NewArticlesService(r).Pin(ctx, id), unexpected)
+    assert.ErrorIs(t, NewArticlesService(r, cacherImpl, cacherImpl).Pin(ctx, id), unexpected)
   })
 
   t.Run("wrong uuid", func(t *testing.T) {
     id = "e4d06ba7-f086-47dc-9f5e"
     r := &archiveRepositoryMockAPIForArticles{}
-    assert.Error(t, NewArticlesService(r).Pin(ctx, id))
+    assert.Error(t, NewArticlesService(r, cacherImpl, cacherImpl).Pin(ctx, id))
     assert.False(t, r.called)
   })
 }
@@ -294,21 +300,21 @@ func TestArticlesService_Unpin(t *testing.T) {
 
   t.Run("success", func(t *testing.T) {
     r := &archiveRepositoryMockAPIForArticles{t: t, arguments: []any{ctx, id, false}}
-    assert.NoError(t, NewArticlesService(r).Unpin(ctx, id))
+    assert.NoError(t, NewArticlesService(r, cacherImpl, cacherImpl).Unpin(ctx, id))
   })
 
   t.Run("gets a repository failure", func(t *testing.T) {
     unexpected := errors.New("unexpected error")
 
     r := &archiveRepositoryMockAPIForArticles{errors: unexpected}
-    assert.ErrorIs(t, NewArticlesService(r).Unpin(ctx, id), unexpected)
+    assert.ErrorIs(t, NewArticlesService(r, cacherImpl, cacherImpl).Unpin(ctx, id), unexpected)
   })
 
   t.Run("wrong uuid", func(t *testing.T) {
     id = "e4d06ba7-f086-47dc-9f5e"
 
     r := &archiveRepositoryMockAPIForArticles{}
-    assert.Error(t, NewArticlesService(r).Unpin(ctx, id))
+    assert.Error(t, NewArticlesService(r, cacherImpl, cacherImpl).Unpin(ctx, id))
     assert.False(t, r.called)
   })
 }
@@ -332,13 +338,13 @@ func TestArticlesService_AddTag(t *testing.T) {
 
   t.Run("success", func(t *testing.T) {
     r := &archiveRepositoryMockAPIForArticles{t: t, arguments: []any{ctx, articleUUID, tagID, []bool(nil)}}
-    assert.NoError(t, NewArticlesService(r).AddTag(ctx, articleUUID, tagID))
+    assert.NoError(t, NewArticlesService(r, cacherImpl, cacherImpl).AddTag(ctx, articleUUID, tagID))
   })
 
   t.Run("wrong draft uuid", func(t *testing.T) {
     articleUUID = "e4d06ba7-f086-47dc-9f5e"
     r := &archiveRepositoryMockAPIForArticles{}
-    assert.Error(t, NewArticlesService(r).AddTag(ctx, articleUUID, tagID))
+    assert.Error(t, NewArticlesService(r, cacherImpl, cacherImpl).AddTag(ctx, articleUUID, tagID))
     assert.False(t, r.called)
   })
 
@@ -347,7 +353,7 @@ func TestArticlesService_AddTag(t *testing.T) {
   t.Run("gets a repository failure", func(t *testing.T) {
     unexpected := errors.New("unexpected error")
     r := &archiveRepositoryMockAPIForArticles{errors: unexpected}
-    err := NewArticlesService(r).AddTag(ctx, articleUUID, uuid.NewString())
+    err := NewArticlesService(r, cacherImpl, cacherImpl).AddTag(ctx, articleUUID, uuid.NewString())
     assert.ErrorIs(t, err, unexpected)
   })
 }
@@ -371,19 +377,19 @@ func TestArticlesService_RemoveTag(t *testing.T) {
 
   t.Run("success", func(t *testing.T) {
     r := &archiveRepositoryMockAPIForArticles{t: t, arguments: []any{ctx, articleUUID, tagID, []bool(nil)}}
-    assert.NoError(t, NewArticlesService(r).RemoveTag(ctx, articleUUID, tagID))
+    assert.NoError(t, NewArticlesService(r, cacherImpl, cacherImpl).RemoveTag(ctx, articleUUID, tagID))
   })
 
   t.Run("wrong draft uuid", func(t *testing.T) {
     r := &archiveRepositoryMockAPIForArticles{}
-    assert.Error(t, NewArticlesService(r).RemoveTag(ctx, "e4d06ba7-f086-47dc-9f5e", tagID))
+    assert.Error(t, NewArticlesService(r, cacherImpl, cacherImpl).RemoveTag(ctx, "e4d06ba7-f086-47dc-9f5e", tagID))
     assert.False(t, r.called)
   })
 
   t.Run("gets a repository failure", func(t *testing.T) {
     unexpected := errors.New("unexpected error")
     r := &archiveRepositoryMockAPIForArticles{errors: unexpected}
-    err := NewArticlesService(r).RemoveTag(ctx, articleUUID, uuid.NewString())
+    err := NewArticlesService(r, cacherImpl, cacherImpl).RemoveTag(ctx, articleUUID, uuid.NewString())
     assert.ErrorIs(t, err, unexpected)
   })
 }

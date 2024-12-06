@@ -115,3 +115,7 @@ func (s *TopicsService) setCache(ctx context.Context) {
 func (s *TopicsService) hasCache() bool {
   return 0 < len(s.cache)
 }
+
+func (s *TopicsService) SetCache(ctx context.Context) {
+  s.setCache(ctx)
+}

@@ -115,3 +115,7 @@ func (s *TagsService) setCache(ctx context.Context) {
 func (s *TagsService) hasCache() bool {
   return 0 < len(s.cache)
 }
+
+func (s *TagsService) SetCache(ctx context.Context) {
+  s.setCache(ctx)
+}

@@ -260,7 +260,7 @@ func main() {
   engine.POST("/archive.drafts.tags.remove", drafts.RemoveTag)
 
   var (
-    articlesService = service.NewArticlesService(archive)
+    articlesService = service.NewArticlesService(archive, topicsService, tagsService)
     articles        = handler.NewArticlesHandler(articlesService)
   )
 
