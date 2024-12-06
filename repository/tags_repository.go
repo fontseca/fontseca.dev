@@ -78,12 +78,18 @@ func (r *TagsRepository) Create(ctx context.Context, creation *transfer.TagCreat
 // List retrieves all the tags.
 func (r *TagsRepository) List(ctx context.Context) (tags []*model.Tag, err error) {
   getTagsQuery := `
-  SELECT "id",
-         "name",
-         "created_at",
-         "updated_at"
-    FROM "archive"."tag"
-ORDER BY lower("name");`
+  SELECT t."id",
+         t."name",
+         t."created_at",
+         t."updated_at"
+    FROM "archive"."tag" t
+   WHERE 1 <= (SELECT count(a.*)
+                 FROM "archive"."article" a
+           INNER JOIN "archive"."article_tag" at ON at."article_uuid" = a."uuid"
+                WHERE NOT a."hidden"
+                      AND a."published_at" IS NOT NULL
+                      AND at."tag_id" = t."id")
+ORDER BY lower(t."name");`
 
   ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
   defer cancel()
