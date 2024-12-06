@@ -88,12 +88,17 @@ func (r *TopicsRepository) Create(ctx context.Context, creation *transfer.TopicC
 // List retrieves all the topics.
 func (r *TopicsRepository) List(ctx context.Context) (topics []*model.Topic, err error) {
   getTopicsQuery := `
-  SELECT "id",
-         "name",
-         "created_at",
-         "updated_at"
-    FROM "archive"."topic"
-ORDER BY lower("name");`
+  SELECT t."id",
+         t."name",
+         t."created_at",
+         t."updated_at"
+    FROM "archive"."topic" t
+   WHERE 1 <= (SELECT count(a.*)
+                 FROM "archive"."article" a
+                WHERE NOT a."hidden"
+                      AND a."published_at" IS NOT NULL
+                      AND a."topic" = t."id")
+ORDER BY lower(t."name");`
 
   ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
   defer cancel()
