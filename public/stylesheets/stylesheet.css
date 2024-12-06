@@ -14,7 +14,7 @@
   body {
     background-image: url("/public/images/bg-light.webp");
     background-color: rgba(255, 255, 255, 0.1);
-    background-blend-mode: lighten;
+    background-blend-mode: multiply;
   }
 }
 
