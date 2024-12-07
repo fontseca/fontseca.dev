@@ -13,24 +13,25 @@
 </div>
 
 Welcome to the source code of my personal website, [fontseca.dev](https://fontseca.dev/). This site is a dedicated
-portal where I share my work, experience, ideas, interests and thoughts. The project represents the culmination of four
-years of strong desired to have a place of my own and one year of devoted work to make it possible. The initial design
-of the project was just a single info page about myself, but it eventually turned into a more complete and complex
+portal where I share my work, experience, ideas, interests, and thoughts. The project represents the culmination of four
+years of strong desired to have a place of my own, and one year of devoted work to make it possible. The initial design was just a single info page about myself, but it eventually turned into a more complete and complex
 platform.
 
-One of my favorite sections in the site is the archive. Before starting the project, I faced a dilemma: use an existing
-platform like Hugo, or create a blog manager from scratch. After some thinking, I chose to build my own blog manager,
-what I call *[the archive](https://fontseca.dev/archive/)*, where I address subjects I find interesting and worth
-sharing. As other sections of the site, the archive is fully managed through an RPC-like API that powers the content,
+One of my favorite sections in the site is *[the archive](https://fontseca.dev/archive/)*.
+Before starting the web, I faced a dilemma: use an existing
+platform like Hugo, or create a blog manager myself from scratch.
+After some thinking, I chose to build my own blog manager—what I decided to call _the archive_.
+Here, I address subjects I find interesting and worth sharing. As other sections of the site, the archive is fully managed through an RPC-like API that powers the content,
 and constitutes one of the core parts of my website, alongside my [playground](https://fontseca.dev/playground/). In
 this archive, I discuss certain [topics](https://fontseca.dev/playground?target=/archive.topics.list) that interest me.
 
-Now, as a back-end engineer, I encountered a problem most of us have suffered when we want to have a website to present
-our work. If you've worked on an API, how'd you showcase that? Well, you could talk about it in a detailed article, but
-most of the time we want to play around with the product. That's why I created the second cornerstone of my website,
-what I call *[the playground](https://fontseca.dev/playground/)*, which is, by the
-way, [open source](https://github.com/fontseca/playground/) and available for integration into other projects. In the
-playground I present a place where my work can be played closely, well, at least public and, so far, HTTP/1.1 APIs.
+As a back-end engineer, I encountered a problem most of us have suffered when we want to have a website to present
+our work.
+When we work on APIs, we often want to showcase some of our labor.
+We could talk about it in a detailed article, but most of the time we want to play around with the product.
+That is why
+I created the second cornerstone of my website—what I call *[the playground](https://fontseca.dev/playground/)*; which is, by the
+way, [open source](https://github.com/fontseca/playground/) and available for integration into other projects.
 
 ## Table of Contents
 
