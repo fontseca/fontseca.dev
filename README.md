@@ -314,8 +314,7 @@ POST /archive.topics.remove
 
 ## Errors
 
-The fontseca.dev API implements error handling using the *
-*[RFC 7807 Problem Details for HTTP APIs](https://datatracker.ietf.org/doc/html/rfc7807)** standard. When an error
+The fontseca.dev API implements error handling using the **[RFC 7807 Problem Details for HTTP APIs](https://datatracker.ietf.org/doc/html/rfc7807)** standard. When an error
 occurs, the API responds with a structured JSON object that includes details about the problem. This standardized format
 improves interoperability and provides clients with consistent error messages, making it easier to troubleshoot and
 respond to issues programmatically.
