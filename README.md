@@ -134,7 +134,7 @@ way, [open source](https://github.com/fontseca/playground/) and available for in
 ## The Archive
 
 <figure>
-  <img src="https://github.com/user-attachments/assets/db79eabd-4697-4a6b-84f7-264d34e769a9" alt="archive"/>
+  <img src="https://github.com/user-attachments/assets/74955b4d-42c2-4d2c-b7f1-25a4d07e1c5d" alt="archive"/>
   <figcaption>
     <p><i>A screenshot of the fontseca.dev's archive in its final development phase.</i></p>
   </figcaption>
@@ -157,7 +157,7 @@ discussion of the articles and enhance their discoverability. Each article begin
 making revisions, and can be shared for feedback until they are ready for publishing as complete articles.
 
 <figure>
-  <img src="https://github.com/user-attachments/assets/da57800e-cda1-4b4d-8a10-634104cfedcb" alt="archive article"/>
+  <img src="https://github.com/user-attachments/assets/0c9b3efb-c08a-4ffb-90e9-bdb5471ff2ba" alt="archive article"/>
   <figcaption>
     <p><i>A screenshot of one article in the fontseca.dev's archive.</i></p>
   </figcaption>
@@ -187,7 +187,7 @@ real and published articles, once in that state, they can undergo updates or imp
 ## The Playground
 
 <figure>
-  <img src="https://github.com/user-attachments/assets/87fea3d1-833e-4cdf-b091-28ec4b9693bc" alt="playground"/>
+  <img src="https://github.com/user-attachments/assets/3e9057f4-612d-4a3b-b975-254162924932" alt="playground"/>
   <figcaption>
     <p><i>A screenshot of the initial version of the fontseca.dev's playground running with a collection exported from Postman.</i></p>
   </figcaption>
@@ -200,7 +200,7 @@ making it run in a different process using some sort of socket-based communicati
 codebase as my website. However, the solution was simpler and intuitive.
 
 <figure>
-  <img src="https://github.com/user-attachments/assets/3b8cd99c-05bb-453d-9876-e5cadf0b9a3e" alt="the devise of the playground"/>
+  <img src="https://github.com/user-attachments/assets/d5f7f124-844f-402e-9ca3-f32f4e88531c" alt="the devise of the playground"/>
   <figcaption>
     <p><i>A brainstorming on how to implement the fontseca.dev's playground.</i></p>
   </figcaption>
