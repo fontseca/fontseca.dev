@@ -33,6 +33,13 @@ That is why
 I created the second cornerstone of my website—what I call *[the playground](https://fontseca.dev/playground/)*; which is, by the
 way, [open source](https://github.com/fontseca/playground/) and available for integration into other projects.
 
+<div align="center" style="display: flex; justify-content: center; text-align: center;">
+  <a href="https://youtu.be/NCcJdYM-UOo" target="_blank">
+    <img src="https://markdown-videos-api.jorgenkh.no/youtube/NCcJdYM-UOo" alt="cheerfully celebrating the launch of my personal website built with go 1.23 — fontseca.dev" width="70%">
+  </a>
+    <p class="text-align: center;"><i>cheerfully celebrating the launch of my personal website built with go 1.23 — fontseca.dev</i></p>
+</div>
+
 ## Table of Contents
 
 <!-- TOC -->
