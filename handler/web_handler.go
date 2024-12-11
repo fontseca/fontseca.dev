@@ -209,7 +209,7 @@ func (h *WebHandler) RenderArchive(c *gin.Context) {
 }
 
 func (h *WebHandler) RenderArticle(c *gin.Context) {
-  cc := context.WithValue(c.Request.Context(), repository.VisitorKey, c.RemoteIP())
+  cc := context.WithValue(c.Request.Context(), repository.VisitorKey, c.ClientIP())
   c.Request = c.Request.Clone(cc)
 
   if _, checksum := c.Params.Get("hash"); checksum {
