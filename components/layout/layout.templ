@@ -29,6 +29,7 @@ templ Layout(title string, selectedMenuIndex int) {
 			</div>
 			<div id="backdrop" onclick="toggleNavigationSidebar()"></div>
 			<script src="https://unpkg.com/htmx.org@1.9.10"></script>
+			<script>htmx.config.getCacheBusterParam = true</script>
 			<script defer src="/public/scripts/script.js"></script>
 		</body>
 	</html>
