@@ -150,10 +150,11 @@ a:hover {
 }
 
 .icon-tag::before {
-  top: .2rem !important;
-  content: "#";
+  /*top: .2rem !important;*/
+  content: "\E478";
   font-weight: normal;
-  font-size: 15px;
+  /*font-size: 15px;*/
+  /*left: -.1rem;*/
 }
 
 /* Logo.  */
@@ -1475,7 +1476,7 @@ button.link-copier.copied::before {
 .archive-content-main .topic-and-search .selected-tag-div .selected-tag::before {
   font-size: 20px;
   top: .1rem !important;
-  left: -.4rem;
+  left: -1rem;
 }
 
 .archive-content-main .topic-and-search .selected-tag-div.hide {
@@ -1569,10 +1570,12 @@ button.link-copier.copied::before {
 
 .archive-content-aside .tags .tags-list .tag::before {
   top: 0 !important;
+  font-size: 12px;
 }
 
 .archive-content-aside .tags .tags-list .tag a {
-  font-size: 13px;
+  margin-left: 3px;
+  font-size: 11px;
   font-weight: normal;
   font-family: 'Source Serif 4', sans-serif;
 }
@@ -1704,10 +1707,12 @@ button.link-copier.copied::before {
 }
 
 .article-post .post-content-section .tags-list .tag::before {
-  top: 0 !important;
+  top: 1px !important;
+  font-size: 13px;
 }
 
 .article-post .post-content-section .tags-list .tag a {
+  margin-left: 6px;
   font-weight: normal;
   font-family: 'Source Serif 4', sans-serif;
   font-size: 13px;
