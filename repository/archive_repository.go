@@ -15,6 +15,7 @@ import (
   "net/http"
   "net/url"
   "os"
+  "slices"
   "strconv"
   "strings"
   "sync"
@@ -968,6 +969,10 @@ func (r *ArchiveRepository) GetByID(ctx context.Context, id string, isDraft bool
   article = new(model.Article)
 
   if 0 < len(tags) {
+    slices.SortFunc(tags, func(a, b *model.Tag) int {
+      return strings.Compare(strings.ToLower(a.Name), strings.ToLower(b.Name))
+    })
+
     article.Tags = tags
   }
 
