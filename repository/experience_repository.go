@@ -39,7 +39,7 @@ func (r *ExperienceRepository) List(ctx context.Context, hidden bool) (experienc
          "updated_at"
     FROM "me"."experience"
    WHERE "hidden" = $1
-ORDER BY "date_end" DESC NULLS FIRST, "date_start" DESC;`
+ORDER BY "date_start" DESC, "date_end" DESC NULLS FIRST;`
 
   ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
   defer cancel()
