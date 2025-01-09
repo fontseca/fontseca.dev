@@ -27,8 +27,9 @@ type Article struct {
   UUID  uuid.UUID `json:"uuid"`
   Title string    `json:"title"`
   Topic *struct {
-    ID  string `json:"id"`
-    URL string `json:"url"` // in the form: 'https://fontseca.dev/archive/:topic'
+    ID   string `json:"id"`
+    Name string `json:"name"`
+    URL  string `json:"url"` // in the form: 'https://fontseca.dev/archive/:topic'
   } `json:"topic"`
   URL         string     `json:"url"` // in the form: 'https://fontseca.dev/archive/:topic/:year/:month/:slug'
   IsPinned    bool       `json:"is_pinned"`
