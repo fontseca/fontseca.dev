@@ -14,14 +14,16 @@
 
 Welcome to the source code of my personal website, [fontseca.dev](https://fontseca.dev/). This site is a dedicated
 portal where I share my work, experience, ideas, interests, and thoughts. The project represents the culmination of four
-years of strong desired to have a place of my own, and one year of devoted work to make it possible. The initial design was just a single info page about myself, but it eventually turned into a more complete and complex
+years of strong desired to have a place of my own, and one year of devoted work to make it possible. The initial design
+was just a single info page about myself, but it eventually turned into a more complete and complex
 platform.
 
 One of my favorite sections in the site is *[the archive](https://fontseca.dev/archive/)*.
 Before starting the web, I faced a dilemma: use an existing
 platform like Hugo, or create a blog manager myself from scratch.
 After some thinking, I chose to build my own blog manager—what I decided to call _the archive_.
-Here, I address subjects I find interesting and worth sharing. As other sections of the site, the archive is fully managed through an RPC-like API that powers the content,
+Here, I address subjects I find interesting and worth sharing. As other sections of the site, the archive is fully
+managed through an RPC-like API that powers the content,
 and constitutes one of the core parts of my website, alongside my [playground](https://fontseca.dev/playground/). In
 this archive, I discuss certain [topics](https://fontseca.dev/playground?target=/archive.topics.list) that interest me.
 
@@ -30,7 +32,8 @@ our work.
 When we work on APIs, we often want to showcase some of our labor.
 We could talk about it in a detailed article, but most of the time we want to play around with the product.
 That is why
-I created the second cornerstone of my website—what I call *[the playground](https://fontseca.dev/playground/)*; which is, by the
+I created the second cornerstone of my website—what I call *[the playground](https://fontseca.dev/playground/)*; which
+is, by the
 way, [open source](https://github.com/fontseca/playground/) and available for integration into other projects.
 
 <div align="center" style="display: flex; justify-content: center; text-align: center;">
@@ -43,99 +46,101 @@ way, [open source](https://github.com/fontseca/playground/) and available for in
 ## Table of Contents
 
 <!-- TOC -->
-  * [Table of Contents](#table-of-contents)
-  * [The Archive](#the-archive)
+
+* [Table of Contents](#table-of-contents)
+* [The Archive](#the-archive)
     * [Articles Lifecycle](#articles-lifecycle)
-  * [The Playground](#the-playground)
+* [The Playground](#the-playground)
 * [API Reference](#api-reference)
-  * [Errors](#errors)
-    * [`internal`](#internal)
-    * [`missing_argument`](#missing_argument)
-    * [`unparseable_value`](#unparseable_value)
-    * [`not_found`](#not_found)
-    * [`out_of_range`](#out_of_range)
-    * [`unmet_validation`](#unmet_validation)
-    * [`duplicate_key`](#duplicate_key)
-    * [`action_already_completed`](#action_already_completed)
-    * [`action_refused`](#action_refused)
-  * [Me](#me)
-    * [`me.get`](#meget)
-    * [`me.set`](#meset)
-    * [`me.set_photo`](#meset_photo)
-    * [`me.set_resume`](#meset_resume)
-    * [`me.set_hireable`](#meset_hireable)
-  * [Experience](#experience)
-    * [`me.experience.list`](#meexperiencelist)
-    * [`me.experience.hidden.list`](#meexperiencehiddenlist)
-    * [`me.experience.get`](#meexperienceget)
-    * [`me.experience.create`](#meexperiencecreate)
-    * [`me.experience.set`](#meexperienceset)
-    * [`me.experience.hide`](#meexperiencehide)
-    * [`me.experience.show`](#meexperienceshow)
-    * [`me.experience.quit`](#meexperiencequit)
-    * [`me.experience.remove`](#meexperienceremove)
-  * [Projects](#projects)
-    * [`me.projects.list`](#meprojectslist)
-    * [`me.projects.get`](#meprojectsget)
-    * [`me.projects.archived.list`](#meprojectsarchivedlist)
-    * [`me.projects.create`](#meprojectscreate)
-    * [`me.projects.set`](#meprojectsset)
-    * [`me.projects.archive`](#meprojectsarchive)
-    * [`me.projects.unarchive`](#meprojectsunarchive)
-    * [`me.projects.finish`](#meprojectsfinish)
-    * [`me.projects.unfinish`](#meprojectsunfinish)
-    * [`me.projects.remove`](#meprojectsremove)
-    * [`me.projects.set_playground_url`](#meprojectsset_playground_url)
-    * [`me.projects.set_first_image_url`](#meprojectsset_first_image_url)
-    * [`me.projects.set_second_image_url`](#meprojectsset_second_image_url)
-    * [`me.projects.set_github_url`](#meprojectsset_github_url)
-    * [`me.projects.set_collection_url`](#meprojectsset_collection_url)
-    * [`me.projects.technologies.add`](#meprojectstechnologiesadd)
-    * [`me.projects.technologies.remove`](#meprojectstechnologiesremove)
-  * [Project Technology Tags](#project-technology-tags)
-    * [`technologies.list`](#technologieslist)
-    * [`technologies.create`](#technologiescreate)
-    * [`technologies.set`](#technologiesset)
-    * [`technologies.remove`](#technologiesremove)
-  * [Archive Article Drafts](#archive-article-drafts)
-    * [`archive.drafts.start`](#archivedraftsstart)
-    * [`archive.drafts.publish`](#archivedraftspublish)
-    * [`archive.drafts.list`](#archivedraftslist)
-    * [`archive.drafts.get`](#archivedraftsget)
-    * [`archive.drafts.share`](#archivedraftsshare)
-    * [`archive.drafts.revise`](#archivedraftsrevise)
-    * [`archive.drafts.discard`](#archivedraftsdiscard)
-    * [`archive.drafts.tags.add`](#archivedraftstagsadd)
-    * [`archive.drafts.tags.remove`](#archivedraftstagsremove)
-  * [Archive Articles](#archive-articles)
-    * [`archive.articles.list`](#archivearticleslist)
-    * [`archive.articles.get`](#archivearticlesget)
-    * [`archive.articles.hidden.list`](#archivearticleshiddenlist)
-    * [`archive.articles.amend`](#archivearticlesamend)
-    * [`archive.articles.set_slug`](#archivearticlesset_slug)
-    * [`archive.articles.hide`](#archivearticleshide)
-    * [`archive.articles.show`](#archivearticlesshow)
-    * [`archive.articles.remove`](#archivearticlesremove)
-    * [`archive.articles.pin`](#archivearticlespin)
-    * [`archive.articles.unpin`](#archivearticlesunpin)
-    * [`archive.articles.tags.add`](#archivearticlestagsadd)
-    * [`archive.articles.tags.remove`](#archivearticlestagsremove)
-  * [Archive Article Patches](#archive-article-patches)
-    * [`archive.articles.patches.list`](#archivearticlespatcheslist)
-    * [`archive.articles.patches.revise`](#archivearticlespatchesrevise)
-    * [`archive.articles.patches.share`](#archivearticlespatchesshare)
-    * [`archive.articles.patches.discard`](#archivearticlespatchesdiscard)
-    * [`archive.articles.patches.release`](#archivearticlespatchesrelease)
-  * [Archive Tags](#archive-tags)
-    * [`archive.tags.create`](#archivetagscreate)
-    * [`archive.tags.list`](#archivetagslist)
-    * [`archive.tags.set`](#archivetagsset)
-    * [`archive.tags.remove`](#archivetagsremove)
-  * [Archive Topics](#archive-topics)
-    * [`archive.topics.create`](#archivetopicscreate)
-    * [`archive.topics.list`](#archivetopicslist)
-    * [`archive.topics.set`](#archivetopicsset)
-    * [`archive.topics.remove`](#archivetopicsremove)
+    * [Errors](#errors)
+        * [`internal`](#internal)
+        * [`missing_argument`](#missing_argument)
+        * [`unparseable_value`](#unparseable_value)
+        * [`not_found`](#not_found)
+        * [`out_of_range`](#out_of_range)
+        * [`unmet_validation`](#unmet_validation)
+        * [`duplicate_key`](#duplicate_key)
+        * [`action_already_completed`](#action_already_completed)
+        * [`action_refused`](#action_refused)
+    * [Me](#me)
+        * [`me.get`](#meget)
+        * [`me.set`](#meset)
+        * [`me.set_photo`](#meset_photo)
+        * [`me.set_resume`](#meset_resume)
+        * [`me.set_hireable`](#meset_hireable)
+    * [Experience](#experience)
+        * [`me.experience.list`](#meexperiencelist)
+        * [`me.experience.hidden.list`](#meexperiencehiddenlist)
+        * [`me.experience.get`](#meexperienceget)
+        * [`me.experience.create`](#meexperiencecreate)
+        * [`me.experience.set`](#meexperienceset)
+        * [`me.experience.hide`](#meexperiencehide)
+        * [`me.experience.show`](#meexperienceshow)
+        * [`me.experience.quit`](#meexperiencequit)
+        * [`me.experience.remove`](#meexperienceremove)
+    * [Projects](#projects)
+        * [`me.projects.list`](#meprojectslist)
+        * [`me.projects.get`](#meprojectsget)
+        * [`me.projects.archived.list`](#meprojectsarchivedlist)
+        * [`me.projects.create`](#meprojectscreate)
+        * [`me.projects.set`](#meprojectsset)
+        * [`me.projects.archive`](#meprojectsarchive)
+        * [`me.projects.unarchive`](#meprojectsunarchive)
+        * [`me.projects.finish`](#meprojectsfinish)
+        * [`me.projects.unfinish`](#meprojectsunfinish)
+        * [`me.projects.remove`](#meprojectsremove)
+        * [`me.projects.set_playground_url`](#meprojectsset_playground_url)
+        * [`me.projects.set_first_image_url`](#meprojectsset_first_image_url)
+        * [`me.projects.set_second_image_url`](#meprojectsset_second_image_url)
+        * [`me.projects.set_github_url`](#meprojectsset_github_url)
+        * [`me.projects.set_collection_url`](#meprojectsset_collection_url)
+        * [`me.projects.technologies.add`](#meprojectstechnologiesadd)
+        * [`me.projects.technologies.remove`](#meprojectstechnologiesremove)
+    * [Project Technology Tags](#project-technology-tags)
+        * [`technologies.list`](#technologieslist)
+        * [`technologies.create`](#technologiescreate)
+        * [`technologies.set`](#technologiesset)
+        * [`technologies.remove`](#technologiesremove)
+    * [Archive Article Drafts](#archive-article-drafts)
+        * [`archive.drafts.start`](#archivedraftsstart)
+        * [`archive.drafts.publish`](#archivedraftspublish)
+        * [`archive.drafts.list`](#archivedraftslist)
+        * [`archive.drafts.get`](#archivedraftsget)
+        * [`archive.drafts.share`](#archivedraftsshare)
+        * [`archive.drafts.revise`](#archivedraftsrevise)
+        * [`archive.drafts.discard`](#archivedraftsdiscard)
+        * [`archive.drafts.tags.add`](#archivedraftstagsadd)
+        * [`archive.drafts.tags.remove`](#archivedraftstagsremove)
+    * [Archive Articles](#archive-articles)
+        * [`archive.articles.list`](#archivearticleslist)
+        * [`archive.articles.get`](#archivearticlesget)
+        * [`archive.articles.hidden.list`](#archivearticleshiddenlist)
+        * [`archive.articles.amend`](#archivearticlesamend)
+        * [`archive.articles.set_slug`](#archivearticlesset_slug)
+        * [`archive.articles.hide`](#archivearticleshide)
+        * [`archive.articles.show`](#archivearticlesshow)
+        * [`archive.articles.remove`](#archivearticlesremove)
+        * [`archive.articles.pin`](#archivearticlespin)
+        * [`archive.articles.unpin`](#archivearticlesunpin)
+        * [`archive.articles.tags.add`](#archivearticlestagsadd)
+        * [`archive.articles.tags.remove`](#archivearticlestagsremove)
+    * [Archive Article Patches](#archive-article-patches)
+        * [`archive.articles.patches.list`](#archivearticlespatcheslist)
+        * [`archive.articles.patches.revise`](#archivearticlespatchesrevise)
+        * [`archive.articles.patches.share`](#archivearticlespatchesshare)
+        * [`archive.articles.patches.discard`](#archivearticlespatchesdiscard)
+        * [`archive.articles.patches.release`](#archivearticlespatchesrelease)
+    * [Archive Tags](#archive-tags)
+        * [`archive.tags.create`](#archivetagscreate)
+        * [`archive.tags.list`](#archivetagslist)
+        * [`archive.tags.set`](#archivetagsset)
+        * [`archive.tags.remove`](#archivetagsremove)
+    * [Archive Topics](#archive-topics)
+        * [`archive.topics.create`](#archivetopicscreate)
+        * [`archive.topics.list`](#archivetopicslist)
+        * [`archive.topics.set`](#archivetopicsset)
+        * [`archive.topics.remove`](#archivetopicsremove)
+
 <!-- TOC -->
 
 ## The Archive
@@ -294,6 +299,8 @@ POST /archive.drafts.tags.remove
  GET /archive.articles.get
 POST /archive.articles.amend
 POST /archive.articles.set_slug
+POST /archive.articles.set_summary
+POST /archive.articles.set_cover
 POST /archive.articles.hide
 POST /archive.articles.show
 POST /archive.articles.remove
@@ -321,7 +328,8 @@ POST /archive.topics.remove
 
 ## Errors
 
-The fontseca.dev API implements error handling using the **[RFC 7807 Problem Details for HTTP APIs](https://datatracker.ietf.org/doc/html/rfc7807)** standard. When an error
+The fontseca.dev API implements error handling using the *
+*[RFC 7807 Problem Details for HTTP APIs](https://datatracker.ietf.org/doc/html/rfc7807)** standard. When an error
 occurs, the API responds with a structured JSON object that includes details about the problem. This standardized format
 improves interoperability and provides clients with consistent error messages, making it easier to troubleshoot and
 respond to issues programmatically.
@@ -347,7 +355,8 @@ This error occurs when a required argument is missing in the request body of a m
 
 ### `unparseable_value`
 
-This error occurs when a value provided in the request is in an incorrect format (e.g., invalid URL or improperly formatted
+This error occurs when a value provided in the request is in an incorrect format (e.g., invalid URL or improperly
+formatted
 boolean).
 
 ### `not_found`
@@ -356,13 +365,15 @@ This error indicates that the requested resource could not be found in the datab
 
 ### `out_of_range`
 
-This error occurs when an input value is too high, too low, or otherwise falls outside the permitted limits, which may be numeric,
+This error occurs when an input value is too high, too low, or otherwise falls outside the permitted limits, which may
+be numeric,
 or based on other boundaries. In other words, the provided value for a method argument is outside the acceptable range
 defined for it.
 
 ### `unmet_validation`
 
-This error occurs when one or more fields in the request do not meet the expected validation rules. The response will typically
+This error occurs when one or more fields in the request do not meet the expected validation rules. The response will
+typically
 include specific information on each field that failed validation to help identify the issue.
 
 ### `duplicate_key`
@@ -371,12 +382,14 @@ This error occurs when the provided value to a method argument already exists in
 
 ### `action_already_completed`
 
-This error occurs when an action cannot be repeated because it has already been completed for the target resource. For example,
+This error occurs when an action cannot be repeated because it has already been completed for the target resource. For
+example,
 attempting to publish an article draft that is already published.
 
 ### `action_refused`
 
-This error occurs when the requested action cannot proceed because one or more required preconditions have not been met, or a prior
+This error occurs when the requested action cannot proceed because one or more required preconditions have not been met,
+or a prior
 step is missing. This typically means that a specific state or prerequisite action is needed before the current action
 can be performed.
 
@@ -1673,6 +1686,8 @@ article's availability.
  GET /archive.articles.get
 POST /archive.articles.amend
 POST /archive.articles.set_slug
+POST /archive.articles.set_summary
+POST /archive.articles.set_cover
 POST /archive.articles.hide
 POST /archive.articles.show
 POST /archive.articles.remove
@@ -1791,10 +1806,10 @@ Changes the slug of a published article.
 
 **Arguments**
 
-| Name           |  Type  | Required | Where | Description                  |
-|:---------------|:------:|:--------:|:-----:|:-----------------------------|
-| `article_uuid` | `uuid` |   Yes    | Body  | The UUID of the article.     |
-| `slug`         | `uuid` |   Yes    | Body  | The new slug of the article. |
+| Name           |   Type   | Required | Where | Description                  |
+|:---------------|:--------:|:--------:|:-----:|:-----------------------------|
+| `article_uuid` |  `uuid`  |   Yes    | Body  | The UUID of the article.     |
+| `slug`         | `string` |   Yes    | Body  | The new slug of the article. |
 
 **Errors**
 
@@ -1804,6 +1819,55 @@ Changes the slug of a published article.
 | `unparseable_value` | The argument `article_uuid` is either empty or has an invalid format.  |
 | `not_found`         | The specified article or tag was not found.                            |
 | `internal`          | A server-side error occurred.                                          |
+
+### `archive.articles.set_summary`
+
+```http
+POST /archive.articles.set_summary
+```
+
+Changes the summary of a published article.
+
+**Arguments**
+
+| Name           |   Type   | Required | Where | Description                     |
+|:---------------|:--------:|:--------:|:-----:|:--------------------------------|
+| `article_uuid` |  `uuid`  |   Yes    | Body  | The UUID of the article.        |
+| `summary`      | `string` |   Yes    | Body  | The new summary of the article. |
+
+**Errors**
+
+| Type                | Reason                                                                    |
+|:--------------------|:--------------------------------------------------------------------------|
+| `missing_argument`  | The `article_uuid` or `summary` argument was not provided in the request. |
+| `unparseable_value` | The argument `article_uuid` is either empty or has an invalid format.     |
+| `not_found`         | The specified article or tag was not found.                               |
+| `internal`          | A server-side error occurred.                                             |
+
+### `archive.articles.set_cover`
+
+```http
+POST /archive.articles.set_cover
+```
+
+Sets the cover URL and caption cover image of an article.
+
+**Arguments**
+
+| Name           |   Type   | Required | Where | Description                                           |
+|:---------------|:--------:|:--------:|:-----:|:------------------------------------------------------|
+| `article_uuid` |  `uuid`  |   Yes    | Body  | The UUID of the article.                              |
+| `url`          | `string` |    No    | Body  | The URL of the cover image.                           |
+| `caption`      | `string` |    No    | Body  | The (optional) caption for the article's cover image. |
+
+**Errors**
+
+| Type                | Reason                                                                |
+|:--------------------|:----------------------------------------------------------------------|
+| `missing_argument`  | The `article_uuid` argument was not provided in the request.          |
+| `unparseable_value` | The argument `article_uuid` is either empty or has an invalid format. |
+| `not_found`         | The specified article or tag was not found.                           |
+| `internal`          | A server-side error occurred.                                         |
 
 ### `archive.articles.hide`
 
@@ -1987,7 +2051,8 @@ Each patch directly references its corresponding article, using the article's UU
 clear connection to the content it improves. Because only one patch can exist per article at a time, accessing the patch
 through the article's UUID allows for seamless retrieval of any ongoing updates.
 
-Patches can also be shared for feedback before the final release. Once a patch is complete and coherent, it is merged into
+Patches can also be shared for feedback before the final release. Once a patch is complete and coherent, it is merged
+into
 the original article.
 
 **Object**
