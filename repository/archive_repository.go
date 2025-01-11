@@ -615,13 +615,17 @@ func (r *ArchiveRepository) Publications(ctx context.Context) (publications []*t
 func (r *ArchiveRepository) List(ctx context.Context, filter *transfer.ArticleFilter, hidden, draftsOnly bool) (articles []*transfer.Article, err error) {
   query := strings.Builder{}
   query.WriteString(`
-  SELECT "uuid",
-         "title",
-         "slug",
-         "topic",
-         "pinned",
-         "published_at"
-    FROM "archive"."article" a`)
+  SELECT a."uuid",
+         a."title",
+         a."slug",
+         a."topic",
+         a."pinned",
+         a."published_at",
+         tp."name",
+         a."summary",
+         a."cover_url"
+    FROM "archive"."article" a
+  LEFT JOIN "archive"."topic" tp ON tp."id" = a."topic"`)
 
   if "" != filter.Tag {
     query.WriteString(`
@@ -678,7 +682,7 @@ func (r *ArchiveRepository) List(ctx context.Context, filter *transfer.ArticleFi
     month = int(filter.Publication.Month)
   }
 
-  ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+  ctx, cancel := context.WithTimeout(ctx, 20*time.Second)
   defer cancel()
 
   result, err := r.db.QueryContext(ctx, query.String(),
@@ -725,6 +729,7 @@ func (r *ArchiveRepository) List(ctx context.Context, filter *transfer.ArticleFi
       article       transfer.Article
       slug          string
       nullableTopic sql.NullString
+      topicName     sql.NullString
     )
 
     err = result.Scan(
@@ -734,6 +739,9 @@ func (r *ArchiveRepository) List(ctx context.Context, filter *transfer.ArticleFi
       &nullableTopic,
       &article.IsPinned,
       &article.PublishedAt,
+      &topicName,
+      &article.Summary,
+      &article.CoverURL,
     )
 
     topic := nullableTopic.String
@@ -746,11 +754,13 @@ func (r *ArchiveRepository) List(ctx context.Context, filter *transfer.ArticleFi
 
       if nil == err {
         article.Topic = &struct {
-          ID  string `json:"id"`
-          URL string `json:"url"`
+          ID   string `json:"id"`
+          Name string `json:"name"`
+          URL  string `json:"url"`
         }{
-          ID:  topic,
-          URL: topicURL,
+          ID:   topic,
+          Name: topicName.String,
+          URL:  topicURL,
         }
       } else {
         slog.Error(err.Error())
