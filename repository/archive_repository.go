@@ -549,6 +549,91 @@ func (r *ArchiveRepository) SetSlug(ctx context.Context, id, slug string) error 
   return nil
 }
 
+// SetArticleSummary updates the summary of an article. The article's read time must be already computed and passed in.
+// This method is intended to be used only on published articles. For article drafts, [Revise] can be used to update the
+// summary. For article patches is not necessary to update summary since it can be directly updated by this method.
+func (r *ArchiveRepository) SetArticleSummary(ctx context.Context, id, summary string, readtime int64) error {
+  slog.Info("updating article summary", slog.String("article_uuid", id))
+
+  tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+  if nil != err {
+    slog.Error(getErrMsg(err))
+    return err
+  }
+
+  defer tx.Rollback()
+
+  setSummaryQuery := `
+  UPDATE "archive"."article"
+     SET "summary" = $2,
+         "read_time" = $3
+   WHERE "uuid" = $1
+     AND "draft" IS FALSE
+     AND "published_at" IS NOT NULL;`
+
+  ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+  defer cancel()
+
+  result, err := tx.ExecContext(ctx, setSummaryQuery, &id, &summary, &readtime)
+  if nil != err && !errors.Is(sql.ErrNoRows, err) {
+    slog.Error(getErrMsg(err))
+    return err
+  }
+
+  if affected, _ := result.RowsAffected(); 1 != affected {
+    return problem.NewNotFound(id, "article")
+  }
+
+  if err := tx.Commit(); nil != err {
+    slog.Error(getErrMsg(err))
+    return err
+  }
+
+  return nil
+}
+
+// SetArticleCover updates either the cover image URL and its caption or both. The article's read time must be already computed and passed in.
+func (r *ArchiveRepository) SetArticleCover(ctx context.Context, id, coverURL, coverCaption string, readtime int64) error {
+  slog.Info("changing article cover", slog.String("article_uuid", id))
+
+  tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+  if nil != err {
+    slog.Error(getErrMsg(err))
+    return err
+  }
+
+  defer tx.Rollback()
+
+  setCoverQuery := `
+  UPDATE "archive"."article"
+     SET "cover_url" = coalesce(nullif($2, ''), "cover_url"),
+         "cover_caption" = coalesce(nullif($3, ''), "cover_caption"),
+         "read_time" = $4
+   WHERE "uuid" = $1
+     AND "draft" IS FALSE
+     AND "published_at" IS NOT NULL;`
+
+  ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+  defer cancel()
+
+  result, err := tx.ExecContext(ctx, setCoverQuery, &id, &coverURL, &coverCaption, &readtime)
+  if nil != err && !errors.Is(sql.ErrNoRows, err) {
+    slog.Error(getErrMsg(err))
+    return err
+  }
+
+  if affected, _ := result.RowsAffected(); 1 != affected {
+    return problem.NewNotFound(id, "article")
+  }
+
+  if err := tx.Commit(); nil != err {
+    slog.Error(getErrMsg(err))
+    return err
+  }
+
+  return nil
+}
+
 func (r *ArchiveRepository) setPublicationsCache(ctx context.Context) {
   r.publicationsCache = nil
   r.publicationsCache, _ = r.Publications(ctx)
