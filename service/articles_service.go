@@ -4,6 +4,7 @@ import (
   "context"
   "errors"
   "fontseca.dev/model"
+  "fontseca.dev/problem"
   "fontseca.dev/transfer"
   "log/slog"
   "strings"
@@ -11,6 +12,8 @@ import (
 
 type archiveRepositoryAPIForArticles interface {
   SetSlug(ctx context.Context, articleID, slug string) error
+  SetArticleSummary(ctx context.Context, articleID, summary string, readtime int64) error
+  SetArticleCover(ctx context.Context, articleID, coverURL, coverCaption string, readtime int64) error
   Publications(ctx context.Context) (publications []*transfer.Publication, err error)
   List(ctx context.Context, filter *transfer.ArticleFilter, hidden, draftsOnly bool) (articles []*transfer.Article, err error)
   Get(ctx context.Context, request *transfer.ArticleRequest) (article *model.Article, err error)
@@ -138,6 +141,91 @@ func (s *ArticlesService) SetSlug(ctx context.Context, id, slug string) error {
   }
 
   return s.r.SetSlug(ctx, id, generateSlug(slug))
+}
+
+// SetSummary updates the summary of an article.
+func (s *ArticlesService) SetSummary(ctx context.Context, id, summary string) error {
+  if err := validateUUID(&id); nil != err {
+    return err
+  }
+
+  summary = strings.TrimSpace(summary)
+  if "" == summary {
+    return nil
+  }
+
+  if 512 < len(summary) {
+    return problem.NewValidation([3]string{"summary", "max", "512"})
+  }
+
+  current, err := s.GetByID(ctx, id)
+  if nil != err {
+    return err
+  }
+
+  /* Since this method only works for published articles, all following fields must non-empty.  */
+
+  builder := strings.Builder{}
+
+  builder.WriteString(current.Title)
+  builder.WriteRune('\n')
+
+  builder.WriteString(summary)
+  builder.WriteRune('\n')
+
+  if nil != current.CoverCap {
+    builder.WriteString(*current.CoverCap)
+    builder.WriteRune('\n')
+  }
+
+  builder.WriteString(current.Content)
+  readtime := computePostReadingTimeInMinutes(strings.NewReader(builder.String()))
+
+  return s.r.SetArticleSummary(ctx, id, summary, int64(readtime))
+}
+
+// SetCover updates either the cover image URL and its caption or both.
+func (s *ArticlesService) SetCover(ctx context.Context, id, coverURL, coverCaption string) error {
+  if err := validateUUID(&id); nil != err {
+    return err
+  }
+
+  err := sanitizeURL(&coverURL)
+  if nil != err {
+    return err
+  }
+
+  coverCaption = strings.TrimSpace(coverCaption)
+  if "" == coverURL && "" == coverCaption {
+    return nil
+  }
+
+  if 256 < len(coverCaption) {
+    return problem.NewValidation([3]string{"caption", "max", "256"})
+  }
+
+  current, err := s.GetByID(ctx, id)
+  if nil != err {
+    return err
+  }
+
+  /* Since this method only works for published articles, all following fields must non-empty.  */
+
+  builder := strings.Builder{}
+
+  builder.WriteString(current.Title)
+  builder.WriteRune('\n')
+
+  builder.WriteString(current.Summary)
+  builder.WriteRune('\n')
+
+  builder.WriteString(coverCaption)
+  builder.WriteRune('\n')
+
+  builder.WriteString(current.Content)
+  readtime := computePostReadingTimeInMinutes(strings.NewReader(builder.String()))
+
+  return s.r.SetArticleCover(ctx, id, coverURL, coverCaption, int64(readtime))
 }
 
 // Amend starts the process to update an article. To amend the article,

@@ -19,6 +19,8 @@ type articlesServiceAPI interface {
   Show(ctx context.Context, articleID string) error
   Amend(ctx context.Context, articleID string) error
   SetSlug(ctx context.Context, articleID, slug string) error
+  SetSummary(ctx context.Context, articleID, summary string) error
+  SetCover(ctx context.Context, articleID, coverURL, coverCaption string) error
   Remove(ctx context.Context, articleID string) error
   Pin(ctx context.Context, articleID string) error
   Unpin(ctx context.Context, articleID string) error
@@ -128,6 +130,52 @@ func (h *ArticlesHandler) SetSlug(c *gin.Context) {
   }
 
   if err := h.articles.SetSlug(c, article, slug); check(err, c.Writer) {
+    return
+  }
+
+  c.Status(http.StatusNoContent)
+}
+
+func (h *ArticlesHandler) SetSummary(c *gin.Context) {
+  article, ok := c.GetPostForm("article_uuid")
+  if !ok {
+    problem.NewMissingParameter("article_uuid").Emit(c.Writer)
+    return
+  }
+
+  summary, ok := c.GetPostForm("summary")
+  if !ok {
+    problem.NewMissingParameter("summary").Emit(c.Writer)
+    return
+  }
+
+  if err := h.articles.SetSummary(c, article, summary); check(err, c.Writer) {
+    return
+  }
+
+  c.Status(http.StatusNoContent)
+}
+
+func (h *ArticlesHandler) SetCover(c *gin.Context) {
+  article, ok := c.GetPostForm("article_uuid")
+  if !ok {
+    problem.NewMissingParameter("article_uuid").Emit(c.Writer)
+    return
+  }
+
+  coverURL, ok := c.GetPostForm("url")
+  if !ok {
+    problem.NewMissingParameter("url").Emit(c.Writer)
+    return
+  }
+
+  coverCaption, ok := c.GetPostForm("caption")
+  if !ok {
+    problem.NewMissingParameter("caption").Emit(c.Writer)
+    return
+  }
+
+  if err := h.articles.SetCover(c, article, coverURL, coverCaption); check(err, c.Writer) {
     return
   }
 

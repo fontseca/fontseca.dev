@@ -269,6 +269,8 @@ func main() {
   engine.GET("/archive.articles.get", articles.Get)
   engine.POST("/archive.articles.amend", articles.Amend)
   engine.POST("/archive.articles.set_slug", articles.SetSlug)
+  engine.POST("/archive.articles.set_summary", articles.SetSummary)
+  engine.POST("/archive.articles.set_cover", articles.SetCover)
   engine.POST("/archive.articles.hide", articles.Hide)
   engine.POST("/archive.articles.show", articles.Show)
   engine.POST("/archive.articles.remove", articles.Remove)
