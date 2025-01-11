@@ -23,6 +23,9 @@ type ArticleRevision struct {
   Slug     string
   ReadTime int
   Content  string `json:"content"`
+  Summary  string `json:"summary"`
+  CoverURL string `json:"cover_url"`
+  CoverCap string `json:"cover_caption"`
 }
 
 // Article is a shallow article entry for transferring metadata.
