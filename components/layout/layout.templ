@@ -1,8 +1,11 @@
 package layout
 
-import "fontseca.dev/components/ui"
+import (
+  "fontseca.dev/components/ui"
+  "fontseca.dev/transfer"
+)
 
-templ Layout(title string, selectedMenuIndex int) {
+templ Layout(title string, selectedMenuIndex int, og ...transfer.OG) {
 	<html lang="en">
 		<head>
 			<meta charset="UTF-8"/>
@@ -19,7 +22,47 @@ templ Layout(title string, selectedMenuIndex int) {
 			<link rel="icon" type="image/png" sizes="32x32" href="/public/icons/favicon-32x32.png" />
 			<link rel="icon" type="image/png" sizes="16x16" href="/public/icons/favicon-16x16.png" />
 			<link rel="manifest" href="/public/icons/site.webmanifest" />
-			<title>fontseca.dev — { title }</title>
+			<title>{ title } — fontseca.dev</title>
+
+      <meta property="og:locale" content="en_US" />
+      <meta property="og:title" content={ title + " — fontseca.dev" } />
+      <meta property="og:site_name" content="fontseca.dev" />
+
+      if len(og) <= 0 {
+        <link rel="canonical" href="https://fontseca.dev/" />
+        <meta name="description" content="Professional software developer with several years of industry experience." />
+        <meta property="og:type" content="website" />
+        <meta property="og:description" content="Professional software developer with several years of industry experience." />
+        <meta property="og:url" content="https://fontseca.dev/" />
+      } else {
+        if "" != og[0].URL {
+          <link rel="canonical" href={ og[0].URL } />
+          <meta property="og:url" content={ og[0].URL } />
+        }
+
+        if "" != og[0].Description {
+          <meta name="description" content={ og[0].Description } />
+          <meta property="og:description" content={ og[0].Description } />
+        }
+
+        if "" != og[0].ImageURL {
+          <meta property="og:image" content={ og[0].ImageURL } />
+          <meta property="og:image:alt" content={ og[0].ImageAlt } />
+        }
+
+        if "" != og[0].Type {
+          <meta property="og:type" content={ og[0].Type } />
+
+          if "article" == og[0].Type {
+            <meta property="og:article:published_time" content={ og[0].ArticlePublishedTime } />
+            <meta property="og:article:author" content={ og[0].ArticleAuthor } />
+            <meta property="og:article:publisher" content={ og[0].ArticlePublisher } />
+          }
+        } else {
+          <meta property="og:type" content="website" />
+        }
+      }
+
 		</head>
 		<body>
 			<div class="site-wrapper">
