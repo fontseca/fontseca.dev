@@ -34,6 +34,8 @@ type Article struct {
   URL         string     `json:"url"` // in the form: 'https://fontseca.dev/archive/:topic/:year/:month/:slug'
   IsPinned    bool       `json:"is_pinned"`
   PublishedAt *time.Time `json:"published_at"`
+  Summary     string     `json:"summary"`
+  CoverURL    string     `json:"cover_url"`
 }
 
 // Publication represents the publication date of an article,
