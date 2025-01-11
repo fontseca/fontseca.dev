@@ -1756,10 +1756,10 @@ button.link-copier.copied::before {
 }
 
 .article-post .info-section .metadata .summary {
-  font-size: 20px;
+  font-size: 19px;
   line-height: 23px;
   font-family: 'Source Serif 4', sans-serif;
-  width: 80%;
+  padding-right: 1rem;
 }
 
 .article-post .info-section .metadata .options {
@@ -1779,7 +1779,7 @@ button.link-copier.copied::before {
 }
 
 .article-post .info-section .article-cover figure figcaption {
-  padding-top: .3rem;
+  padding-top: .4rem;
   text-align: right;
 }
 
@@ -1854,6 +1854,10 @@ button.link-copier.copied::before {
 }
 
 @media screen and (max-width: 765px) {
+  .article-post .info-section {
+    padding-bottom: .4rem;
+  }
+
   .article-post .info-section header {
     padding-right: 0;
   }
@@ -1879,6 +1883,7 @@ button.link-copier.copied::before {
   .article-post .info-section .metadata .summary {
     margin-top: .8rem;
     margin-bottom: .8rem;
+    padding-right: 0;
   }
 
   .article-post .info-section .article-cover,
