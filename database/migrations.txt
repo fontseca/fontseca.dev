@@ -1,0 +1,4 @@
+Migrations History
+====================
+
+1. 2025_01_10_add_summary_and_cover.sql (at archive)
