@@ -356,7 +356,7 @@ func (r *ArchiveRepository) Draft(ctx context.Context, creation *transfer.Articl
                                    "cover_url",
                                    "cover_caption")
                  VALUES ($1,
-                         'fontseca.dev',
+                         'fontseca',
                          $2,
                          $3,
                          coalesce(nullif($4, ''), 'no content'),
