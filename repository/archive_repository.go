@@ -347,18 +347,35 @@ func (r *ArchiveRepository) Draft(ctx context.Context, creation *transfer.Articl
   defer tx.Rollback()
 
   draftArticleQuery := `
-  INSERT INTO "archive"."article" ("title", "author", "slug", "read_time", "content")
-                 VALUES ($1, 'fontseca.dev', $2, $3, coalesce(nullif($4, ''), 'no content'))
+  INSERT INTO "archive"."article" ("title",
+                                   "author",
+                                   "slug",
+                                   "read_time",
+                                   "content",
+                                   "summary",
+                                   "cover_url",
+                                   "cover_caption")
+                 VALUES ($1,
+                         'fontseca.dev',
+                         $2,
+                         $3,
+                         coalesce(nullif($4, ''), 'no content'),
+                         coalesce(nullif($5, ''), 'no summary'),
+                         coalesce(nullif($6, ''), 'about:blank'),
+                         nullif($7, ''))
               RETURNING "uuid";`
 
-  ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+  ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
   defer cancel()
 
   result := tx.QueryRowContext(ctx, draftArticleQuery,
-    creation.Title,
-    creation.Slug,
-    creation.ReadTime,
-    creation.Content,
+    &creation.Title,
+    &creation.Slug,
+    &creation.ReadTime,
+    &creation.Content,
+    &creation.Summary,
+    &creation.CoverURL,
+    &creation.CoverCap,
   )
 
   if err = result.Scan(&id); nil != err {
