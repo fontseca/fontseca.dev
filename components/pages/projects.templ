@@ -2,12 +2,15 @@ package pages
 
 import (
   "fontseca.dev/model"
+  "fontseca.dev/transfer"
   "fontseca.dev/components/layout"
   "fontseca.dev/components/ui"
 )
 
 templ Projects(projects []*model.Project) {
-  @layout.Layout("work", 2) {
+  @layout.Layout("work", 2, transfer.OG{
+      Description: "A collection of key projects in my career, demonstrating my expertise in software engineering.",
+      URL: "https://fontseca.dev/work/" }) {
     <section class="projects">
       @ui.TitleHeader("work", "/me.projects.list")
       if 0 == len(projects) {
