@@ -10,7 +10,9 @@ import (
 )
 
 templ Archive(articles []*transfer.Article, publications []*transfer.Publication, topics []*model.Topic, tags []*model.Tag, search string, publication *transfer.Publication, topic *model.Topic, tag *model.Tag) {
-  @layout.Layout("archive", 3) {
+  @layout.Layout("archive", 3, transfer.OG{
+    Description: "A conglomeration of articles where I share my perspective on different topics, thoughtfully expressing my ideas into logically and coherently organized pieces of writing.",
+    URL: "https://fontseca.dev/archive/" }) {
     <section class="archive">
       @ui.TitleHeader("archive", "/archive.articles.list?page=1&rpp=5&search=")
       <section class="archive-content">
