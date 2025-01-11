@@ -2,12 +2,15 @@ package pages
 
 import (
   "fontseca.dev/model"
+  "fontseca.dev/transfer"
   "fontseca.dev/components/layout"
   "fontseca.dev/components/ui"
 )
 
 templ Experience(exp []*model.Experience) {
-  @layout.Layout("experience", 1) {
+  @layout.Layout("experience", 1, transfer.OG{
+    Description: "Brief details about my experience history as a software engineer.",
+    URL: "https://fontseca.dev/experience/" }) {
     <section class="experience">
       @ui.TitleHeader("experience", "/me.experience.list")
       if 0 == len(exp) {
