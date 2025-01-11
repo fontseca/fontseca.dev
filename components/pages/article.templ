@@ -3,13 +3,47 @@ package pages
 import(
   "fontseca.dev/components/layout"
   "fontseca.dev/model"
+  "fontseca.dev/transfer"
   "strconv"
   "fmt"
+  "time"
 )
+
+func getOGArticleURL(article *model.Article) string {
+  u := "https://fontseca.dev/"
+  if nil == article.Topic || nil == article.PublishedAt {
+    return u
+  }
+  year := strconv.Itoa(article.PublishedAt.Year())
+  month := strconv.Itoa(int(article.PublishedAt.Month()))
+  return fmt.Sprint(u, "archive/", article.Topic.ID, "/", year, "/", month, "/", article.Slug)
+}
+
+func getOGImageAlt(article *model.Article) string {
+  if nil == article.CoverCap {
+    return article.Summary
+  }
+  return *article.CoverCap
+}
+
+func getOGPublishedTime(article *model.Article) string {
+  if nil == article.PublishedAt {
+    return time.Date(0, 0, 0, 0, 0, 0, 0, time.UTC).Format(time.RFC3339)
+  }
+  return article.PublishedAt.Format(time.RFC3339)
+}
 
 templ Article(article *model.Article) {
   if nil != article {
-    @layout.Layout(article.Title, 3) {
+    @layout.Layout(article.Title, 3, transfer.OG{
+      Description: article.Summary,
+      ImageURL: article.CoverURL,
+      ImageAlt: getOGImageAlt(article),
+      Type: "article",
+      ArticlePublishedTime: getOGPublishedTime(article),
+      ArticleAuthor: article.Author,
+      ArticlePublisher: "https://fontseca.dev/archive",
+      URL: getOGArticleURL(article), }) {
       <section class="article-post">
         <section class="info-section">
         <div class="title-and-summary">
