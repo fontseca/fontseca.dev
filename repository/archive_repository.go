@@ -968,7 +968,10 @@ func (r *ArchiveRepository) GetByID(ctx context.Context, id string, isDraft bool
             t."id",
             t."name",
             t."created_at",
-            t."updated_at"
+            t."updated_at",
+            a."summary",
+            a."cover_url",
+            a."cover_caption"
        FROM "archive"."article" a
   LEFT JOIN "archive"."topic" t
          ON t."id" = a."topic" 
@@ -980,7 +983,7 @@ func (r *ArchiveRepository) GetByID(ctx context.Context, id string, isDraft bool
                   AND "hidden" IS FALSE
                   END;`
 
-  ctx2, cancel2 := context.WithTimeout(ctx, 5*time.Second)
+  ctx2, cancel2 := context.WithTimeout(ctx, 10*time.Second)
   defer cancel2()
 
   article = new(model.Article)
@@ -1018,6 +1021,9 @@ func (r *ArchiveRepository) GetByID(ctx context.Context, id string, isDraft bool
     &nullableTopicName,
     &nullableTopicCreatedAt,
     &nullableTopicUpdatedAt,
+    &article.Summary,
+    &article.CoverURL,
+    &article.CoverCap,
   )
 
   article.Views += r.views(article.UUID.String())
