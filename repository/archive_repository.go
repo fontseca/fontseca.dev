@@ -682,7 +682,7 @@ func (r *ArchiveRepository) List(ctx context.Context, filter *transfer.ArticleFi
     month = int(filter.Publication.Month)
   }
 
-  ctx, cancel := context.WithTimeout(ctx, 20*time.Second)
+  ctx, cancel := context.WithTimeout(ctx, 50*time.Second)
   defer cancel()
 
   result, err := r.db.QueryContext(ctx, query.String(),
@@ -930,7 +930,7 @@ func (r *ArchiveRepository) GetByID(ctx context.Context, id string, isDraft bool
          ON at."tag_id" = t."id"
       WHERE "article_uuid" = $1;`
 
-  ctx1, cancel1 := context.WithTimeout(ctx, 5*time.Second)
+  ctx1, cancel1 := context.WithTimeout(ctx, 20*time.Second)
   defer cancel1()
 
   result, err := r.db.QueryContext(ctx1, getTagsQuery, id)
@@ -1832,7 +1832,10 @@ func (r *ArchiveRepository) Revise(ctx context.Context, id string, revision *tra
                             THEN "read_time"
                             ELSE $5
                              END,
-         "content" = coalesce (nullif ($6, ''), "content")
+         "content" = coalesce (nullif ($6, ''), "content"),
+         "summary" = coalesce(nullif($7, ''), "summary"),
+         "cover_url" = coalesce(nullif($8, ''), "cover_url"),
+         "cover_caption" = coalesce(nullif($9, ''), "cover_caption")
    WHERE "uuid" = $1
      AND "draft" IS TRUE
      AND "published_at" IS NULL;`
@@ -1850,19 +1853,25 @@ func (r *ArchiveRepository) Revise(ctx context.Context, id string, revision *tra
                               ELSE $5
                                END,
            "content" = coalesce (nullif ($6, ''), "content")
-     WHERE "article_uuid" = $1;`
+     WHERE "article_uuid" = $1
+       AND length($7) >= 0
+       AND length($8) >= 0
+       AND length($9) >= 0;` /* (Just ignore these parameters.)  */
   }
 
-  ctx, cancel = context.WithTimeout(ctx, 3*time.Second)
+  ctx, cancel = context.WithTimeout(ctx, 20*time.Second)
   defer cancel()
 
   result, err := tx.ExecContext(ctx, reviseArticleQuery,
-    id,
-    revision.Title,
-    revision.Slug,
-    revision.Topic,
-    revision.ReadTime,
-    revision.Content,
+    &id,
+    &revision.Title,
+    &revision.Slug,
+    &revision.Topic,
+    &revision.ReadTime,
+    &revision.Content,
+    &revision.Summary,
+    &revision.CoverURL,
+    &revision.CoverCap,
   )
 
   if nil != err {
