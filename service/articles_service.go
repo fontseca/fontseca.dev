@@ -190,9 +190,11 @@ func (s *ArticlesService) SetCover(ctx context.Context, id, coverURL, coverCapti
     return err
   }
 
-  err := sanitizeURL(&coverURL)
-  if nil != err {
-    return err
+  if "" != coverURL {
+    err := sanitizeURL(&coverURL)
+    if nil != err {
+      return err
+    }
   }
 
   coverCaption = strings.TrimSpace(coverCaption)

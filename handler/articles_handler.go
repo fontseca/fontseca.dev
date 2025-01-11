@@ -163,17 +163,8 @@ func (h *ArticlesHandler) SetCover(c *gin.Context) {
     return
   }
 
-  coverURL, ok := c.GetPostForm("url")
-  if !ok {
-    problem.NewMissingParameter("url").Emit(c.Writer)
-    return
-  }
-
-  coverCaption, ok := c.GetPostForm("caption")
-  if !ok {
-    problem.NewMissingParameter("caption").Emit(c.Writer)
-    return
-  }
+  coverURL := c.PostForm("url")
+  coverCaption := c.PostForm("caption")
 
   if err := h.articles.SetCover(c, article, coverURL, coverCaption); check(err, c.Writer) {
     return
