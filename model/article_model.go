@@ -22,6 +22,9 @@ type Article struct {
   UpdatedAt   time.Time  `json:"updated_at"`
   Topic       *Topic     `json:"topic"`
   Tags        []*Tag     `json:"tags"`
+  Summary     string     `json:"summary"`
+  CoverURL    string     `json:"cover_url"`
+  CoverCap    *string    `json:"cover_caption"`
   Content     string     `json:"content"`
 }
 
