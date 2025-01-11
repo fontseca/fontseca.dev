@@ -1569,6 +1569,8 @@ func (r *ArchiveRepository) SetPinned(ctx context.Context, id string, pinned boo
 // A shareable link does not make an article public. This link will
 // eventually expire after a certain amount of time.
 func (r *ArchiveRepository) Share(ctx context.Context, id string) (link string, err error) {
+  const base = "https://fontseca.dev"
+
   defer func() {
     if nil == err {
       r.mu.Lock()
@@ -1656,7 +1658,7 @@ func (r *ArchiveRepository) Share(ctx context.Context, id string) (link string, 
         slog.String("elapsed", now.Sub(expiresAt).String()),
         slog.String("article_uuid", id))
     } else {
-      return link, nil
+      return base + link, nil
     }
   }
 
@@ -1694,7 +1696,7 @@ func (r *ArchiveRepository) Share(ctx context.Context, id string) (link string, 
     return "", err
   }
 
-  return link, nil
+  return base + link, nil
 }
 
 // Discard completely drops a draft; otherwise if called on a patch
