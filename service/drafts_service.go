@@ -46,14 +46,28 @@ func (s *DraftsService) Draft(ctx context.Context, creation *transfer.ArticleCre
   }
 
   creation.Title = strings.TrimSpace(creation.Title)
+  creation.Summary = strings.TrimSpace(creation.Summary)
+  creation.CoverURL = strings.TrimSpace(creation.CoverURL)
+  creation.CoverCap = strings.TrimSpace(creation.CoverCap)
 
   sanitizeTextWordIntersections(&creation.Title)
+
+  if "" != creation.CoverURL {
+    err = sanitizeURL(&creation.CoverURL)
+    if nil != err {
+      return uuid.Nil, err
+    }
+  }
 
   switch {
   case 256 < len(creation.Title):
     return uuid.Nil, problem.NewValidation([3]string{"title", "max", "256"})
   case 0 != len(creation.Content) && 3145728 < len(creation.Content):
     return uuid.Nil, problem.NewValidation([3]string{"content", "max", "3145728"})
+  case 0 != len(creation.Summary) && 512 < len(creation.Summary):
+    return uuid.Nil, problem.NewValidation([3]string{"summary", "max", "512"})
+  case 0 != len(creation.CoverCap) && 256 < len(creation.CoverCap):
+    return uuid.Nil, problem.NewValidation([3]string{"cover_caption", "max", "256"})
   }
 
   creation.Slug = generateSlug(creation.Title)
@@ -61,6 +75,16 @@ func (s *DraftsService) Draft(ctx context.Context, creation *transfer.ArticleCre
   builder := strings.Builder{}
 
   builder.WriteString(creation.Title)
+
+  if "" != creation.Summary {
+    builder.WriteRune('\n')
+    builder.WriteString(creation.Summary)
+  }
+
+  if "" != creation.CoverCap {
+    builder.WriteRune('\n')
+    builder.WriteString(creation.CoverCap)
+  }
 
   if "" != creation.Content {
     builder.WriteRune('\n')

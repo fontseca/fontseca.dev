@@ -37,14 +37,20 @@ func TestDraftsService_Draft(t *testing.T) {
   creation := &transfer.ArticleCreation{
     Title:    "Consectetur! Adipiscing... Quis nostrud: ELIT?",
     Slug:     "consectetur-adipiscing-quis-nostrud-elit",
+    Summary:  "Sequi ab quaerat consequatur dolore vel non consequuntur. Quis et qui. Minus incidunt eos cum omnis in doloribus aut quia.",
+    CoverURL: "http://placeimg.com/640/480",
+    CoverCap: "Dolor perspiciatis fugit officia sit. Qui consequuntur assumenda.",
     ReadTime: 1,
     Content:  "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
   }
 
   t.Run("success", func(t *testing.T) {
     dirty := &transfer.ArticleCreation{
-      Title:   " \n\t " + creation.Title + " \n\t ",
-      Content: creation.Content,
+      Title:    " \n\t " + creation.Title + " \n\t ",
+      Summary:  " \n\t " + creation.Summary + " \n\t ",
+      CoverURL: " \n\t " + creation.CoverURL + " \n\t ",
+      CoverCap: " \n\t " + creation.CoverCap + " \n\t ",
+      Content:  creation.Content,
     }
 
     r := &archiveRepositoryMockAPIForDrafts{t: t, arguments: []any{ctx, creation}, returns: []any{id.String()}}
