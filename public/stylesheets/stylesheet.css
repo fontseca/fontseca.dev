@@ -274,7 +274,8 @@ button.link-copier.copied::before {
 /* Header and navigation.  */
 
 .header {
-  height: 120px;
+  padding-top: 3rem;
+  padding-bottom: 1.2rem;
   width: 100%;
   display: flex;
   align-items: center;
