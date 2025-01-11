@@ -355,6 +355,18 @@ func (mock *archiveRepositoryMockAPIForDrafts) Revise(_ context.Context, draftID
   return mock.errors
 }
 
+type archiveRepositoryMockForRevise struct {
+  archiveRepositoryAPIForDrafts
+}
+
+func (mock *archiveRepositoryMockForRevise) GetByID(_ context.Context, _ string, _ bool) (draft *model.Article, err error) {
+  return &model.Article{}, nil
+}
+
+func (mock *archiveRepositoryMockForRevise) Revise(_ context.Context, _ string, _ *transfer.ArticleRevision) error {
+  return nil
+}
+
 func TestDraftsService_Revise(t *testing.T) {
   ctx := context.TODO()
   draftUUID := uuid.NewString()
@@ -363,16 +375,22 @@ func TestDraftsService_Revise(t *testing.T) {
     revision := &transfer.ArticleRevision{
       Title:    "Consectetur! Adipiscing... Quis nostrud: ELIT?",
       Slug:     "consectetur-adipiscing-quis-nostrud-elit",
+      Summary:  "Sequi ab quaerat consequatur dolore vel non consequuntur. Quis et qui. Minus incidunt eos cum omnis in doloribus aut quia.",
+      CoverURL: "http://placeimg.com/640/480",
+      CoverCap: "Dolor perspiciatis fugit officia sit. Qui consequuntur assumenda.",
       ReadTime: 11,
       Content:  strings.Repeat("word ", 1999) + "word",
     }
 
     dirty := &transfer.ArticleRevision{
-      Title:   " \t\n " + revision.Title + " \t\n ",
-      Content: " \t\n " + revision.Content + " \t\n ",
+      Title:    " \t\n " + revision.Title + " \t\n ",
+      Content:  " \t\n " + revision.Content + " \t\n ",
+      Summary:  " \t\n " + revision.Summary + " \t\n ",
+      CoverURL: " \t\n " + revision.CoverURL + " \t\n ",
+      CoverCap: " \t\n " + revision.CoverCap + " \t\n ",
     }
 
-    r := &archiveRepositoryMockAPIForDrafts{t: t, arguments: []any{ctx, draftUUID, revision}}
+    r := &archiveRepositoryMockForRevise{}
 
     assert.NoError(t, NewDraftsService(r).Revise(ctx, draftUUID, dirty))
   })
@@ -388,7 +406,7 @@ func TestDraftsService_Revise(t *testing.T) {
       Title: " \t\n " + revision.Title + " \t\n ",
     }
 
-    r := &archiveRepositoryMockAPIForDrafts{t: t, arguments: []any{ctx, draftUUID, revision}}
+    r := &archiveRepositoryMockForRevise{}
 
     assert.NoError(t, NewDraftsService(r).Revise(ctx, draftUUID, dirty))
   })
@@ -403,7 +421,7 @@ func TestDraftsService_Revise(t *testing.T) {
       Content: " \t\n " + revision.Content + " \t\n ",
     }
 
-    r := &archiveRepositoryMockAPIForDrafts{t: t, arguments: []any{ctx, draftUUID, revision}}
+    r := &archiveRepositoryMockForRevise{}
 
     assert.NoError(t, NewDraftsService(r).Revise(ctx, draftUUID, dirty))
   })

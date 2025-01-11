@@ -47,6 +47,7 @@ func (s *DraftsService) Draft(ctx context.Context, creation *transfer.ArticleCre
 
   creation.Title = strings.TrimSpace(creation.Title)
   creation.Summary = strings.TrimSpace(creation.Summary)
+  creation.Content = strings.TrimSpace(creation.Content)
   creation.CoverURL = strings.TrimSpace(creation.CoverURL)
   creation.CoverCap = strings.TrimSpace(creation.CoverCap)
 
@@ -206,27 +207,79 @@ func (s *DraftsService) Revise(ctx context.Context, draftUUID string, revision *
     sanitizeTextWordIntersections(&revision.Title)
   }
 
+  if "" != revision.CoverURL {
+    err := sanitizeURL(&revision.CoverURL)
+    if nil != err {
+      return err
+    }
+  }
+
   switch {
   case 0 != len(revision.Title) && 256 < len(revision.Title):
     return problem.NewValidation([3]string{"title", "max", "256"})
   case 0 != len(revision.Content) && 3145728 < len(revision.Content):
     return problem.NewValidation([3]string{"content", "max", "3145728"})
+  case 0 != len(revision.Summary) && 512 < len(revision.Summary):
+    return problem.NewValidation([3]string{"summary", "max", "512"})
+  case 0 != len(revision.CoverCap) && 256 < len(revision.CoverCap):
+    return problem.NewValidation([3]string{"cover_caption", "max", "256"})
   }
 
-  if "" != revision.Title || "" != revision.Content {
-    builder := strings.Builder{}
+  if "" != revision.Title {
+    revision.Slug = generateSlug(revision.Title)
+  }
 
-    if "" != revision.Title {
-      builder.WriteString(revision.Title)
-      revision.Slug = generateSlug(revision.Title)
+  if "" != revision.Title || "" != revision.Content || "" != revision.Summary || "" != revision.CoverCap {
+    current, err := s.Get(ctx, draftUUID)
+    if nil != err {
+      return err
     }
 
-    if "" != revision.Content {
-      if 0 < builder.Len() {
-        builder.WriteRune('\n')
-      }
+    var (
+      title        = revision.Title
+      content      = revision.Content
+      summary      = revision.Summary
+      coverCaption = revision.CoverCap
+    )
 
-      builder.WriteString(revision.Content)
+    if "" == title && "" != current.Title {
+      title = current.Title
+    }
+
+    if "" == content && "" != current.Content {
+      content = current.Content
+    }
+
+    if "" == summary && "" != current.Summary {
+      summary = current.Summary
+    }
+
+    if "" == coverCaption && nil != current.CoverCap {
+      coverCaption = *current.CoverCap
+    }
+
+    builder := strings.Builder{}
+
+    /* None of these variables should be an empty string (except cover caption), but for correctness,
+       I add the 'if' wrappers.  */
+
+    if "" != title {
+      builder.WriteString(title)
+    }
+
+    if "" != content {
+      builder.WriteRune('\n')
+      builder.WriteString(content)
+    }
+
+    if "" != summary {
+      builder.WriteRune('\n')
+      builder.WriteString(summary)
+    }
+
+    if "" != coverCaption {
+      builder.WriteRune('\n')
+      builder.WriteString(summary)
     }
 
     r := strings.NewReader(builder.String())
