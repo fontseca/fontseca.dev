@@ -11,6 +11,9 @@ type ArticleCreation struct {
   Slug     string
   ReadTime int
   Content  string `json:"content"`
+  Summary  string `json:"summary"`
+  CoverURL string `json:"cover_url"`
+  CoverCap string `json:"cover_caption"`
 }
 
 // ArticleRevision represents the data required to update an existing article entry.
