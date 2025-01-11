@@ -3,23 +3,49 @@ package ui
 import (
   "fontseca.dev/transfer"
   "time"
+  "fmt"
 )
 
 templ SearchResults(articles []*transfer.Article) {
   if 0 == len(articles) {
     <p>No articles found.</p>
   } else {
-    <ul id="articles-list" class="articles-list">
+    <div id="articles-list" class="articles-list">
       for _, article := range articles {
         if nil != article {
-          <li class={ "article-tile", templ.KV("pinned", article.IsPinned) }>
-            <a href={ templ.SafeURL(article.URL) }>{ article.Title }</a>
+          <div class="article-tile">
+            <div>
+            <a class="title" href={ templ.SafeURL(article.URL) }>{ article.Title }</a>
+            <p class="options">
             <time datetime={ article.PublishedAt.Format(time.RFC3339) }>
-              { article.PublishedAt.Format("Jan 02, 2006") }
+              <a href={ templ.SafeURL(fmt.Sprint("/archive/any/", article.PublishedAt.Year(), "/", int(article.PublishedAt.Month()))) }>
+                 { article.PublishedAt.Format("Jan 02, 2006") }
+              </a>
             </time>
-          </li>
+            <span>
+              <a href={ templ.SafeURL(fmt.Sprint("/archive/", article.Topic.ID)) }>{ article.Topic.Name }</a>
+            </span>
+            if article.IsPinned {
+            <span style="font-weight: 800">
+              Pinned
+            </span>
+            }
+            </p>
+            <div class="summary">
+              <p>{ article.Summary }</p>
+            </div>
+            </div>
+            <div class="article-cover">
+              <div class="image-container">
+                <a href={ templ.SafeURL(article.URL) }>
+                  <img src={ article.CoverURL }/>
+                </a>
+              </div>
+            </div>
+
+          </div>
         }
       }
-    </ul>
+    </div>
   }
 }
