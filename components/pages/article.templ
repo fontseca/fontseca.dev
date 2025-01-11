@@ -12,22 +12,14 @@ templ Article(article *model.Article) {
     @layout.Layout(article.Title, 3) {
       <section class="article-post">
         <section class="info-section">
+        <div class="title-and-summary">
           <header>
             <a href="/archive" class="go-back-indicator">Go back to archive</a>
             <h1 class="title">{ article.Title }</h1>
           </header>
           <div class="metadata">
-            <p>
-              <span>
-                <a style="font-weight: 800;" href="/playground?target=/me.get" target="_blank">{ "@" + article.Author }</a>
-              </span>
-              <span style="font-weight: 500;">
-                if nil != article.Topic {
-                  <a style="font-weight: 500;" href={ templ.SafeURL(fmt.Sprint("/archive/", article.Topic.ID)) }>{ article.Topic.Name }</a>
-                } else {
-                  { "No topic" }
-                }
-              </span>
+            <p class="summary">{ article.Summary }</p>
+            <div class="options">
               <span style="font-weight: 500;">
                   if nil != article.Topic && nil != article.PublishedAt {
                     <time>
@@ -40,8 +32,35 @@ templ Article(article *model.Article) {
                     { "Draft" }
                   }
               </span>
-            </p>
+              <span style="font-weight: 500;">
+                if nil != article.Topic {
+                  <a style="font-weight: 500;" href={ templ.SafeURL(fmt.Sprint("/archive/", article.Topic.ID)) }>{ article.Topic.Name }</a>
+                } else {
+                  { "No topic" }
+                }
+              </span>
+              <span>
+                <a style="font-weight: 800;" href="/playground?target=/me.get" target="_blank">{ "@" + article.Author }</a>
+              </span>
+            </div>
           </div>
+        </div>
+        <div class="article-cover">
+          <figure>
+            <div class="image-container">
+              if nil != article.CoverCap {
+                <img src={ article.CoverURL } alt={ *article.CoverCap } />
+              } else {
+                <img src={ article.CoverURL } alt={ article.Summary }/>
+              }
+            </div>
+            if nil != article.CoverCap {
+              <figcaption>
+                <small>{ *article.CoverCap }</small>
+              </figcaption>
+            }
+          </figure>
+        </div>
         </section>
         <section class="post-content-section post-content-receiver-container">
           <header class="post-header">
