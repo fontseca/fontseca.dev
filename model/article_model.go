@@ -5,6 +5,13 @@ import (
   "time"
 )
 
+// DownloadFile holds meta-data about the PDF files for a specific article.
+type DownloadFile struct {
+  Lang      string `json:"lang"`
+  LangShort string `json:"lang_short"`
+  FileLink  string `json:"file_link"`
+}
+
 // Article represents a piece of writing about a
 // particular subject in my website's archive.
 type Article struct {
@@ -26,6 +33,8 @@ type Article struct {
   CoverURL    string     `json:"cover_url"`
   CoverCap    *string    `json:"cover_caption"`
   Content     string     `json:"content"`
+
+  DownloadFiles []DownloadFile `json:"download_files"`
 }
 
 // ArticlePatch is a patch for a published article.
