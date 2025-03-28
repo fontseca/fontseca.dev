@@ -1046,6 +1046,44 @@ func (r *ArchiveRepository) GetByID(ctx context.Context, id string, isDraft bool
     tags = append(tags, &tag)
   }
 
+  getDownloadLinksQuery := `
+     SELECT "lang",
+            "lang_short",
+            "file_link"
+  FROM "archive"."article_file"
+ WHERE "article" = $1
+ORDER BY "lang";`
+
+  ctx1, cancel1 = context.WithTimeout(ctx, 20*time.Second)
+  defer cancel1()
+
+  result, err = r.db.QueryContext(ctx1, getDownloadLinksQuery, id)
+  if err != nil {
+    slog.Error(getErrMsg(err))
+    return nil, err
+  }
+
+  defer result.Close()
+
+  files := make([]model.DownloadFile, 0)
+
+  for result.Next() {
+    var file model.DownloadFile
+
+    err = result.Scan(
+      &file.Lang,
+      &file.LangShort,
+      &file.FileLink,
+    )
+
+    if nil != err {
+      slog.Error(getErrMsg(err))
+      return nil, err
+    }
+
+    files = append(files, file)
+  }
+
   getArticleByUUIDQuery := `
      SELECT a."uuid",
             a."title",
@@ -1082,6 +1120,10 @@ func (r *ArchiveRepository) GetByID(ctx context.Context, id string, isDraft bool
   defer cancel2()
 
   article = new(model.Article)
+
+  if 0 < len(files) {
+    article.DownloadFiles = files
+  }
 
   if 0 < len(tags) {
     slices.SortFunc(tags, func(a, b *model.Tag) int {
