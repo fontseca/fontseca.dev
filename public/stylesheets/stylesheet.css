@@ -1200,6 +1200,7 @@ button.link-copier.copied::before {
   position: absolute;
   left: 0;
   flex-direction: column;
+  flex-wrap: wrap;
 }
 
 .post-content-section .post-header p {
@@ -1214,12 +1215,11 @@ button.link-copier.copied::before {
   cursor: pointer;
   background-color: transparent;
   padding-top: .2rem;
-  padding-bottom: .2rem;
   color: black;
   font-weight: 700;
   text-decoration: none;
   font-size: 16px;
-  margin-bottom: .3rem;
+  margin-bottom: .5rem;
 }
 
 .post-content-section .post-header button i,
@@ -1228,12 +1228,32 @@ button.link-copier.copied::before {
 }
 
 .post-content-section .post-header p {
-  margin-top: .3rem;
+  padding-bottom: .5rem;
   font-weight: 700;
 }
 
 .post-content-section .post-header button:hover {
   text-decoration: underline;
+}
+
+.post-content-section .post-header span {
+  padding-bottom: .5rem;
+}
+
+.post-content-section .post-header span a::before {
+  content: "\E20C";
+  font-weight: lighter;
+}
+
+.post-content-section .post-header .readtime::before {
+  content: "\E19A";
+  font-weight: lighter;
+  top: .3rem;
+}
+
+.post-content-section .post-header p.bar {
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
 @media screen and (max-width: 1120px) {
@@ -1243,14 +1263,23 @@ button.link-copier.copied::before {
     flex-direction: row;
   }
 
+  .post-content-section .post-header p {
+    padding-bottom: 0;
+  }
+
   .post-content-section .post-header button {
     margin-bottom: 0;
   }
 
-  .post-content-section .post-header p:not(:first-child):before {
+  .post-content-section .post-header p.bar::before {
     content: "|";
     padding-right: .8rem;
     padding-left: .8rem;
+  }
+
+  .post-content-section .post-header .file-span {
+    padding: 0.2rem 0 0;
+    margin-right: 0.8rem;
   }
 }
 
@@ -1307,6 +1336,7 @@ button.link-copier.copied::before {
 .post-content-section .content ul,
 .post-content-section .content ol {
   padding-left: 3rem;
+  padding-bottom: 1.3rem;
 }
 
 .post-content-section .content blockquote {

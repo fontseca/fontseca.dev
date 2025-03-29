@@ -101,7 +101,15 @@ templ Article(article *model.Article) {
             <button type="button" class="link-copier">
               Copy link
             </button>
-            <p><i class="ph ph-clock"></i>{ strconv.Itoa(article.ReadTime) } min</p>
+            <p class="bar"></p>
+            <p class="readtime has-phosphor-icon">{ strconv.Itoa(article.ReadTime) } min</p>
+            if len(article.DownloadFiles) > 0 {
+              <p class="bar"></p>
+              for _, f := range article.DownloadFiles {
+                <span class="file-span"><a class="link-normal has-phosphor-icon" target="_blank" href={ templ.SafeURL(f.FileLink) } download="filename">{ f.Lang }</a></span>
+              }
+            }
+
           </header>
           <article class={ "content", templ.KV("add-border", 0 < len(article.Tags)) }>
             {! templ.Raw(md2html(article.Content)) }
