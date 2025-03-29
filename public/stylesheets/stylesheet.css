@@ -1575,6 +1575,12 @@ button.link-copier.copied::before {
   line-height: 20px;
   font-family: 'Source Serif 4', sans-serif;
   width: 90%;
+
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .articles-list .article-tile .article-cover {
