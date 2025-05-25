@@ -1,4 +1,10 @@
-document.querySelectorAll("button.link-copier").forEach(button => {
+document.addEventListener("DOMContentLoaded", function () {
+  const linkCopiers = document.querySelectorAll("button.link-copier")
+
+  linkCopiers.forEach(copyArticleLink);
+});
+
+function copyArticleLink(button) {
   let isCopied = false;
   button.onclick = () => {
     if (isCopied) {
@@ -27,7 +33,7 @@ document.querySelectorAll("button.link-copier").forEach(button => {
       document.body.removeChild(dummy);
     }
   };
-});
+}
 
 function toggleNavigationSidebar() {
   const menu = document.getElementById("navigation")
