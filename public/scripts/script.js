@@ -1,8 +1,102 @@
 document.addEventListener("DOMContentLoaded", function () {
   const linkCopiers = document.querySelectorAll("button.link-copier")
+  const images = document.querySelectorAll(".article-post img, .post-content-section img, .images-container img");
 
   linkCopiers.forEach(copyArticleLink);
+  images.forEach(openImageInViewer);
 });
+
+function openImageInViewer(img) {
+  img.style.cursor = "zoom-in";
+  img.addEventListener("click", handleImageClicked.bind(this, img));
+}
+
+function handleImageClicked(img) {
+  const imageDialog = document.createElement("dialog");
+  const imageDialogHeading = document.createElement("p");
+  const imageContainerDiv = document.createElement("div");
+  const image = document.createElement("img");
+  let imageCaption;
+
+  imageDialog.classList.add("img-viewer");
+
+  imageDialogHeading.classList.add("small");
+  imageDialogHeading.textContent = "Hit `^Esc` or tap outside the image to close."
+  imageDialog.appendChild(imageDialogHeading);
+
+  imageContainerDiv.classList.add("img-container");
+
+  image.src = img.src;
+  image.alt = img.alt;
+
+  imageContainerDiv.appendChild(image);
+  imageDialog.appendChild(imageContainerDiv);
+
+  /* Set image caption.  */
+
+  let currentCaption = img.parentNode.querySelector(".caption p");
+  if (currentCaption != null) { /* When project or article post image.  */
+    imageCaption = currentCaption.cloneNode(true); /* Clone the whole caption */
+  } else {
+    currentCaption = img.parentNode.parentNode.querySelector("small");
+    if (currentCaption != null) { /* When archive article cover image.  */
+      imageCaption = document.createElement("p");
+      imageCaption.textContent = currentCaption.textContent;
+    } else { /* When project cover image.  */
+      let element = img;
+      let found = true;
+      while ((element = element.parentNode)) { /* Stops at either '.project-tile' or '.info-article'.  */
+        if (element.nodeName.toLowerCase() === "main") { /* When, for instance, there is no caption at all.  */
+          found = false;
+          break;
+        }
+
+        if (element.classList.contains("project-tile") || element.classList.contains("info-article")) {
+          break
+        }
+      }
+
+      if (found) {
+        const title = element.querySelector("p.name, h1.name");
+        imageCaption = document.createElement("p");
+        imageCaption.textContent = title.textContent;
+      }
+    }
+  }
+
+  if (imageCaption != null) {
+    imageCaption.classList.add("caption");
+    imageDialog.appendChild(imageCaption);
+  }
+
+  document.body.appendChild(imageDialog);
+  imageDialog.showModal();
+
+  /* Close dialog when clicking outside the image.  */
+  imageDialog.addEventListener("click", (e) => {
+    const rect = imageDialog.getBoundingClientRect();
+    const isOutside =
+      e.clientX < rect.left || e.clientX > rect.right ||
+      e.clientY < rect.top || e.clientY > rect.bottom;
+    if (isOutside) {
+      imageDialog.close();
+    }
+  });
+
+  /* Close dialog when hitting '^Esc'.  */
+  const escHandler = (e) => {
+    if (e.key === "Escape") {
+      imageDialog.close();
+    }
+  };
+
+  document.addEventListener("keydown", escHandler);
+
+  imageDialog.addEventListener("close", () => {
+    document.removeEventListener("keydown", escHandler);
+    imageDialog.remove();
+  });
+}
 
 function copyArticleLink(button) {
   let isCopied = false;
