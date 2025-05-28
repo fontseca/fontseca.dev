@@ -7,7 +7,6 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 function openImageInViewer(img) {
-  img.style.cursor = "zoom-in";
   img.addEventListener("click", handleImageClicked.bind(this, img));
 }
 

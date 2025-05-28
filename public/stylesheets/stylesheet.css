@@ -215,6 +215,13 @@ button.link-copier.copied::before {
 }
 
 /* Image viewer.  */
+
+.article-post img,
+.post-content-section img,
+.images-container img {
+  cursor: zoom-in;
+}
+
 dialog.img-viewer {
   top: 50%;
   left: 50%;
