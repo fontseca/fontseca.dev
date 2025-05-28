@@ -214,6 +214,58 @@ button.link-copier.copied::before {
   content: "\E182";
 }
 
+/* Image viewer.  */
+dialog.img-viewer {
+  top: 50%;
+  left: 50%;
+  -webkit-transform: translateX(-50%) translateY(-50%);
+  -moz-transform: translateX(-50%) translateY(-50%);
+  -ms-transform: translateX(-50%) translateY(-50%);
+  transform: translateX(-50%) translateY(-50%);
+  border: none;
+  outline: none;
+  border-radius: 5px;
+  background-color: transparent;
+}
+
+dialog.img-viewer::backdrop {
+  background-color: rgb(0, 0, 0, 0.8);
+}
+
+dialog.img-viewer .small {
+  color: rgb(255, 255, 255, 0.5);
+  text-align: center;
+  font-size: 12px;
+  font-family: 'Source Serif 4', sans-serif;
+  padding-bottom: .25rem;
+}
+
+dialog.img-viewer .img-container {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+dialog.img-viewer .img-container img {
+  max-width: 95vw;
+  max-height: 85vh;
+  border-radius: 5px;
+}
+
+@media (prefers-color-scheme: dark) {
+  dialog.img-viewer .img-container img {
+    filter: none;
+  }
+}
+
+dialog.img-viewer .caption {
+  text-align: center;
+  padding-top: .25rem;
+  color: white;
+  font-style: italic;
+  font-family: 'Source Serif 4', sans-serif;
+}
+
 /* Title header.  */
 
 .title-header {
