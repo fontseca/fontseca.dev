@@ -247,9 +247,15 @@ dialog.img-viewer .img-container {
 }
 
 dialog.img-viewer .img-container img {
-  max-width: 95vw;
-  max-height: 85vh;
+  max-width: 92vw;
+  max-height: 90vh;
   border-radius: 5px;
+}
+
+@media screen and (max-width: 610px) {
+  dialog.img-viewer .img-container img {
+    max-width: 88vw;
+  }
 }
 
 @media (prefers-color-scheme: dark) {
@@ -263,6 +269,11 @@ dialog.img-viewer .caption {
   padding-top: .25rem;
   color: white;
   font-style: italic;
+  font-family: 'Source Serif 4', sans-serif;
+}
+
+dialog.img-viewer .caption * {
+  color: white;
   font-family: 'Source Serif 4', sans-serif;
 }
 
