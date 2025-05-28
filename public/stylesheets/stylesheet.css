@@ -254,15 +254,9 @@ dialog.img-viewer .img-container {
 }
 
 dialog.img-viewer .img-container img {
-  max-width: 92vw;
-  max-height: 90vh;
+  max-width: calc(100vw - 3rem);
+  max-height: calc(100vh - 6.5rem);
   border-radius: 5px;
-}
-
-@media screen and (max-width: 610px) {
-  dialog.img-viewer .img-container img {
-    max-width: 88vw;
-  }
 }
 
 @media (prefers-color-scheme: dark) {
