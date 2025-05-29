@@ -221,6 +221,8 @@ func (s *DraftsService) Revise(ctx context.Context, draftUUID string, revision *
     return problem.NewValidation([3]string{"content", "max", "3145728"})
   case 0 != len(revision.Summary) && 512 < len(revision.Summary):
     return problem.NewValidation([3]string{"summary", "max", "512"})
+  case 0 != len(revision.Summary) && 100 > len(revision.Summary):
+    return problem.NewValidation([3]string{"summary", "min", "120"})
   case 0 != len(revision.CoverCap) && 256 < len(revision.CoverCap):
     return problem.NewValidation([3]string{"cover_caption", "max", "256"})
   }
