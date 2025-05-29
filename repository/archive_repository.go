@@ -473,8 +473,8 @@ func (r *ArchiveRepository) Publish(ctx context.Context, id string) error {
   /* Check article draft has a summary and a cover image (#42).   */
 
   getSummaryAndCoverQuery := `
-  SELECT "summary" <> 'no summary' OR length("summary") < 20,
-         "cover_url" <> 'about:blank' OR length("cover_url") < 20
+  SELECT "summary" <> 'no summary' AND length("summary") >= 120,
+         "cover_url" <> 'about:blank'
     FROM  "archive"."article"
    WHERE "uuid" = $1
      AND "draft" IS TRUE
@@ -499,8 +499,17 @@ func (r *ArchiveRepository) Publish(ctx context.Context, id string) error {
     p.Type(problem.TypeActionRefused)
     p.Status(http.StatusUnprocessableEntity)
     p.Title("Could not publish draft.")
-    p.Detail("Cannot publish a draft without a valid summary and cover.")
     p.With("draft_uuid", id)
+
+    switch {
+    case !hasSummary:
+      p.Detail("Cannot publish a draft without a valid summary.")
+      p.With("cannot", "be less than 100 characters long")
+      p.With("cannot", "be an empty string")
+    case !hasCoverURL:
+      p.Detail("Cannot publish a draft without a valid cover URL.")
+    }
+
     return p
   }
 
