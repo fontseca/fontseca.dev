@@ -411,7 +411,7 @@ func (r *ArchiveRepository) Publish(ctx context.Context, id string) error {
     FROM "archive"."article"
    WHERE "uuid" = $1;`
 
-  ctx1, cancel := context.WithTimeout(ctx, time.Second)
+  ctx1, cancel := context.WithTimeout(ctx, 7*time.Second)
   defer cancel()
 
   row := r.db.QueryRowContext(ctx1, isArticleDraftQuery, id)
@@ -451,8 +451,10 @@ func (r *ArchiveRepository) Publish(ctx context.Context, id string) error {
      AND "topic" IS NOT NULL
      AND "topic" <> '';`
 
-  err = r.db.QueryRowContext(ctx, hasTopicQuery, id).Scan(&hasTopic)
+  ctx1, cancel = context.WithTimeout(ctx, 7*time.Second)
+  defer cancel()
 
+  err = r.db.QueryRowContext(ctx1, hasTopicQuery, id).Scan(&hasTopic)
   if nil != err {
     slog.Error(getErrMsg(err))
     return err
@@ -464,6 +466,40 @@ func (r *ArchiveRepository) Publish(ctx context.Context, id string) error {
     p.Status(http.StatusBadRequest)
     p.Title("Could not publish draft.")
     p.Detail("Cannot publish a draft without making it belong to a topic first.")
+    p.With("draft_uuid", id)
+    return p
+  }
+
+  /* Check article draft has a summary and a cover image (#42).   */
+
+  getSummaryAndCoverQuery := `
+  SELECT "summary" <> 'no summary' OR length("summary") < 20,
+         "cover_url" <> 'about:blank' OR length("cover_url") < 20
+    FROM  "archive"."article"
+   WHERE "uuid" = $1
+     AND "draft" IS TRUE
+     AND "published_at" IS NULL;`
+
+  var (
+    hasSummary  bool
+    hasCoverURL bool
+  )
+
+  ctx1, cancel = context.WithTimeout(ctx, 7*time.Second)
+  defer cancel()
+
+  err = r.db.QueryRowContext(ctx1, getSummaryAndCoverQuery, id).Scan(&hasSummary, &hasCoverURL)
+  if nil != err {
+    slog.Error(getErrMsg(err))
+    return err
+  }
+
+  if !hasSummary || !hasCoverURL {
+    p := &problem.Problem{}
+    p.Type(problem.TypeActionRefused)
+    p.Status(http.StatusUnprocessableEntity)
+    p.Title("Could not publish draft.")
+    p.Detail("Cannot publish a draft without a valid summary and cover.")
     p.With("draft_uuid", id)
     return p
   }
@@ -484,7 +520,7 @@ func (r *ArchiveRepository) Publish(ctx context.Context, id string) error {
 
   slog.Info("publishing draft", slog.String("uuid", id))
 
-  ctx, cancel = context.WithTimeout(ctx, 2*time.Second)
+  ctx, cancel = context.WithTimeout(ctx, 7*time.Second)
   defer cancel()
 
   result, err := tx.ExecContext(ctx, publishArticleDraftQuery, id)
