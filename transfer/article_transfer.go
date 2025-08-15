@@ -1,8 +1,9 @@
 package transfer
 
 import (
-  "github.com/google/uuid"
   "time"
+
+  "github.com/google/uuid"
 )
 
 // ArticleCreation represents the data required to create a new article entry.
@@ -42,6 +43,7 @@ type Article struct {
   PublishedAt *time.Time `json:"published_at"`
   Summary     string     `json:"summary"`
   CoverURL    string     `json:"cover_url"`
+  Views       int64      `json:"views"`
 }
 
 // Publication represents the publication date of an article,
