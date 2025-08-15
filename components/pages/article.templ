@@ -103,6 +103,8 @@ templ Article(article *model.Article) {
             </button>
             <p class="bar"></p>
             <p class="readtime has-phosphor-icon">{ strconv.Itoa(article.ReadTime) } min</p>
+            <p class="bar"></p>
+            <p class="views has-phosphor-icon">{ fmtNumber(article.Views) }</p>
             if len(article.DownloadFiles) > 0 {
               <p class="bar"></p>
               for _, f := range article.DownloadFiles {

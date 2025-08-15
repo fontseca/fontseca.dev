@@ -30,6 +30,7 @@ templ SearchResults(articles []*transfer.Article) {
               Pinned
             </span>
             }
+            <span>{ fmtNumber(article.Views) } views</span>
             </p>
             <div class="summary">
               <p>{ article.Summary }</p>

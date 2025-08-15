@@ -1315,6 +1315,12 @@ dialog.img-viewer .caption * {
   top: .3rem;
 }
 
+.post-content-section .post-header .views::before {
+  content: "\E220";
+  font-weight: lighter;
+  top: .3rem;
+}
+
 .post-content-section .post-header p.bar {
   margin: 0 !important;
   padding: 0 !important;
