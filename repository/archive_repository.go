@@ -753,7 +753,8 @@ func (r *ArchiveRepository) List(ctx context.Context, filter *transfer.ArticleFi
          a."published_at",
          tp."name",
          a."summary",
-         a."cover_url"
+         a."cover_url",
+         a."views"
     FROM "archive"."article" a
   LEFT JOIN "archive"."topic" tp ON tp."id" = a."topic"`)
 
@@ -872,7 +873,10 @@ func (r *ArchiveRepository) List(ctx context.Context, filter *transfer.ArticleFi
       &topicName,
       &article.Summary,
       &article.CoverURL,
+      &article.Views,
     )
+
+    article.Views += r.views(article.UUID.String())
 
     topic := nullableTopic.String
 
